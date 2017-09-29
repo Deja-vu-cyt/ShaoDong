@@ -1,0 +1,65 @@
+object frmConfirm: TfrmConfirm
+  Left = 0
+  Top = 0
+  BorderStyle = bsDialog
+  Caption = #25552#31034
+  ClientHeight = 121
+  ClientWidth = 194
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poMainFormCenter
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object mmoPrompt: TMemo
+    AlignWithMargins = True
+    Left = 5
+    Top = 5
+    Width = 184
+    Height = 73
+    Margins.Left = 5
+    Margins.Top = 5
+    Margins.Right = 5
+    Margins.Bottom = 5
+    Align = alClient
+    BevelOuter = bvNone
+    BorderStyle = bsNone
+    Color = clBtnFace
+    ReadOnly = True
+    TabOrder = 0
+    ExplicitHeight = 111
+  end
+  object Panel1: TPanel
+    Left = 0
+    Top = 83
+    Width = 194
+    Height = 38
+    Align = alBottom
+    BevelOuter = bvNone
+    TabOrder = 1
+    ExplicitTop = 121
+    object btnYes: TButton
+      Left = 16
+      Top = 8
+      Width = 75
+      Height = 25
+      Caption = #26159
+      TabOrder = 0
+      OnClick = btnYesClick
+    end
+    object btnNo: TButton
+      Left = 97
+      Top = 8
+      Width = 75
+      Height = 25
+      Caption = #21542
+      TabOrder = 1
+      OnClick = btnNoClick
+    end
+  end
+end
