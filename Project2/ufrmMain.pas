@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Threading,
-  System.Classes, Vcl.Graphics, System.Math, System.Types, System.IOUtils,
+  System.Classes, Vcl.Graphics, System.Math, System.Types, System.IOUtils, IdHTTP,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls,
   FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
   FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
@@ -53,7 +53,7 @@ type
     function BuildStringValue: string;
     procedure SaveGroupByFirstRow;
     procedure SaveGroupByCompareType;
-    procedure SaveGroupByValueCount;
+    procedure SaveGroupByCompareTypeValueCount;
     procedure Compare;
   public
     { Public declarations }
@@ -135,7 +135,7 @@ end;
 procedure TfrmMain.SaveGroupByFirstRow;
 var
   FirstRowList: TStringList;
-  i, FirstRow: Integer;
+  i, FirstRow, RowSpacing, MaxRowSpacing, MinRowSpacing, Rowcount: Integer;
   s: string;
 begin
   l.Clear;
@@ -155,6 +155,8 @@ begin
       fdmtData.Next;
     end;
 
+    MaxRowSpacing := 0;
+    MinRowSpacing := 100;
     for i := 0 to FirstRowList.Count - 1 do
     begin
       FirstRow := FirstRowList[i].ToInteger;
@@ -162,23 +164,43 @@ begin
       fdmtData.Filter := Format('CompareTypeCount >= %d AND FirstRow = %d', [fExportTypeCount, FirstRow]);
       fdmtData.Filtered := True;
 
+      if i = 0 then RowSpacing := FirstRow - 1
+      else RowSpacing := FirstRow - FirstRowList[i - 1].ToInteger;
+      if RowSpacing > MaxRowSpacing then MaxRowSpacing := MaxRowSpacing;
+      if RowSpacing < MinRowSpacing then MinRowSpacing := MaxRowSpacing;
+
       s := '第%d行（为首行）（邻行距：↑%d，同行数：%d）';
-      if i = 0 then
-        s := Format(s, [FirstRow, FirstRow - 1, fdmtData.RecordCount])
-      else
-        s := Format(s, [FirstRow, FirstRow - FirstRowList[i - 1].ToInteger, fdmtData.RecordCount]);
+      s := Format(s, [FirstRow, RowSpacing, fdmtData.RecordCount]);
+      l.Add('');
+      l.Add('');
+      l.Add('');
       l.Add(s);
 
       fdmtData.First;
       while not fdmtData.Eof do
       begin
-        s := '（%d）（代号：1%s ）= 无【对应列】数： %d列 ；【列数字】：%s';
-        s := Format(s, [
-          fdmtData.RecNo,
-          fdmtData.FieldByName('CompareType').AsString,
-          fdmtData.FieldByName('ValueCount').AsInteger,
-          BuildStringValue
-        ]);
+        if fColCount = fRangeColCount then
+        begin
+          s := '（%d）（代号：1%s ）= 无【对应列】数： %d列 ；【列数字】：%s';
+          s := Format(s, [
+            fdmtData.RecNo,
+            fdmtData.FieldByName('CompareType').AsString,
+            fdmtData.FieldByName('ValueCount').AsInteger,
+            BuildStringValue
+          ]);
+        end
+        else
+        begin
+          s := '（%d）（代号：1%s ）= 【 %d-%d 】列 ；【列数字】：%s';
+          s := Format(s, [
+            fdmtData.RecNo,
+            fdmtData.FieldByName('CompareType').AsString,
+            fdmtData.FieldByName('ValueCount').AsInteger,
+            fdmtData.FieldByName('ValueCount2').AsInteger,
+            BuildStringValue
+          ]);
+        end;
+        l.Add('');
         l.Add(s);
 
         fdmtData.Next;
@@ -186,7 +208,37 @@ begin
     end;
     s := '第%d行（为首行）（邻行距：↑%d）';
     s := Format(s, [FirstRow, FirstRow - FirstRowList[0].ToInteger]);
+    l.Add('');
+    l.Add('');
+    l.Add('');
     l.Add(s);
+
+    s := '';
+    Rowcount := 0;
+    for i := 0 to l.Count - 2 do
+    begin
+      if l[i].IndexOf(Format('邻行距：↑%d', [MaxRowSpacing])) > -1 then
+      begin
+        s := s + l[i] + #$D#$A;
+        Inc(Rowcount);
+        if Rowcount >= 100 then Break;
+      end;
+    end;
+    if MaxRowSpacing <> MinRowSpacing then
+    begin
+      Rowcount := 0;
+      for i := 0 to l.Count - 2 do
+      begin
+        if l[i].IndexOf(Format('邻行距：↑%d', [MinRowSpacing])) > -1 then
+        begin
+          s := s + l[i] + #$D#$A;
+          Inc(Rowcount);
+          if Rowcount >= 100 then Break;
+        end;
+      end;
+    end;
+    l.Insert(0, s);
+
     s := fFilePath + Format('①.【排列】“%d”个以上（代号：1.NZY ）组合.txt', [fExportTypeCount]);
     l.SaveToFile(s);
   finally
@@ -199,7 +251,7 @@ end;
 procedure TfrmMain.SaveGroupByCompareType;
 var
   CompareTypeList: TStringList;
-  i, FirstRow: Integer;
+  i: Integer;
   s, CompareType: string;
 begin
   l.Clear;
@@ -226,33 +278,47 @@ begin
       fdmtData.Filter := Format('CompareTypeCount >= %d AND CompareType = ''%s''', [fExportTypeCount, CompareType]);
       fdmtData.Filtered := True;
 
-      l.Add(Format('代号：1%s 同行数：%d', [CompareType, fdmtData.RecordCount]));
+      l.Add('');
+      l.Add('');
+      l.Add('');
+      l.Add(Format('（代号：1%s ）、（ 最多 [ 不同首行数：%d 行 ] ）', [CompareType, fdmtData.RecordCount]));
 
-      FirstRow := 1;
       fdmtData.First;
       while not fdmtData.Eof do
       begin
-        s := '（%d）第%d行（为首行）（邻行距：%d）= 无【对应列】数： %d列 ；【列数字】：%s';
-        s := Format(s, [
-          fdmtData.RecNo,
-          fdmtData.FieldByName('FirstRow').AsInteger,
-          fdmtData.FieldByName('FirstRow').AsInteger - FirstRow,
-          fdmtData.FieldByName('ValueCount').AsInteger,
-          BuildStringValue
-        ]);
+        if fColCount = fRangeColCount then
+        begin
+          s := '（%d）第%d行（为首行）= 无【对应列】数： %d列 ；【列数字】：%s';
+          s := Format(s, [
+            fdmtData.RecNo,
+            fdmtData.FieldByName('FirstRow').AsInteger,
+            fdmtData.FieldByName('ValueCount').AsInteger,
+            BuildStringValue
+          ]);
+        end
+        else
+        begin
+          s := '（%d）第%d行（为首行）= 【 %d-%d 】列 ；【列数字】：%s';
+          s := Format(s, [
+            fdmtData.RecNo,
+            fdmtData.FieldByName('FirstRow').AsInteger,
+            fdmtData.FieldByName('ValueCount').AsInteger,
+            fdmtData.FieldByName('ValueCount2').AsInteger,
+            BuildStringValue
+          ]);
+        end;
+        l.Add('');
         l.Add(s);
-
-        FirstRow := fdmtData.FieldByName('FirstRow').AsInteger;
 
         fdmtData.Next;
       end;
     end;
-    s := fFilePath + Format('②.【排列】“%d”个以上（邻行距、同行数：N ）各个组合.txt', [fExportTypeCount]);
+    s := fFilePath + Format('②.【排列】“%d”个以上各个组合（相同代号、不同首行）的（不同首行数：最多 - 最少行）.txt', [fExportTypeCount]);
     l.SaveToFile(s);
 
     for i := 0 to CompareTypeList.Count - 1 do
       CompareTypeList[i] := Format('%d=1', [i + 1]) + CompareTypeList[i];
-    s := fFilePath + Format('④.【保存】“%d”个以上（代号：1.NZY ）组合.txt', [fExportTypeCount]);
+    s := fFilePath + Format('⑥.【保存】“%d”个以上各个组合（相同代号、不同首行）的（代号：1.NZY ）.txt', [fExportTypeCount]);
     CompareTypeList.SaveToFile(s);
   finally
     CompareTypeList.Free;
@@ -261,61 +327,78 @@ begin
   end;
 end;
 
-procedure TfrmMain.SaveGroupByValueCount;
+procedure TfrmMain.SaveGroupByCompareTypeValueCount;
 var
-  ValueCountList: TStringList;
-  i, FirstRow, ValueCount: Integer;
-  s: string;
+  CompareTypeList: TStringList;
+  i, ValueCount, ValueCount2: Integer;
+  s, CompareType: string;
 begin
   l.Clear;
-  ValueCountList := TStringList.Create;
+  CompareTypeList := TStringList.Create;
   try
     fdmtData.Filtered := False;
     fdmtData.Filter := Format('CompareTypeCount >= %d', [fExportTypeCount]);
     fdmtData.Filtered := True;
-    fdmtData.IndexFieldNames := 'ValueCount;FirstRow;CompareTypeCount;CompareType';
+    fdmtData.IndexFieldNames := 'CompareTypeCount;CompareType;ValueCount;FirstRow';
     fdmtData.First;
     while not fdmtData.Eof do
     begin
+      CompareType := fdmtData.FieldByName('CompareType').AsString;
       ValueCount := fdmtData.FieldByName('ValueCount').AsInteger;
-      if ValueCountList.IndexOf(ValueCount.ToString) = -1 then
-        ValueCountList.Add(ValueCount.ToString);
+      ValueCount2 := fdmtData.FieldByName('ValueCount2').AsInteger;
+      s := Format('%s-%d-%d', [CompareType, ValueCount, ValueCount2]);
+      if CompareTypeList.IndexOf(s) = -1 then
+        CompareTypeList.Add(s);
 
       fdmtData.Next;
     end;
 
-    for i := 0 to ValueCountList.Count - 1 do
+    for i := 0 to CompareTypeList.Count - 1 do
     begin
-      ValueCount := ValueCountList[i].ToInteger;
+      s := CompareTypeList[i];
+      CompareType := s.Split(['-'])[0];
+      ValueCount := s.Split(['-'])[1].ToInteger;
+      ValueCount2 := s.Split(['-'])[2].ToInteger;
+
       fdmtData.Filtered := False;
-      fdmtData.Filter := Format('CompareTypeCount = %d AND ValueCount >= %d', [fExportTypeCount, ValueCount]);
+      fdmtData.Filter := Format('CompareTypeCount >= %d AND CompareType = ''%s'' AND ValueCount = %d AND ValueCount2 = %d', [fExportTypeCount, CompareType, ValueCount, ValueCount2]);
       fdmtData.Filtered := True;
 
-      l.Add(Format('列数：%d 同行数：%d', [ValueCount, fdmtData.RecordCount]));
+      if fColCount = fRangeColCount then
+      begin
+        s := '（代号：1%s ）、（ 最多 [ 无【对应列】数：%d列 ] ）';
+        s := Format(s, [CompareType, ValueCount])
+      end
+      else
+      begin
+        s := '（代号：1%s ）、（ 最多 [ 无【对应列】数：%d-%d列 ] ）';
+        s := Format(s, [CompareType, ValueCount, ValueCount2])
+      end;
+      l.Add('');
+      l.Add('');
+      l.Add('');
+      l.Add(s);
 
-      FirstRow := 1;
       fdmtData.First;
       while not fdmtData.Eof do
       begin
-        s := '（%d）第%d行（为首行）（邻行距：%d）（代号：1%s）= 无【对应列】数：【列数字】：%s';
+        s := '（%d）第%d行（为首行）= 【列数字】：%s';
         s := Format(s, [
           fdmtData.RecNo,
           fdmtData.FieldByName('FirstRow').AsInteger,
-          fdmtData.FieldByName('FirstRow').AsInteger - FirstRow,
-          fdmtData.FieldByName('CompareType').AsString,
           BuildStringValue
         ]);
-        l.Add(s);
 
-        FirstRow := fdmtData.FieldByName('FirstRow').AsInteger;
+        l.Add('');
+        l.Add(s);
 
         fdmtData.Next;
       end;
     end;
-    s := fFilePath + Format('③.【排列】“%d”个以上（【对应列数】：N-N列）.txt', [fExportTypeCount]);
+    s := fFilePath + Format('⑤.【排列】“%d”个以上各个组合（相同代号、不同首行）的（无【对应列】数：最多 - 最少列）.txt', [fExportTypeCount]);
     l.SaveToFile(s);
   finally
-    ValueCountList.Free;
+    CompareTypeList.Free;
     fdmtData.Filtered := False;
     fdmtData.IndexFieldNames := '';
   end;
@@ -324,10 +407,10 @@ end;
 procedure TfrmMain.Compare;
 var
   Arr, Arr2: TIntDyadicArray;
-  i, i2, i3, i4,
+  i, i2, i3, i4, i5, StartNo, EndNo,
   CompareRowNo, FirstRow, ValueCount: Integer;
   s, CompareType: string;
-  rZ, rY, rRange, rRangeIndex: TIntegerDynArray;
+  rZ, rY, rRange, rRangeIndex, CombineRows: TIntegerDynArray;
   f: TField;
 
   function CompareRow(Row, Row2: TIntegerDynArray; Offset: Integer): TIntegerDynArray;
@@ -361,9 +444,9 @@ var
 
   procedure AddRow(FirstRow: Integer; CompareType: string; vData: TInt64DynArray);
   var
-    i: Integer;
+    i, ColNo: Integer;
     c: Char;
-    CompareTypeCount, ValueCount: Integer;
+    CompareTypeCount, ValueCount, ValueCount2: Integer;
     v: Int64;
     IsExist: Boolean;
   begin
@@ -371,14 +454,24 @@ var
     for c in CompareType do
       if c = '.' then Inc(CompareTypeCount);
     ValueCount := 0;
-    for v in vData do
-      for i := 1 to 64 do if v = v or i64 shl (64 - i) then Inc(ValueCount);
+    ValueCount2 := 0;
+    for i := Low(vData) to High(vData) do
+    begin
+      v := vData[i];
+      for ColNo := 1 to 64 do
+        if v = v or i64 shl (64 - ColNo) then
+        begin
+          if i * 64 + ColNo > fRangeColCount then Inc(ValueCount2)
+          else Inc(ValueCount);
+        end;
+    end;
 
     fdmtData.Append;
     fdmtData.FieldByName('FirstRow').AsInteger := FirstRow;
     fdmtData.FieldByName('CompareType').AsString := CompareType;
     fdmtData.FieldByName('CompareTypeCount').AsInteger := CompareTypeCount;
     fdmtData.FieldByName('ValueCount').AsInteger := ValueCount;
+    fdmtData.FieldByName('ValueCount2').AsInteger := ValueCount2;
     for i := Low(fValues) to High(fValues) do
       fdmtData.FieldByName('Field' + (i + 1).ToString).AsLargeInt := fValues[i];
     fdmtData.Post;
@@ -433,6 +526,11 @@ begin
     Name := 'ValueCount';
     DataType := ftSmallInt;
   end;
+  with fdmtData.FieldDefs.AddFieldDef do
+  begin
+    Name := 'ValueCount2';
+    DataType := ftSmallInt;
+  end;
   for i := Low(fValues) to High(fValues) do
   begin
     with fdmtData.FieldDefs.AddFieldDef do
@@ -447,18 +545,20 @@ begin
   try
     for i := Low(Arr) to High(Arr) - fCompareSpacing do
     begin
+      //获取符合数据
       FirstRow := i + 1;
       SetLength(rRange, 1);
       rRange[0] := -1;
+      StartNo := fdmtData.RecNo + 1;
       for i2 := i + 1 to i + fCompareSpacing do
       begin
         CompareRowNo := i2 - i + 1;
-        rZ := CompareRow(Arr[i], Arr[i2], i - i2);
-        if Length(rZ) > 0 then
-          AddRow2(FirstRow, Format('.%dZ', [CompareRowNo]), rZ);
         rY := CompareRow(Arr[i], Arr[i2], i2 - i);
         if Length(rY) > 0 then
           AddRow2(FirstRow, Format('.%dY', [CompareRowNo]), rY);
+        rZ := CompareRow(Arr[i], Arr[i2], i - i2);
+        if Length(rZ) > 0 then
+          AddRow2(FirstRow, Format('.%dZ', [CompareRowNo]), rZ);
         //if (Length(rZ) > 0) and (Length(rY) > 0) then
           //AddRow2(FirstRow, Format('.%dZY', [CompareRowNo]), rZ + rY);
 
@@ -468,8 +568,44 @@ begin
           rRange[Length(rRange) - 1] := fdmtData.RecNo;
         end;
       end;
+      EndNo := fdmtData.RecNo;
+      if EndNo <= StartNo then Continue;
+      //组合数据
+      for i2 := 2 to fCompareSpacing do
+      begin
+        if i2 < fExportTypeCount then Continue;
+        SetLength(CombineRows, i2);
+        for i3 := Low(CombineRows) to High(CombineRows) do
+          CombineRows[i3] := StartNo + i3;
+        repeat
+          CompareType := '';
+          for i3 := Low(fValues) to High(fValues) do fValues[i3] := 0;
+          for i3 := Low(CombineRows) to High(CombineRows) do
+          begin
+            fdmtData.RecNo := CombineRows[i3];
+            CompareType := CompareType + fdmtData.FieldByName('CompareType').AsString;
+            for i4 := Low(fValues) to High(fValues) do
+              fValues[i4] := fValues[i4] or fdmtData.FieldByName('Field' + (i4 + 1).ToString).AsLargeInt;
+          end;
+          AddRow(FirstRow, CompareType, fValues);
 
-      for i2 := Low(rRange) + 2 to High(rRange) do
+          CombineRows[High(CombineRows)] := CombineRows[High(CombineRows)] + 1;
+          if CombineRows[High(CombineRows)] > EndNo then
+          begin
+            for i3 := High(CombineRows) - 1 downto Low(CombineRows) do
+            begin
+              CombineRows[i3] := CombineRows[i3] + 1;
+              if CombineRows[i3] < EndNo - High(CombineRows) + 1 + i3 then
+              begin
+                for i4 := i3 + 1 to High(CombineRows) do
+                  CombineRows[i4] := CombineRows[i4 - 1] + 1;
+                Break;
+              end;
+            end;
+          end;
+        until CombineRows[Low(CombineRows)] > EndNo - i2 + 1;
+      end;
+      {for i2 := Low(rRange) + 2 to High(rRange) do
       begin
         SetLength(rRangeIndex, i2);
         for i3 := Low(rRangeIndex) to High(rRangeIndex) do
@@ -501,14 +637,14 @@ begin
           end;
           AddRow(i + 1, CompareType, fValues);
         until rRangeIndex[0] > rRange[1];
-      end;
+      end;}
     end;
 
     if fdmtData.RecordCount > 0 then
     begin
       SaveGroupByFirstRow;
       SaveGroupByCompareType;
-      SaveGroupByValueCount;
+      SaveGroupByCompareTypeValueCount;
     end;
   finally
     fdmtData.EnableControls;
@@ -534,11 +670,48 @@ begin
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
+var
+  s: string;
+  ProbationExpired: Boolean;
+  FBeiJingTime: TDateTime;
 begin
-  if FormatDateTime('YYYY-MM-DD', Now) = '2017-10-08' then
-    raise Exception.Create('软件已过期');
+  ProbationExpired := True;
+  with TIdHttp.Create do
+  begin
+    try
+      s := 'http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json';
+      try
+        s := Get(s);
+        if s.IndexOf('"success":"1"') > -1 then
+        begin
+          s := s.Substring(s.IndexOf('datetime_1":"') + 13, 19);
+          FBeiJingTime := StrToDateTime(s);
+          ProbationExpired := FBeiJingTime > StrToDateTime('2017-10-20');
+        end;
+      except
+        on e: Exception do
+        begin
+          ShowMessage('校验时间失败，请检查网络连接是否正常' + #$D#$A + e.Message);
+        end;
+      end;
+    finally
+      Free;
+    end;
+  end;
+  if ProbationExpired then
+  begin
+    ShowMessage('软件已过期');
+    Application.Terminate;
+  end;
 
   l := TStringList.Create;
+  {edtFileName.Text := 'D:\二. 读取：被查询（TXT）文本 .txt';
+  edtColCount.Text := '32';
+  edtRangeColCount.Text := '32';
+  edtCompareSpacing.Text := '3';
+  edtExportTypeCount.Text := '1';
+  btnCompare.Click;
+  Application.Terminate;}
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -548,6 +721,7 @@ end;
 
 procedure TfrmMain.pnlTopDblClick(Sender: TObject);
 begin
+  if not btnCompare.Enabled then Exit;
   DataSource.Enabled := not DataSource.Enabled;
 end;
 
@@ -563,6 +737,7 @@ begin
   if not (TryStrToInt(edtExportTypeCount.Text, fExportTypeCount) and (fExportTypeCount > 0)) then
     raise Exception.Create('请输入有效导出次数');
 
+  TButton(Sender).Enabled := False;
   TTask.Create(procedure
   begin
     StartTime;
@@ -572,6 +747,10 @@ begin
       ShowMessage('查询完毕');
     finally
       StopTime;
+      TThread.Synchronize(nil, procedure
+      begin
+        TButton(Sender).Enabled := True;
+      end);
     end;
   end).Start;
 end;

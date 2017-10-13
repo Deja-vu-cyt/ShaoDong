@@ -2,7 +2,7 @@ object frmMain: TfrmMain
   Left = 0
   Top = 0
   ClientHeight = 397
-  ClientWidth = 810
+  ClientWidth = 1024
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,13 +17,13 @@ object frmMain: TfrmMain
   object pnlTop: TPanel
     Left = 0
     Top = 0
-    Width = 810
-    Height = 249
+    Width = 1024
+    Height = 145
     Align = alTop
     TabOrder = 0
     OnDblClick = pnlTopDblClick
     object Label1: TLabel
-      Left = 305
+      Left = 5
       Top = 37
       Width = 228
       Height = 21
@@ -37,8 +37,8 @@ object frmMain: TfrmMain
       ParentFont = False
     end
     object Label2: TLabel
-      Left = 33
-      Top = 142
+      Left = 320
+      Top = 72
       Width = 500
       Height = 21
       Alignment = taRightJustify
@@ -51,7 +51,7 @@ object frmMain: TfrmMain
       ParentFont = False
     end
     object Label3: TLabel
-      Left = 301
+      Left = 5
       Top = 72
       Width = 232
       Height = 21
@@ -65,7 +65,7 @@ object frmMain: TfrmMain
       ParentFont = False
     end
     object Label4: TLabel
-      Left = 292
+      Left = 5
       Top = 107
       Width = 241
       Height = 21
@@ -79,8 +79,8 @@ object frmMain: TfrmMain
       ParentFont = False
     end
     object Label5: TLabel
-      Left = 14
-      Top = 177
+      Left = 320
+      Top = 107
       Width = 519
       Height = 21
       Alignment = taRightJustify
@@ -93,11 +93,10 @@ object frmMain: TfrmMain
       ParentFont = False
     end
     object lblUseTime: TLabel
-      Left = 414
+      Left = 5
       Top = 10
       Width = 119
       Height = 21
-      Alignment = taRightJustify
       Caption = #22788#29702#25152#38656#26102#38388#65306
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
@@ -107,9 +106,9 @@ object frmMain: TfrmMain
       ParentFont = False
     end
     object edtFileName: TEdit
-      Left = 539
+      Left = 239
       Top = 34
-      Width = 250
+      Width = 500
       Height = 29
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
@@ -119,12 +118,11 @@ object frmMain: TfrmMain
       ParentFont = False
       ReadOnly = True
       TabOrder = 0
-      Text = 'C:\Users\admin\Desktop\2.txt'
       OnClick = edtFileNameClick
     end
     object edtCompareSpacing: TEdit
-      Left = 539
-      Top = 139
+      Left = 826
+      Top = 69
       Width = 50
       Height = 29
       Font.Charset = DEFAULT_CHARSET
@@ -138,8 +136,8 @@ object frmMain: TfrmMain
       Text = '1'
     end
     object btnCompare: TButton
-      Left = 539
-      Top = 209
+      Left = 901
+      Top = 104
       Width = 120
       Height = 30
       Caption = '6.'#8220#24320#22987#26597#35810#8221
@@ -153,7 +151,7 @@ object frmMain: TfrmMain
       OnClick = btnCompareClick
     end
     object edtColCount: TEdit
-      Left = 539
+      Left = 243
       Top = 69
       Width = 50
       Height = 29
@@ -168,7 +166,7 @@ object frmMain: TfrmMain
       Text = '256'
     end
     object edtRangeColCount: TEdit
-      Left = 539
+      Left = 252
       Top = 104
       Width = 50
       Height = 29
@@ -183,8 +181,8 @@ object frmMain: TfrmMain
       Text = '256'
     end
     object edtExportTypeCount: TEdit
-      Left = 539
-      Top = 174
+      Left = 845
+      Top = 104
       Width = 50
       Height = 29
       Font.Charset = DEFAULT_CHARSET
@@ -200,9 +198,9 @@ object frmMain: TfrmMain
   end
   object DBGridEh1: TDBGridEh
     Left = 0
-    Top = 249
-    Width = 810
-    Height = 148
+    Top = 145
+    Width = 1024
+    Height = 252
     Align = alClient
     DataSource = DataSource
     DynProps = <>
@@ -212,8 +210,7 @@ object frmMain: TfrmMain
   end
   object OpenDialog: TOpenDialog
     Filter = #25991#26412#25991#20214'|*.txt'
-    Left = 40
-    Top = 8
+    Left = 312
   end
   object fdmtData: TFDMemTable
     OnNewRecord = fdmtDataNewRecord
@@ -227,13 +224,14 @@ object frmMain: TfrmMain
     UpdateOptions.CheckRequired = False
     UpdateOptions.AutoCommitUpdates = True
     StoreDefs = True
-    Left = 80
-    Top = 16
+    Left = 520
+    Top = 65520
   end
   object DataSource: TDataSource
+    AutoEdit = False
     DataSet = fdmtData
     Enabled = False
-    Left = 112
-    Top = 16
+    Left = 384
+    Top = 8
   end
 end
