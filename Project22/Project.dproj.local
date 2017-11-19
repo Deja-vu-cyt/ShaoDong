@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899-12-30 00:00:00.000.455,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.809,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.438,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.135,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.084,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.655,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.976,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.985,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.610,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.977,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\ServerMethodsUnit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.385,D:\新建文件夹\新建文件夹 (3)\Unit1.dfm=D:\新建文件夹\新建文件夹 (3)\ufrmMain.dfm</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.105,D:\新建文件夹\新建文件夹 (3)\Project1.dproj=D:\新建文件夹\新建文件夹 (3)\Project.dproj</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.633,=C:\Users\admin\Documents\Embarcadero\Studio\Projects\ServerContainerUnit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.835,D:\新建文件夹\新建文件夹 (3)\Unit1.dfm=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.dfm</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.657,D:\新建文件夹\新建文件夹 (3)\Project1.dproj=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.385,D:\新建文件夹\新建文件夹 (3)\Unit1.pas=D:\新建文件夹\新建文件夹 (3)\ufrmMain.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.596,=D:\新建文件夹\新建文件夹 (3)\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.518,=D:\新建文件夹\新建文件夹 (3)\uGlobal.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.835,D:\新建文件夹\新建文件夹 (3)\Unit1.pas=C:\Users\admin\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+  </Transactions>
+	<ActiveMobileDevice>
+		<NoProfile iOSSimulator="iPhone5"/>
+	</ActiveMobileDevice>
+</BorlandProject>

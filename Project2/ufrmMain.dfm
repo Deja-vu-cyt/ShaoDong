@@ -1,8 +1,8 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  ClientHeight = 397
-  ClientWidth = 1024
+  ClientHeight = 661
+  ClientWidth = 904
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -14,17 +14,34 @@ object frmMain: TfrmMain
   OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
+  object Splitter1: TSplitter
+    Left = 194
+    Top = 345
+    Width = 5
+    Height = 316
+    Align = alRight
+    ExplicitLeft = 354
+    ExplicitTop = 351
+  end
+  object Splitter2: TSplitter
+    Left = 399
+    Top = 345
+    Width = 5
+    Height = 316
+    Align = alRight
+    ExplicitLeft = 510
+  end
   object pnlTop: TPanel
     Left = 0
     Top = 0
-    Width = 1024
-    Height = 145
+    Width = 904
+    Height = 345
     Align = alTop
     TabOrder = 0
     OnDblClick = pnlTopDblClick
     object Label1: TLabel
       Left = 5
-      Top = 37
+      Top = 44
       Width = 228
       Height = 21
       Alignment = taRightJustify
@@ -38,7 +55,7 @@ object frmMain: TfrmMain
     end
     object Label2: TLabel
       Left = 320
-      Top = 72
+      Top = 79
       Width = 500
       Height = 21
       Alignment = taRightJustify
@@ -52,7 +69,7 @@ object frmMain: TfrmMain
     end
     object Label3: TLabel
       Left = 5
-      Top = 72
+      Top = 79
       Width = 232
       Height = 21
       Alignment = taRightJustify
@@ -66,7 +83,7 @@ object frmMain: TfrmMain
     end
     object Label4: TLabel
       Left = 5
-      Top = 107
+      Top = 114
       Width = 241
       Height = 21
       Alignment = taRightJustify
@@ -80,7 +97,7 @@ object frmMain: TfrmMain
     end
     object Label5: TLabel
       Left = 320
-      Top = 107
+      Top = 114
       Width = 519
       Height = 21
       Alignment = taRightJustify
@@ -94,7 +111,7 @@ object frmMain: TfrmMain
     end
     object lblUseTime: TLabel
       Left = 5
-      Top = 10
+      Top = 9
       Width = 119
       Height = 21
       Caption = #22788#29702#25152#38656#26102#38388#65306
@@ -105,9 +122,22 @@ object frmMain: TfrmMain
       Font.Style = []
       ParentFont = False
     end
+    object Label6: TLabel
+      Left = 5
+      Top = 204
+      Width = 519
+      Height = 21
+      Caption = #12304#25490#21015#12305' '#9313'.- '#9316'.'#8220'N'#8221#20010#20197#19978#21508#20010#32452#21512#65288#30456#21516#20195#21495#12289#19981#21516#39318#34892#65289#65292#22914#19979#65306
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -17
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
     object edtFileName: TEdit
       Left = 239
-      Top = 34
+      Top = 41
       Width = 500
       Height = 29
       Font.Charset = DEFAULT_CHARSET
@@ -121,8 +151,8 @@ object frmMain: TfrmMain
       OnClick = edtFileNameClick
     end
     object edtCompareSpacing: TEdit
-      Left = 826
-      Top = 69
+      Left = 845
+      Top = 76
       Width = 50
       Height = 29
       Font.Charset = DEFAULT_CHARSET
@@ -136,11 +166,11 @@ object frmMain: TfrmMain
       Text = '1'
     end
     object btnCompare: TButton
-      Left = 901
-      Top = 104
-      Width = 120
+      Left = 5
+      Top = 308
+      Width = 216
       Height = 30
-      Caption = '6.'#8220#24320#22987#26597#35810#8221
+      Caption = '6.'#8220#24320#22987#26597#35810#8221#24182#8220#23548#20986#25968#25454#8221
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -17
@@ -151,8 +181,8 @@ object frmMain: TfrmMain
       OnClick = btnCompareClick
     end
     object edtColCount: TEdit
-      Left = 243
-      Top = 69
+      Left = 252
+      Top = 76
       Width = 50
       Height = 29
       Font.Charset = DEFAULT_CHARSET
@@ -167,7 +197,7 @@ object frmMain: TfrmMain
     end
     object edtRangeColCount: TEdit
       Left = 252
-      Top = 104
+      Top = 111
       Width = 50
       Height = 29
       Font.Charset = DEFAULT_CHARSET
@@ -182,7 +212,7 @@ object frmMain: TfrmMain
     end
     object edtExportTypeCount: TEdit
       Left = 845
-      Top = 104
+      Top = 111
       Width = 50
       Height = 29
       Font.Charset = DEFAULT_CHARSET
@@ -195,16 +225,141 @@ object frmMain: TfrmMain
       TabOrder = 5
       Text = '1'
     end
+    object chkExportFile: TCheckBox
+      Left = 5
+      Top = 172
+      Width = 796
+      Height = 17
+      Caption = 
+        #9312'.'#12304#25490#21015#12305#8220'N'#8221#20010#20197#19978#12304' [ '#30456#21516#65288#31532#8220'N'#8221#34892#20026#39318#34892#65289'] '#12289#19981#21516'[ '#20195#21495#65306#65288#31532#8220'N.N'#8221#20010#65289#8220'N'#8221'Z.'#8220'N'#8221'Y  ] '#12305#30340#32452#21512 +
+        '     '
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -17
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 6
+    end
+    object chkExportFile2: TCheckBox
+      Left = 5
+      Top = 239
+      Width = 252
+      Height = 17
+      Caption = #9313'. '#19981#21516#39318#34892#25968#65306#26368#22810' - '#26368#23569#34892
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -17
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 7
+    end
+    object chkExportFile3: TCheckBox
+      Left = 275
+      Top = 239
+      Width = 278
+      Height = 17
+      Caption = #9314'. '#37051#34892#36317#65306#26368#22823#8593#8220'N'#8221'- '#26368#23567#8593#8220'N'#8221
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -17
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 8
+    end
+    object chkExportFile4: TCheckBox
+      Left = 5
+      Top = 262
+      Width = 241
+      Height = 17
+      Caption = #9315'. '#32452#21512#25968#65306#26368#22810' - '#26368#23569#20010
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -17
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 9
+    end
+    object chkExportFile5: TCheckBox
+      Left = 275
+      Top = 262
+      Width = 302
+      Height = 17
+      Caption = #9316'. '#26080#12304#23545#24212#21015#12305#25968#65306#26368#22810' - '#26368#23569#21015
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -17
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 10
+    end
+    object chkExportFile6: TCheckBox
+      Left = 5
+      Top = 285
+      Width = 684
+      Height = 17
+      Caption = #9317'.'#12304#20445#23384#12305#8220'N'#8221#20010#20197#19978#21508#20010#32452#21512#65306#65288#30456#21516#20195#21495#12289#19981#21516#39318#34892#65289#30340#65288#20195#21495#65306#8220'N'#8221'='#8220'N'#8221'Z.'#8220'N'#8221'Y '#65289
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -17
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 11
+    end
+    object chkSelectAll: TCheckBox
+      Left = 5
+      Top = 149
+      Width = 52
+      Height = 17
+      Caption = #20840#36873
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -17
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 12
+      OnClick = chkSelectAllClick
+    end
   end
-  object DBGridEh1: TDBGridEh
+  object dbgrdData: TDBGridEh
     Left = 0
-    Top = 145
-    Width = 1024
-    Height = 252
+    Top = 345
+    Width = 194
+    Height = 316
     Align = alClient
-    DataSource = DataSource
+    DataSource = dsData
     DynProps = <>
     TabOrder = 1
+    object RowDetailData: TRowDetailPanelControlEh
+    end
+  end
+  object dbgrdFirstRow: TDBGridEh
+    Left = 199
+    Top = 345
+    Width = 200
+    Height = 316
+    Align = alRight
+    DataSource = dsFirstRow
+    DynProps = <>
+    TabOrder = 2
+    object RowDetailData: TRowDetailPanelControlEh
+    end
+  end
+  object dbgrdCompareType: TDBGridEh
+    Left = 404
+    Top = 345
+    Width = 500
+    Height = 316
+    Align = alRight
+    DataSource = dsCompareType
+    DynProps = <>
+    TabOrder = 3
     object RowDetailData: TRowDetailPanelControlEh
     end
   end
@@ -224,14 +379,58 @@ object frmMain: TfrmMain
     UpdateOptions.CheckRequired = False
     UpdateOptions.AutoCommitUpdates = True
     StoreDefs = True
-    Left = 520
-    Top = 65520
+    Left = 352
+    Top = 8
   end
-  object DataSource: TDataSource
+  object dsData: TDataSource
     AutoEdit = False
     DataSet = fdmtData
     Enabled = False
     Left = 384
+    Top = 8
+  end
+  object fdmtCompareType: TFDMemTable
+    OnNewRecord = fdmtDataNewRecord
+    FieldDefs = <>
+    IndexDefs = <>
+    FetchOptions.AssignedValues = [evMode]
+    FetchOptions.Mode = fmAll
+    ResourceOptions.AssignedValues = [rvSilentMode]
+    ResourceOptions.SilentMode = True
+    UpdateOptions.AssignedValues = [uvCheckRequired, uvAutoCommitUpdates]
+    UpdateOptions.CheckRequired = False
+    UpdateOptions.AutoCommitUpdates = True
+    StoreDefs = True
+    Left = 576
+    Top = 8
+  end
+  object fdmtFirstRow: TFDMemTable
+    OnNewRecord = fdmtDataNewRecord
+    FieldDefs = <>
+    IndexDefs = <>
+    FetchOptions.AssignedValues = [evMode]
+    FetchOptions.Mode = fmAll
+    ResourceOptions.AssignedValues = [rvSilentMode]
+    ResourceOptions.SilentMode = True
+    UpdateOptions.AssignedValues = [uvCheckRequired, uvAutoCommitUpdates]
+    UpdateOptions.CheckRequired = False
+    UpdateOptions.AutoCommitUpdates = True
+    StoreDefs = True
+    Left = 432
+    Top = 8
+  end
+  object dsFirstRow: TDataSource
+    AutoEdit = False
+    DataSet = fdmtFirstRow
+    Enabled = False
+    Left = 464
+    Top = 8
+  end
+  object dsCompareType: TDataSource
+    AutoEdit = False
+    DataSet = fdmtCompareType
+    Enabled = False
+    Left = 608
     Top = 8
   end
 end
