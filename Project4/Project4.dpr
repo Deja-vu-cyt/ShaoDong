@@ -1,4 +1,4 @@
-program Project2;
+program Project4;
 
 uses
   Vcl.Forms,

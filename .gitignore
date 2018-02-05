@@ -4,5 +4,9 @@ Dcu/
 Exe/
 __history/
 Win32/
-Project22/
+Project2/uDataComputer2.pas
+Project2/uDataComputer3.pas
 Grouping.txt
+*.skincfg
+*.identcache
+*.local

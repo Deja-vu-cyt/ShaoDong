@@ -245,7 +245,7 @@ var
 begin
   try
     InternetTime := GetInternetTime;
-    if (InternetTime = 0) and (InternetTime > StrToDateTime('2017-11-30')) then
+    if (InternetTime = 0) or (InternetTime > StrToDateTime('2017-11-30')) then
       raise Exception.Create('软件已过期');
   except
     on e: Exception do
