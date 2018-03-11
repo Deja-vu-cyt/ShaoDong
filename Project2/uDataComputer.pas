@@ -137,8 +137,6 @@ type
     function DataToString(Value: TSQLData): string;
     procedure CalcDataValueCount(CompareData: TSQLCompareData);
     procedure CalcRowSpacing(CompareData: TSQLCompareData);
-    procedure RecalcFirstRowRowCount;
-    procedure RecalcCompareTypeRowCount;
     procedure SaveGroupByFirstRow;
     procedure SaveGroupByCompareTypeSortByRowcount;
     procedure SaveGroupByCompareTypeSortByMaxRowSpacing;
@@ -327,7 +325,7 @@ begin
   if CompareData2.FillOne then
     CompareData.RowSpacing := CompareData.FirstRow - CompareData2.FirstRow
   else
-    CompareData.RowSpacing := CompareData.FirstRow - 1;
+    CompareData.RowSpacing := CompareData.FirstRow - fCompareSpacing - 1;
 end;
 
 constructor TDataComputer.Create;
@@ -490,7 +488,7 @@ var
 
 var
   i, i2: Integer;
-  RowNo, RowSpacing: Word;
+  RowNo: Word;
   v: Variant;
 begin
   fCompareState.Process := cpCompare;
@@ -499,6 +497,7 @@ begin
   if v <> Unassigned then fCompareState.Process := TCompareProcess(v);
   v := GetKeyValue('CompareStateFirstRow');
   if v <> Unassigned then fCompareState.FirstRow := v;
+  fRowCount := fDatabase.TableRowCount(TSQLRow);
 
   TSQLRow.AutoFree(Row, fDatabase, 'Number >= ?', [fCompareState.FirstRow - fCompareSpacing]);
   TSQLRow.AutoFree(Row2);
@@ -608,7 +607,7 @@ begin
               if FirstRow2.FillOne then
                 FirstRow.RowSpacing := FirstRow.Value - FirstRow2.Value
               else
-                FirstRow.RowSpacing := FirstRow.Value - 1;
+                FirstRow.RowSpacing := FirstRow.Value - fCompareSpacing - 1;
 
               fDatabase.Add(FirstRow, True);
             end;
@@ -629,11 +628,8 @@ begin
                 CompareData2.FillPrepare(fDatabase, 'CompareType = ? AND FirstRow < ? ORDER BY FirstRow DESC LIMIT 1', [CompareType.Value, CompareData.FirstRow]);
                 if CompareData2.FillOne then
                 begin
-                  RowSpacing := CompareData.FirstRow - CompareData2.FirstRow;
-                  if RowSpacing > CompareType.MaxRowSpacing then
-                    CompareType.MaxRowSpacing := RowSpacing;
-                  if RowSpacing = 1 then
-                    CompareType.OneRowSpacingCount := CompareType.OneRowSpacingCount + 1;
+                  if CompareData.RowSpacing > CompareType.MaxRowSpacing then
+                    CompareType.MaxRowSpacing := CompareData.RowSpacing;
 
                   if (CompareData.TotalValueCount > CompareType.MaxTotalValueCount)
                     or ((CompareData.TotalValueCount = CompareType.MaxTotalValueCount)
@@ -655,11 +651,8 @@ begin
                 CompareType.MaxRowSpacing := CompareData.FirstRow - 1;
                 CompareType.MaxTotalValueCount := CompareData.TotalValueCount;
                 CompareType.MaxValueCount := CompareData.ValueCount;
-                CompareType.LastFirstRow := Row.Number;
+                CompareType.LastFirstRow := CompareData.FirstRow;
                 CompareType.OneRowSpacingCount := 0;
-                if CompareData.FirstRow = 2 then
-                  CompareType.OneRowSpacingCount := 1;
-
                 fDatabase.Add(CompareType, True);
               end;
             end;
@@ -669,6 +662,39 @@ begin
             begin
               fDatabase.RollBack;
               raise Exception.Create(e.Message);
+            end;
+          end;
+          //更新连续1临行距个数
+          if fRowCount = Row.Number then
+          begin
+            fDatabase.TransactionBegin(TSQLCompareType);
+            try
+              CompareType.FillPrepare(fDatabase, 'OneRowSpacingCount > 0', []);
+              while CompareType.FillOne do
+              begin
+                CompareType.OneRowSpacingCount := 0;
+                fDatabase.Update(CompareType);
+              end;
+              CompareType.FillPrepare(fDatabase, 'LastFirstRow = ?', [fRowCount]);
+              while CompareType.FillOne do
+              begin
+                CompareType.OneRowSpacingCount := 1;
+
+                CompareData.FillPrepare(fDatabase, 'CompareType = ? AND RowSpacing = 1 ORDER BY FirstRow DESC', [CompareType.Value]);
+                while CompareData.FillOne do
+                begin
+                  if CompareData.FillCurrentRow < fRowCount - CompareData.FirstRow + 2 then Break;
+                  CompareType.OneRowSpacingCount := CompareType.OneRowSpacingCount + 1;
+                end;
+                fDatabase.Update(CompareType);
+              end;
+              fDatabase.Commit(1, True);
+            except
+              on e: Exception do
+              begin
+                fDatabase.RollBack;
+                raise Exception.Create(e.Message);
+              end;
             end;
           end;
         end;
@@ -703,52 +729,6 @@ begin
     end;
   finally
     CloseFile(tf);
-  end;
-end;
-
-procedure TDataComputer.RecalcFirstRowRowCount;
-var
-  FirstRow: TSQLFirstRow;
-begin
-  fDatabase.TransactionBegin(TSQLFirstRow);
-  try
-    TSQLFirstRow.AutoFree(FirstRow, fDatabase, '', []);
-    while FirstRow.FillOne do
-    begin
-      FirstRow.RowCount := StrToInt(fDatabase.OneFieldValue(TSQLCompareData,
-        'Count(*)', 'FirstRow = ? AND CompareTypeValueCount >= ?', [FirstRow.Value, fExportTypeCount]));
-      fDatabase.Update(FirstRow);
-    end;
-    fDatabase.Commit(1, True);
-  except
-    on e: Exception do
-    begin
-      fDatabase.RollBack;
-      raise Exception.Create(e.Message);
-    end;
-  end;
-end;
-
-procedure TDataComputer.RecalcCompareTypeRowCount;
-var
-  CompareType: TSQLCompareType;
-begin
-  fDatabase.TransactionBegin(TSQLCompareType);
-  try
-    TSQLCompareType.AutoFree(CompareType, fDatabase, 'ValueCount >= ?', [fExportTypeCount]);
-    while CompareType.FillOne do
-    begin
-      CompareType.RowCount := StrToInt(fDatabase.OneFieldValue(TSQLCompareData,
-        'Count(*)', 'CompareType = ? AND CompareTypeValueCount >= ?', [CompareType.Value, fExportTypeCount]));
-      fDatabase.Update(CompareType);
-    end;
-    fDatabase.Commit(1, True);
-  except
-    on e: Exception do
-    begin
-      fDatabase.RollBack;
-      raise Exception.Create(e.Message);
-    end;
   end;
 end;
 
@@ -833,8 +813,11 @@ begin
 
       s := '%d.（第%d行为首行）（邻行距 ↓%d，同行数：%d）';
       s := Format(s, [FirstRow.FillCurrentRow, FirstRow.Value, FirstRow.RowSpacing, FirstRow.RowCount]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
+      if FirstRow.FillCurrentRow > 2 then
+      begin
+        WriteLn(tf, '');
+        WriteLn(tf, '');
+      end;
       WriteLn(tf, '');
       WriteLn(tf, s);
 
@@ -859,10 +842,8 @@ begin
     s := '%d.（第%d行为首行）';
     s := Format(s, [
       FirstRow.FillTable.RowCount + 2,
-      FirstRow.Value
+      fCompareSpacing + 1
     ]);
-    WriteLn(tf, '');
-    WriteLn(tf, '');
     WriteLn(tf, '');
     WriteLn(tf, s);
   finally
@@ -951,6 +932,17 @@ begin
         s := '%d=[（第%s个）%s ] ：（%d）（%d）';
         s := Format(s, [RowNo, sCompareType, sCompareType2, Data.FirstRow, Data.RowSpacing]);
         WriteLn(tf3, s);
+
+        if (Data.FillCurrentRow > Data.FillTable.RowCount) and (Data.FirstRow > fCompareSpacing + 1) then
+        begin
+          RowNo := RowNo + 1;
+          s := '%d=[（第%s个）%s ] ：（%d）（0）';
+          s := Format(s, [Data.FillCurrentRow + 1, sCompareType, sCompareType2, fCompareSpacing + 1]);
+          WriteLn(tf2, s);
+          s := '%d=[（第%s个）%s ] ：（%d）（0）';
+          s := Format(s, [RowNo, sCompareType, sCompareType2, fCompareSpacing + 1]);
+          WriteLn(tf3, s);
+        end;
       end;
     end;
   finally
@@ -1014,7 +1006,7 @@ begin
         if Data.FillCurrentRow > Data.FillTable.RowCount then
         begin
           s := '（%d）（第%d行为首行）';
-          s := Format(s, [Data.FillCurrentRow + 1, Data.FirstRow]);
+          s := Format(s, [Data.FillCurrentRow + 1, fCompareSpacing + 1]);
           WriteLn(tf, '');
           WriteLn(tf, s);
         end;
@@ -1132,7 +1124,7 @@ var
   Data: TSQLCompareData;
   RowNo: Cardinal;
 begin
-  TxtFileName := '（2）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（最大 - 最小）（4）.txt';
+  TxtFileName := '（2）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（邻行距：最大 → 小）（4）.txt';
   TxtFileName := Format(TxtFileName, [fExportTypeCount]);
   FileName := fExportDirectory + TxtFileName;
   if TFile.Exists(FileName) then TFile.Delete(FileName);
@@ -1157,10 +1149,19 @@ begin
           s := Format(s, [RowNo, sCompareType, sCompareType2, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
           WriteLn(tf, s);
         end;
+
         RowNo := RowNo + 1;
         s := '%d=[（第%s个）%s ] ：（%d）（%d）';
         s := Format(s, [RowNo, sCompareType, sCompareType2, Data.FirstRow, Data.RowSpacing]);
         WriteLn(tf, s);
+
+        if (Data.FillCurrentRow > Data.FillTable.RowCount) and (Data.FirstRow > fCompareSpacing + 1) then
+        begin
+          RowNo := RowNo + 1;
+          s := '%d=[（第%s个）%s ] ：（%d）（0）';
+          s := Format(s, [Data.FillCurrentRow + 1, sCompareType, sCompareType2, fCompareSpacing + 1]);
+          WriteLn(tf, s);
+        end;
       end;
     end;
   finally
@@ -1176,7 +1177,7 @@ var
   Data: TSQLCompareData;
   RowNo: Cardinal;
 begin
-  TxtFileName := '（2）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（最小 - 最大）（5）.txt';
+  TxtFileName := '（2）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（邻行距：最小 → 大）（5）.txt';
   TxtFileName := Format(TxtFileName, [fExportTypeCount]);
   FileName := fExportDirectory + TxtFileName;
   if TFile.Exists(FileName) then TFile.Delete(FileName);
@@ -1184,7 +1185,7 @@ begin
   Rewrite(tf);
   try
     RowNo := 0;
-    TSQLCompareType.AutoFree(CompareType, fDatabase, 'ORDER BY OneRowSpacingCount DESC, ValueCount, Size DESC', []);
+    TSQLCompareType.AutoFree(CompareType, fDatabase, 'ORDER BY OneRowSpacingCount DESC, LastFirstRow DESC, ValueCount, Size DESC', []);
     TSQLCompareData.AutoFree(Data);
     while CompareType.FillOne do
     begin
@@ -1201,10 +1202,19 @@ begin
           s := Format(s, [RowNo, sCompareType, sCompareType2, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
           WriteLn(tf, s);
         end;
+
         RowNo := RowNo + 1;
         s := '%d=[（第%s个）%s ] ：（%d）（%d）';
         s := Format(s, [RowNo, sCompareType, sCompareType2, Data.FirstRow, Data.RowSpacing]);
         WriteLn(tf, s);
+
+        if (Data.FillCurrentRow > Data.FillTable.RowCount) and (Data.FirstRow > fCompareSpacing + 1) then
+        begin
+          RowNo := RowNo + 1;
+          s := '%d=[（第%s个）%s ] ：（%d）（0）';
+          s := Format(s, [Data.FillCurrentRow + 1, sCompareType, sCompareType2, fCompareSpacing + 1]);
+          WriteLn(tf, s);
+        end;
       end;
     end;
   finally
@@ -1219,7 +1229,7 @@ var
   i, j: Integer;
   CompareType: TSQLCompareType;
 begin
-  TxtFileName := '（6）.【保存】“%d”个以上各个组合（相同代号、不同首行）的（代号：1.“N”ZY ）.txt';
+  TxtFileName := '（6）.【保存】“%d”个以上各个组合（相同代号、不同首行）的（代号：“N”ZY ）.txt';
   TxtFileName := Format(TxtFileName, [fExportTypeCount]);
   FileName := fExportDirectory2 + TxtFileName;
   if TFile.Exists(FileName) then TFile.Delete(FileName);
@@ -1251,7 +1261,6 @@ begin
 
   if efFile in ExportFiles then
   begin
-    //RecalcFirstRowRowCount;
     i := Length(Tasks);
     SetLength(Tasks, i + 1);
     Tasks[i] := TTask.Create(SaveGroupByFirstRow);
@@ -1259,8 +1268,6 @@ begin
   end;
   if efFile2 in ExportFiles then
   begin
-    //RecalcCompareTypeRowCount;
-
     i := Length(Tasks);
     SetLength(Tasks, i + 1);
     Tasks[i] := TTask.Create(SaveGroupByCompareTypeSortByRowcount);
