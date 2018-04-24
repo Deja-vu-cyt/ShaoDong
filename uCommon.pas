@@ -101,7 +101,7 @@ end;
 function DigitToString(Digit: Cardinal): string;
 begin
   Result := Digit.ToString;
-  if Result.Length < 2 then Result := '0' + Result;
+  if (Result.Length < 2) and (Result <> '0') then Result := '0' + Result;
 end;
 
 function TInt64Helper.ValueExist(Value: Byte): Boolean;

@@ -151,11 +151,11 @@ begin
   if chkExportRowSpacingFile2.Checked then ExportFiles := ExportFiles + [efRowSpacingFile2];
   if chkExportRowSpacingFile3.Checked then ExportFiles := ExportFiles + [efRowSpacingFile3];
   if chkExportRowSpacingFile4.Checked then ExportFiles := ExportFiles + [efRowSpacingFile4];
-  //if chkExportBearOneRowSpacingFile.Checked then
-  //  ExportFiles := ExportFiles + [efBearOneRowSpacingFile];
+  if chkExportBearOneRowSpacingFile.Checked then
+    ExportFiles := ExportFiles + [efBearOneRowSpacingFile];
   if chkExportBearOneRowSpacingFile2.Checked and (ExportFileCount >= 1) then
     ExportFiles := ExportFiles + [efBearOneRowSpacingFile2];
-  {if chkExportBearOneRowSpacingFile3.Checked and (ExportFileCount >= 2) then
+  if chkExportBearOneRowSpacingFile3.Checked and (ExportFileCount >= 2) then
     ExportFiles := ExportFiles + [efBearOneRowSpacingFile3];
   if chkExportBearOneRowSpacingFile4.Checked and (ExportFileCount >= 3) then
     ExportFiles := ExportFiles + [efBearOneRowSpacingFile4];
@@ -168,7 +168,7 @@ begin
   if chkExportBearOneRowSpacingFile8.Checked and (ExportFileCount >= 7) then
     ExportFiles := ExportFiles + [efBearOneRowSpacingFile8];
   if chkExportBearOneRowSpacingFile9.Checked and (ExportFileCount >= 8) then
-    ExportFiles := ExportFiles + [efBearOneRowSpacingFile9];}
+    ExportFiles := ExportFiles + [efBearOneRowSpacingFile9];
 
   OnStateChange(True);
   TTask.Create(procedure

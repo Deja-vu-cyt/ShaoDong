@@ -132,6 +132,8 @@ var
   i: comp;
   d, d2, d3, d4: Double;
 begin
+  FBeiJingTime := Now;
+  Exit;
   IdHttp := TIdHttp.Create;
   try
     s := 'http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json';
@@ -183,7 +185,7 @@ begin
     dmConfig.WriteKeyValue('LastUseDay',  EncryptString(FormatDateTime('YYYY-MM-DD', FBeiJingTime), EncryptKey));
     dmConfig.WriteKeyValue('UseDays', EncryptString(UseDays.ToString, EncryptKey));
   end;
-  if (UseDays > 200) or (FBeiJingTime > StrToDateTime('2017-12-31')) then
+  if (UseDays > 200) or (FBeiJingTime > StrToDateTime('2018-07-31')) then
   begin
     FProbationExpired := True;
     TThread.Synchronize(nil, procedure
