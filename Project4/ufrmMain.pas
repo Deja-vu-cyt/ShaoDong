@@ -47,6 +47,7 @@ type
     chkExportBearOneRowSpacingFile7: TCheckBox;
     chkExportBearOneRowSpacingFile8: TCheckBox;
     chkExportBearOneRowSpacingFile9: TCheckBox;
+    chkNotExportSourceData: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure edtFileNameClick(Sender: TObject);
@@ -114,6 +115,7 @@ procedure TfrmMain.btnCompareClick(Sender: TObject);
 var
   CompareRowCount, CompareTypeCount, ExportTypeCount, ExportTypeCount2, ExportFileCount: Integer;
   ExportFiles: TDataComputer.TExportFiles;
+  ExportSourceData: Boolean;
 begin
   if not TryStrToInt(edtCompareRowCount.Text, CompareRowCount) then
   begin
@@ -145,6 +147,7 @@ begin
     edtExportTypeCount2.SelectAll;
     raise Exception.Create('请输入有效“导出连和组合数”');
   end;
+  ExportSourceData := not chkNotExportSourceData.Checked;
 
   ExportFiles := [];
   if chkExportRowSpacingFile.Checked then ExportFiles := ExportFiles + [efRowSpacingFile];
@@ -200,7 +203,7 @@ begin
         begin
           fDataComputer.LoadRow(edtFileName.Text, CompareRowCount);
           fDataComputer.Compare(CompareTypeCount);
-          fDataComputer.ExportCompareData(ExportTypeCount, ExportTypeCount, ExportFiles);
+          fDataComputer.ExportCompareData(ExportTypeCount, ExportTypeCount, ExportFiles, ExportSourceData);
         end;
         StopTime;
         ShowMessage('查询完毕');

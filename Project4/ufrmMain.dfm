@@ -82,13 +82,13 @@ object frmMain: TfrmMain
   object edtFileName: TEdit
     Left = 326
     Top = 41
-    Width = 465
+    Width = 900
     Height = 32
     TabOrder = 0
     OnClick = edtFileNameClick
   end
   object btnCompare: TButton
-    Left = 5
+    Left = 8
     Top = 600
     Width = 380
     Height = 35
@@ -115,7 +115,7 @@ object frmMain: TfrmMain
   object edtCompareRowCount: TEdit
     Left = 261
     Top = 79
-    Width = 50
+    Width = 100
     Height = 32
     NumbersOnly = True
     TabOrder = 4
@@ -257,6 +257,14 @@ object frmMain: TfrmMain
     Height = 25
     Caption = #9312'.'#65288#25490#24207#65289'...'#65288#36830#21644#65306'+8'#20197#19978#65289#65288#26368#22823' '#8594' '#23567#65289#65306#12304'9'#12305
     TabOrder = 21
+  end
+  object chkNotExportSourceData: TCheckBox
+    Left = 434
+    Top = 280
+    Width = 90
+    Height = 25
+    Caption = #19981#26174#31034
+    TabOrder = 22
   end
   object OpenDialog: TOpenDialog
     Filter = #25991#26412#25991#20214'|*.txt'

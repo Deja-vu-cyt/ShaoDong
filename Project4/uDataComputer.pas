@@ -149,6 +149,7 @@ type
     fCompareTypeCount: Byte;
     fExportTypeCount: Byte;
     fExportTypeCount2: Byte;
+    fExportSourceData: Boolean;
     fMinBearOneRowSpacingCount: Word;
     procedure DeleteBearOneRowSpacingCount(SpacingCount: Word);
     function BuildCompareTypeString(CompareType: TSQLCompareType; NumberFlag: Byte = 2): string;
@@ -164,7 +165,8 @@ type
     destructor Destroy;
     procedure LoadRow(FileName: string; CompareRowCount: Word);
     procedure Compare(TypeCount: Byte);
-    procedure ExportCompareData(ExportTypeCount, ExportTypeCount2: Byte; ExportFiles: TExportFiles);
+    procedure ExportCompareData(ExportTypeCount, ExportTypeCount2: Byte;
+      ExportFiles: TExportFiles; ExportSourceData: Boolean);
   end;
 
 implementation
@@ -579,7 +581,7 @@ begin
 end;
 
 procedure TDataComputer.ExportCompareData(ExportTypeCount, ExportTypeCount2: Byte;
-  ExportFiles: TExportFiles);
+  ExportFiles: TExportFiles; ExportSourceData: Boolean);
 var
   s: string;
   i: Integer;
@@ -593,6 +595,7 @@ begin
   for s in TDirectory.GetFiles(fExportDirectory2, '*.txt') do TFile.Delete(s);
   fExportTypeCount := ExportTypeCount;
   fExportTypeCount2 := ExportTypeCount2;
+  fExportSourceData := ExportSourceData;
 
   if efRowSpacingFile in ExportFiles then
   begin
@@ -1156,6 +1159,7 @@ begin
         end;
       end;
     end;
+    if not fExportSourceData then Exit;
 
     WriteLn(tf, '');
     WriteLn(tf, '');
@@ -1182,7 +1186,8 @@ begin
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          if Row.FillCurrentRow = 2 then WriteLn(tf, '');
+          //if Row.FillCurrentRow = 2 then WriteLn(tf, '');
+          WriteLn(tf, '');
           WriteLn(tf, s);
 
           if Row.FillCurrentRow > 2 then
@@ -1262,6 +1267,7 @@ begin
         end;
       end;
     end;
+    if not fExportSourceData then Exit;
 
     WriteLn(tf, '');
     WriteLn(tf, '');
@@ -1288,7 +1294,7 @@ begin
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          if Row.FillCurrentRow = 2 then WriteLn(tf, '');
+          WriteLn(tf, '');
           WriteLn(tf, s);
 
           if Row.FillCurrentRow > 2 then
@@ -1368,6 +1374,7 @@ begin
         end;
       end;
     end;
+    if not fExportSourceData then Exit;
 
     WriteLn(tf, '');
     WriteLn(tf, '');
@@ -1394,7 +1401,7 @@ begin
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          if Row.FillCurrentRow = 2 then WriteLn(tf, '');
+          WriteLn(tf, '');
           WriteLn(tf, s);
 
           if Row.FillCurrentRow > 2 then
@@ -1474,6 +1481,7 @@ begin
         end;
       end;
     end;
+    if not fExportSourceData then Exit;
 
     WriteLn(tf, '');
     WriteLn(tf, '');
@@ -1500,7 +1508,7 @@ begin
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          if Row.FillCurrentRow = 2 then WriteLn(tf, '');
+          WriteLn(tf, '');
           WriteLn(tf, s);
 
           if Row.FillCurrentRow > 2 then
@@ -1578,6 +1586,7 @@ begin
         end;
       end;
     end;
+    if not fExportSourceData then Exit;
 
     WriteLn(tf, '');
     WriteLn(tf, '');
@@ -1605,7 +1614,7 @@ begin
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, bdsBearOneRowSpacings, 2);
-          if Row.FillCurrentRow = 2 then WriteLn(tf, '');
+          WriteLn(tf, '');
           WriteLn(tf, s);
 
           if Row.FillCurrentRow > 2 then
@@ -1772,6 +1781,7 @@ begin
         end;
       end;
     end;
+    if not fExportSourceData then Exit;
 
     WriteLn(tf, '');
     WriteLn(tf, '');
@@ -1799,7 +1809,7 @@ begin
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, bdsBearOneRowSpacings, 2);
-          if Row.FillCurrentRow = 2 then WriteLn(tf, '');
+          WriteLn(tf, '');
           WriteLn(tf, s);
 
           if Row.FillCurrentRow > 2 then
