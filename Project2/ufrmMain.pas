@@ -83,12 +83,9 @@ type
     chkExportVertSlantFile6: TCheckBox;
     chkVertSlantSelectAll: TCheckBox;
     edtCompareGroupValueCount: TEdit;
-    Label19: TLabel;
-    edtVertSlantExportGroupRowCount: TEdit;
-    Label20: TLabel;
-    edtVertExportGroupRowCount: TEdit;
-    Label21: TLabel;
-    edtSlantExportGroupRowCount: TEdit;
+    btnVertSlantExportSettings: TButton;
+    btnVertExportSettings: TButton;
+    btnSlantExportSettings: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure edtFileNameClick(Sender: TObject);
@@ -98,12 +95,13 @@ type
     procedure Panel1DblClick(Sender: TObject);
     procedure chkVertSelectAllClick(Sender: TObject);
     procedure chkVertSlantSelectAllClick(Sender: TObject);
+    procedure btnExportSettingsClick(Sender: TObject);
   private
     fDataComputer: TDataComputer;
     procedure OnStateChange(Working: Boolean);
     procedure Init(var MaxValue: Word; var FirstRangeValue: Word);
-    procedure InitCompare(var VertCompareSpacing: Word; var VertSameValueCount: Byte;
-      var VertSameValueCount2: Byte; var SlantCompareSpacing: Word;
+    procedure InitCompare(var VertCompareSpacing: Cardinal; var VertSameValueCount: Byte;
+      var VertSameValueCount2: Byte; var SlantCompareSpacing: Cardinal;
       var SlantSameValueCount: Byte; var SlantSameValueCount2: Byte;
       var CompareGroupValueCount: Byte; var ExportGroupValueCount: Byte);
   public
@@ -116,7 +114,7 @@ var
 implementation
 
 uses
-  uTimer;
+  uTimer, ufrmExportSettings;
 
 {$R *.dfm}
 
@@ -125,6 +123,9 @@ begin
   btnSlantCompare.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmSlant]);
   btnVertCompare.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVert]);
   btnVertSlantCompare.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVertSlant]);
+  btnSlantExportSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmSlant]);
+  btnVertExportSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVert]);
+  btnVertSlantExportSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVertSlant]);
 end;
 
 procedure TfrmMain.Panel1DblClick(Sender: TObject);
@@ -146,8 +147,8 @@ begin
 end;
 
 procedure TfrmMain.InitCompare(
-  var VertCompareSpacing: Word; var VertSameValueCount: Byte;
-  var VertSameValueCount2: Byte; var SlantCompareSpacing: Word;
+  var VertCompareSpacing: Cardinal; var VertSameValueCount: Byte;
+  var VertSameValueCount2: Byte; var SlantCompareSpacing: Cardinal;
   var SlantSameValueCount: Byte; var SlantSameValueCount2: Byte;
   var CompareGroupValueCount: Byte; var ExportGroupValueCount: Byte);
 var
@@ -225,6 +226,11 @@ end;
 procedure TfrmMain.btnExportCompareRowClick(Sender: TObject);
 begin
   fDataComputer.ExportCompareRow;
+end;
+
+procedure TfrmMain.btnExportSettingsClick(Sender: TObject);
+begin
+  frmExportSettings.ShowModal;
 end;
 
 procedure TfrmMain.chkSelectAllClick(Sender: TObject);
@@ -341,7 +347,6 @@ end;
 procedure TfrmMain.btnCompareClick(Sender: TObject);
 var
   ExportFiles: TDataComputer.TExportFiles;
-  ExportGroupRowCount: Integer;
 begin
   if Sender = btnSlantCompare then
     fDataComputer.CompareMode := cmSlant
@@ -349,12 +354,11 @@ begin
     fDataComputer.CompareMode := cmVert
   else
     fDataComputer.CompareMode := cmVertSlant;
+
+  ExportFiles := [];
   case fDataComputer.CompareMode of
     cmVert:
     begin
-      if not TryStrToInt(edtVertExportGroupRowCount.Text, ExportGroupRowCount) then
-        raise Exception.Create('请输入有效首行数');
-      ExportFiles := [];
       if chkExportVertFile.Checked then ExportFiles := ExportFiles + [efFile];
       if chkExportVertFile2.Checked then ExportFiles := ExportFiles + [efFile2];
       if chkExportVertFile3.Checked then ExportFiles := ExportFiles + [efFile3];
@@ -364,9 +368,6 @@ begin
     end;
     cmSlant:
     begin
-      if not TryStrToInt(edtSlantExportGroupRowCount.Text, ExportGroupRowCount) then
-        raise Exception.Create('请输入有效首行数');
-      ExportFiles := [];
       if chkExportFile.Checked then ExportFiles := ExportFiles + [efFile];
       if chkExportFile2.Checked then ExportFiles := ExportFiles + [efFile2];
       if chkExportFile3.Checked then ExportFiles := ExportFiles + [efFile3];
@@ -376,9 +377,6 @@ begin
     end;
     cmVertSlant:
     begin
-      if not TryStrToInt(edtVertSlantExportGroupRowCount.Text, ExportGroupRowCount) then
-        raise Exception.Create('请输入有效首行数');
-      ExportFiles := [];
       if chkExportVertSlantFile.Checked then ExportFiles := ExportFiles + [efFile];
       if chkExportVertSlantFile2.Checked then ExportFiles := ExportFiles + [efFile2];
       if chkExportVertSlantFile3.Checked then ExportFiles := ExportFiles + [efFile3];
@@ -416,7 +414,8 @@ begin
       try
         fDataComputer.LoadRow(edtFileName.Text);
         fDataComputer.Compare;
-        fDataComputer.ExportCompareData(ExportFiles, ExportGroupRowCount);
+        fDataComputer.ExportCompareData(ExportFiles, frmExportSettings.KeepMaxRowSpacing,
+          frmExportSettings.MinGroupRowCount);
         StopTime;
         ShowMessage('查询完毕');
       except

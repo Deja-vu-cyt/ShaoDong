@@ -6,7 +6,8 @@ uses
   uInternetTime in '..\uInternetTime.pas',
   uTimer in '..\uTimer.pas',
   uCommon in '..\uCommon.pas',
-  uDataComputer in 'uDataComputer.pas';
+  uDataComputer in 'uDataComputer.pas',
+  uFileWriter in '..\uFileWriter.pas';
 
 {$R *.res}
 

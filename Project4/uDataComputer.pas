@@ -13,7 +13,8 @@ uses
   mORMotSQLite3,
   SynSQLite3Static,
   SynCommons,
-  uCommon;
+  uCommon,
+  uFileWriter;
 
 type
   TSQLRow = class(TSQLRecord)
@@ -1101,7 +1102,7 @@ end;
 
 procedure TDataComputer.SaveRowSpacingOrderByCompareTypeCount;
 var
-  tf, tf2: TextFile;
+  fr, fr2: TFileWriter;
   s, FileName, FileName2, TxtFileName: string;
   Row: TSQLRow;
   CompareType: TSQLCompareType;
@@ -1111,10 +1112,8 @@ begin
   TxtFileName := '（1）.（排序）组合次数（最多 → 少）：（1）.txt';
   FileName := fExportDirectory + TxtFileName;
   FileName2 := fExportDirectory2 + TxtFileName;
-  AssignFile(tf, FileName);
-  Rewrite(tf);
-  AssignFile(tf2, FileName2);
-  Rewrite(tf2);
+  fr := TFileWriter.Create(FileName);
+  fr2 := TFileWriter.Create(FileName2);
   try
     Number := 0;
     TSQLRow.AutoFree(Row);
@@ -1122,21 +1121,23 @@ begin
     TSQLCompareTypeCount.AutoFree(CompareTypeCount);
 
     s := TxtFileName.Replace('.txt', '');
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn(s);
     s := Format('第1-%d次组合（N）间差 ：', [fCompareTypeCount]);
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn(s);
 
     CompareTypeCount.FillPrepare(fDatabase, 'ORDER BY Value DESC', []);
     while CompareTypeCount.FillOne do
     begin
       s := '%d.【 第%d次组合 】：';
       s := Format(s, [CompareTypeCount.FillCurrentRow - 1, CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? ORDER BY Number2 LIMIT ?', [CompareTypeCount.Value, fExportTypeCount]);
       while CompareType.FillOne do
@@ -1144,70 +1145,72 @@ begin
         Number := Number + 1;
 
         s := Format('【%d-%d】', [Number, CompareType.Number6]) + BuildCompareTypeString(CompareType);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
         s := s.Substring(0, s.Length - 1);
-        WriteLn(tf2, s);
+        fr2.WriteLn(s);
+        s := CompareType.Remark;
+        fr2.WriteLn('');
+        fr2.WriteLn(s);
 
         Row.FillPrepare(fDatabase, 'CompareType = ? AND IsFirstRow = 1', [CompareType.Value]);
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, []);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
         end;
       end;
     end;
     if not fExportSourceData then Exit;
 
-    WriteLn(tf, '');
-    WriteLn(tf, '');
+    fr.WriteLn('');
+    fr.WriteLn('');
 
     CompareTypeCount.FillRewind;
     while CompareTypeCount.FillOne do
     begin
       s := '第%d次组合：';
       s := Format(s, [CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? ORDER BY Number2', [CompareTypeCount.Value]);
       while CompareType.FillOne do
       begin
         s := CompareType.Number6.ToString + BuildCompareTypeString(CompareType);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
 
         Row.FillPrepare(fDatabase, 'CompareType = ? AND (IsFirstRow = 1 OR RowSpacingNumber > 0) ORDER BY IsFirstRow DESC, RowSpacing DESC', [CompareType.Value]);
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          //if Row.FillCurrentRow = 2 then WriteLn(tf, '');
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
 
           if Row.FillCurrentRow > 2 then
           begin
             s := CompareType.Remark;
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
         end;
       end;
     end;
   finally
-    CloseFile(tf);
-    CloseFile(tf2);
+    fr.Free;
+    fr2.Free;
   end;
 end;
 
 procedure TDataComputer.SaveRowSpacingOrderByCompareTypeCount2;
 var
-  tf, tf2: TextFile;
+  fr, fr2: TFileWriter;
   s, FileName, FileName2, TxtFileName: string;
   Row: TSQLRow;
   CompareType: TSQLCompareType;
@@ -1217,10 +1220,8 @@ begin
   TxtFileName := '（2）.（排序）①.不同首行 [代号：N.（N、N；..）]：（N）（N）；最右的（N）（最大→小）（2）.txt';
   FileName := fExportDirectory + TxtFileName;
   FileName2 := fExportDirectory2 + TxtFileName;
-  AssignFile(tf, FileName);
-  Rewrite(tf);
-  AssignFile(tf2, FileName2);
-  Rewrite(tf2);
+  fr := TFileWriter.Create(FileName);
+  fr2 := TFileWriter.Create(FileName2);
   try
     Number := 0;
     TSQLRow.AutoFree(Row);
@@ -1228,21 +1229,23 @@ begin
     TSQLCompareTypeCount.AutoFree(CompareTypeCount);
 
     s := TxtFileName.Replace('.txt', '');
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn(s);
     s := Format('第1-%d次组合（N）间差 ：', [fCompareTypeCount]);
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn(s);
 
     CompareTypeCount.FillPrepare(fDatabase, 'ORDER BY Value', []);
     while CompareTypeCount.FillOne do
     begin
       s := '%d.【 第%d次组合 】：';
       s := Format(s, [CompareTypeCount.FillCurrentRow - 1, CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? ORDER BY Number2 LIMIT ?', [CompareTypeCount.Value, fExportTypeCount]);
       while CompareType.FillOne do
@@ -1250,11 +1253,14 @@ begin
         Number := Number + 1;
 
         s := Format('【%d-%d】', [Number, CompareType.Number5]) + BuildCompareTypeString(CompareType);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
         s := s.Substring(0, s.Length - 1);
-        WriteLn(tf2, s);
+        fr2.WriteLn(s);
+        s := CompareType.Remark;
+        fr2.WriteLn('');
+        fr2.WriteLn(s);
 
         Row.FillPrepare(fDatabase,
           'CompareType = ? AND (RowSpacingNumber >= ? OR IsFirstRow = 1) ORDER BY IsFirstRow DESC, RowSpacing DESC',
@@ -1262,59 +1268,59 @@ begin
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
         end;
       end;
     end;
     if not fExportSourceData then Exit;
 
-    WriteLn(tf, '');
-    WriteLn(tf, '');
+    fr.WriteLn('');
+    fr.WriteLn('');
 
     CompareTypeCount.FillRewind;
     while CompareTypeCount.FillOne do
     begin
       s := '第%d次组合：';
       s := Format(s, [CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? ORDER BY Number2', [CompareTypeCount.Value]);
       while CompareType.FillOne do
       begin
         s := CompareType.Number5.ToString + BuildCompareTypeString(CompareType);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
 
         Row.FillPrepare(fDatabase, 'CompareType = ? AND (IsFirstRow = 1 OR RowSpacingNumber > 0) ORDER BY IsFirstRow DESC, RowSpacing DESC', [CompareType.Value]);
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
 
           if Row.FillCurrentRow > 2 then
           begin
             s := CompareType.Remark;
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
         end;
       end;
     end;
   finally
-    CloseFile(tf);
-    CloseFile(tf2);
+    fr.Free;
+    fr2.Free;
   end;
 end;
 
 procedure TDataComputer.SaveRowSpacingOrderByCompareTypeCount3;
 var
-  tf, tf2: TextFile;
+  fr, fr2: TFileWriter;
   s, FileName, FileName2, TxtFileName: string;
   Row: TSQLRow;
   CompareType: TSQLCompareType;
@@ -1324,10 +1330,8 @@ begin
   TxtFileName := '（3）.（排序）②.（第N个间差：N）（最大 → 小）：（3）.txt';
   FileName := fExportDirectory + TxtFileName;
   FileName2 := fExportDirectory2 + TxtFileName;
-  AssignFile(tf, FileName);
-  Rewrite(tf);
-  AssignFile(tf2, FileName2);
-  Rewrite(tf2);
+  fr := TFileWriter.Create(FileName);
+  fr2 := TFileWriter.Create(FileName2);
   try
     Number := 0;
     TSQLRow.AutoFree(Row);
@@ -1335,21 +1339,23 @@ begin
     TSQLCompareTypeCount.AutoFree(CompareTypeCount);
 
     s := TxtFileName.Replace('.txt', '');
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn(s);
     s := Format('第1-%d次组合（N）间差 ：', [fCompareTypeCount]);
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn(s);
 
     CompareTypeCount.FillPrepare(fDatabase, 'ORDER BY Value', []);
     while CompareTypeCount.FillOne do
     begin
       s := '%d.【 第%d次组合 】：';
       s := Format(s, [CompareTypeCount.FillCurrentRow - 1, CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? AND Number2 <= ? ORDER BY MaxRowSpacing DESC', [CompareTypeCount.Value, fExportTypeCount]);
       while CompareType.FillOne do
@@ -1357,11 +1363,14 @@ begin
         Number := Number + 1;
 
         s := Format('【%d-%d】', [Number, CompareType.Number5]) + BuildCompareTypeString(CompareType);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
         s := s.Substring(0, s.Length - 1);
-        WriteLn(tf2, s);
+        fr2.WriteLn(s);
+        s := CompareType.Remark;
+        fr2.WriteLn('');
+        fr2.WriteLn(s);
 
         Row.FillPrepare(fDatabase,
           'CompareType = ? AND (RowSpacingNumber >= ? OR IsFirstRow = 1) ORDER BY IsFirstRow DESC, RowSpacing DESC',
@@ -1369,59 +1378,59 @@ begin
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
         end;
       end;
     end;
     if not fExportSourceData then Exit;
 
-    WriteLn(tf, '');
-    WriteLn(tf, '');
+    fr.WriteLn('');
+    fr.WriteLn('');
 
     CompareTypeCount.FillRewind;
     while CompareTypeCount.FillOne do
     begin
       s := '第%d次组合：';
       s := Format(s, [CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? ORDER BY Number2', [CompareTypeCount.Value]);
       while CompareType.FillOne do
       begin
         s := CompareType.Number5.ToString + BuildCompareTypeString(CompareType);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
 
         Row.FillPrepare(fDatabase, 'CompareType = ? AND (IsFirstRow = 1 OR RowSpacingNumber > 0) ORDER BY IsFirstRow DESC, RowSpacing DESC', [CompareType.Value]);
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
 
           if Row.FillCurrentRow > 2 then
           begin
             s := CompareType.Remark;
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
         end;
       end;
     end;
   finally
-    CloseFile(tf);
-    CloseFile(tf2);
+    fr.Free;
+    fr2.Free;
   end;
 end;
 
 procedure TDataComputer.SaveRowSpacingOrderByCompareTypeCount4;
 var
-  tf, tf2: TextFile;
+  fr, fr2: TFileWriter;
   s, FileName, FileName2, TxtFileName: string;
   Row: TSQLRow;
   CompareType: TSQLCompareType;
@@ -1431,10 +1440,8 @@ begin
   TxtFileName := '（4）.（排序）③.【第N-N个间差：N】（最大 → 小）：（4）.txt';
   FileName := fExportDirectory + TxtFileName;
   FileName2 := fExportDirectory2 + TxtFileName;
-  AssignFile(tf, FileName);
-  Rewrite(tf);
-  AssignFile(tf2, FileName2);
-  Rewrite(tf2);
+  fr := TFileWriter.Create(FileName);
+  fr2 := TFileWriter.Create(FileName2);
   try
     Number := 0;
     TSQLRow.AutoFree(Row);
@@ -1442,21 +1449,23 @@ begin
     TSQLCompareTypeCount.AutoFree(CompareTypeCount);
 
     s := TxtFileName.Replace('.txt', '');
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn(s);
     s := Format('第1-%d次组合（N）间差 ：', [fCompareTypeCount]);
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn(s);
 
     CompareTypeCount.FillPrepare(fDatabase, 'ORDER BY Value', []);
     while CompareTypeCount.FillOne do
     begin
       s := '%d.【 第%d次组合 】：';
       s := Format(s, [CompareTypeCount.FillCurrentRow - 1, CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? AND Number2 <= ? ORDER BY MaxRowSpacing3 DESC', [CompareTypeCount.Value, fExportTypeCount]);
       while CompareType.FillOne do
@@ -1464,11 +1473,14 @@ begin
         Number := Number + 1;
 
         s := Format('【%d-%d】', [Number, CompareType.Number5]) + BuildCompareTypeString(CompareType);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
         s := s.Substring(0, s.Length - 1);
-        WriteLn(tf2, s);
+        fr2.WriteLn(s);
+        s := CompareType.Remark;
+        fr2.WriteLn('');
+        fr2.WriteLn(s);
 
         Row.FillPrepare(fDatabase,
           'CompareType = ? AND (RowSpacingNumber >= ? OR IsFirstRow = 1) ORDER BY IsFirstRow DESC, RowSpacing3 DESC',
@@ -1476,59 +1488,59 @@ begin
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
         end;
       end;
     end;
     if not fExportSourceData then Exit;
 
-    WriteLn(tf, '');
-    WriteLn(tf, '');
+    fr.WriteLn('');
+    fr.WriteLn('');
 
     CompareTypeCount.FillRewind;
     while CompareTypeCount.FillOne do
     begin
       s := '第%d次组合：';
       s := Format(s, [CompareTypeCount.FillCurrentRow - 1, CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? ORDER BY Number2', [CompareTypeCount.Value]);
       while CompareType.FillOne do
       begin
         s := CompareType.Number5.ToString + BuildCompareTypeString(CompareType);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
 
         Row.FillPrepare(fDatabase, 'CompareType = ? AND (IsFirstRow = 1 OR RowSpacingNumber > 0) ORDER BY IsFirstRow DESC, RowSpacing DESC', [CompareType.Value]);
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsRowSpacing]);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
 
           if Row.FillCurrentRow > 2 then
           begin
             s := CompareType.Remark;
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
         end;
       end;
     end;
   finally
-    CloseFile(tf);
-    CloseFile(tf2);
+    fr.Free;
+    fr2.Free;
   end;
 end;
 
 procedure TDataComputer.SaveBearOneRowSpacingOrderByCompareTypeCount;
 var
-  tf, tf2: TextFile;
+  fr, fr2: TFileWriter;
   s, FileName, FileName2, TxtFileName: string;
   Row: TSQLRow;
   CompareType: TSQLCompareType;
@@ -1538,10 +1550,8 @@ begin
   TxtFileName := '①. （排序）组合次数（连和：+1以上）（最多 → 少）：【1】.txt';
   FileName := fExportDirectory + TxtFileName;
   FileName2 := fExportDirectory2 + TxtFileName;
-  AssignFile(tf, FileName);
-  Rewrite(tf);
-  AssignFile(tf2, FileName2);
-  Rewrite(tf2);
+  fr := TFileWriter.Create(FileName);
+  fr2 := TFileWriter.Create(FileName2);
   try
     Number := 0;
     TSQLRow.AutoFree(Row);
@@ -1549,21 +1559,23 @@ begin
     TSQLCompareTypeCount.AutoFree(CompareTypeCount);
 
     s := TxtFileName.Replace('.txt', '');
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn(s);
     s := Format('第1-%d次组合（N），连和：+1 以上 ：', [fCompareTypeCount]);
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn(s);
 
     CompareTypeCount.FillPrepare(fDatabase, 'ORDER BY Value DESC', []);
     while CompareTypeCount.FillOne do
     begin
       s := '第%d次组合（N）连和：';
       s := Format(s, [CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? AND Number <= ? AND IsFirstRowOneRowSpacing = 1 ORDER BY Number',
         [CompareTypeCount.Value, fExportTypeCount2]);
@@ -1572,69 +1584,72 @@ begin
         Number := Number + 1;
 
         s := Format('【%d-%d】', [Number, CompareType.Number4]) + BuildCompareTypeString(CompareType, 1);
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn(s);
         s := s.Substring(0, s.Length - 1);
-        WriteLn(tf2, s);
+        fr2.WriteLn(s);
+        s := CompareType.Remark;
+        fr2.WriteLn('');
+        fr2.WriteLn(s);
 
         Row.FillPrepare(fDatabase, 'CompareType = ? ORDER BY Number LIMIT 1', [CompareType.Value]);
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, [bdsBearOneRowSpacing], 2);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
         end;
       end;
     end;
     if not fExportSourceData then Exit;
 
-    WriteLn(tf, '');
-    WriteLn(tf, '');
+    fr.WriteLn('');
+    fr.WriteLn('');
 
     CompareTypeCount.FillRewind;
     while CompareTypeCount.FillOne do
     begin
       s := '第%d次组合（N）连和：';
       s := Format(s, [CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? ORDER BY Number', [CompareTypeCount.Value]);
       while CompareType.FillOne do
       begin
         s := CompareType.Number4.ToString + BuildCompareTypeString(CompareType, 1);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
-        WriteLn(tf, '');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
+        fr.WriteLn('');
 
         Row.FillPrepare(fDatabase, 'CompareType = ? ORDER BY Number', [CompareType.Value]);
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, bdsBearOneRowSpacings, 2);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
 
           if Row.FillCurrentRow > 2 then
           begin
             s := CompareType.Remark;
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
         end;
       end;
     end;
   finally
-    CloseFile(tf);
-    CloseFile(tf2);
+    fr.Free;
+    fr2.Free;
   end;
 end;
 
 procedure TDataComputer.SaveBearOneRowSpacingOrderByCompareTypeCount2;
 var
-  tf, tf2: TextFile;
+  fr, fr2: TFileWriter;
   s, FileName, FileName2, TxtFileName, sTypeCountFlag: string;
   Row: TSQLRow;
   CompareType: TSQLCompareType;
@@ -1646,10 +1661,8 @@ begin
     [fMinBearOneRowSpacingCount, fMinBearOneRowSpacingCount + 1]);
   FileName := fExportDirectory + TxtFileName;
   FileName2 := fExportDirectory2 + TxtFileName;
-  AssignFile(tf, FileName);
-  Rewrite(tf);
-  AssignFile(tf2, FileName2);
-  Rewrite(tf2);
+  fr := TFileWriter.Create(FileName);
+  fr2 := TFileWriter.Create(FileName2);
   try
     Number := 0;
     TSQLRow.AutoFree(Row);
@@ -1657,26 +1670,28 @@ begin
     TSQLCompareTypeCount.AutoFree(CompareTypeCount);
 
     s := TxtFileName.Replace('.txt', '');
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn(s);
     s := Format('第1-%d次组合（N），连和：+%d 以上 ：', [fCompareTypeCount, fMinBearOneRowSpacingCount]);
-    WriteLn(tf, '');
-    WriteLn(tf, s);
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn(s);
 
     CompareTypeCount.FillPrepare(fDatabase, 'ORDER BY Value', []);
     while CompareTypeCount.FillOne do
     begin
       s := '第%d次组合（N）连和：';
       s := Format(s, [CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       s := '1.显示（组合同次数）的（一）.（最大连和）、（二）.（最大第N个总间差）、（三）.（最大第N-N个总间差）、（四）.【最大第N-N个总间差】：';
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? AND TypeCountFlag > 0 ORDER BY TypeCountFlag', [CompareTypeCount.Value]);
       while CompareType.FillOne do
@@ -1703,8 +1718,8 @@ begin
           end;
         end;
         s := Format('（%s）', [sTypeCountFlag]) + BuildCompareTypeString(CompareType, 1);
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn(s);
 
         Row.FillRewind;
         while Row.FillOne do
@@ -1712,26 +1727,26 @@ begin
           if Row.ID = CompareTypeCount.MaxBearOneRowSpacingCountID then
           begin
             s := BuildCompareDataString(Row, [bdsBearOneRowSpacing], 2) + '[（一）.（最大连和：+N）]';
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
           if Row.ID = CompareTypeCount.MaxRowSpacing4ID then
           begin
             s := BuildCompareDataString(Row, [bdsRowSpacing4], 2) + '[（二）.（最大第N个总间差：N）]';
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
           if Row.ID = CompareTypeCount.MaxRowSpacing5ID then
           begin
             s := BuildCompareDataString(Row, [bdsRowSpacing5], 2) + '[（三）.（最大第N-N个总间差：N）]';
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
           if Row.ID = CompareTypeCount.MaxRowSpacing6ID then
           begin
             s := BuildCompareDataString(Row, [bdsRowSpacing6], 2) + '[（四）.【最大第N-N个总间差：N】]';
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
         end;
       end;
@@ -1743,29 +1758,32 @@ begin
         Number := Number + 1;
 
         s := '1-1.显示[ 相同代号（符合设置条件的首行、其它行）]：';
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
         s := Format('【%d-%d】', [Number, CompareType.Number3]) + BuildCompareTypeString(CompareType, 1);
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn(s);
         s := s.Substring(0, s.Length - 1);
-        WriteLn(tf2, s);
+        fr2.WriteLn(s);
+        s := CompareType.Remark;
+        fr2.WriteLn('');
+        fr2.WriteLn(s);
 
         Row.FillPrepare(fDatabase, 'CompareType = ? AND TypeFlag > 0 ORDER BY Number', [CompareType.Value]);
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, bdsBearOneRowSpacings, 2);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
         end;
 
         s := '1-2.显示[ 相同代号（第N个连和：+N）（大→小）排序 ]：';
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
 
         LastBearOneRowSpacingCount := 0;
         Row.FillPrepare(fDatabase, 'CompareType = ? AND BearOneRowSpacingNumber > 0 AND BearOneRowSpacingCount >= ? ORDER BY BearOneRowSpacingNumber DESC, Number DESC',
@@ -1776,54 +1794,54 @@ begin
           LastBearOneRowSpacingCount := Row.BearOneRowSpacingCount;
 
           s := BuildCompareDataString(Row, [bdsBearOneRowSpacing, bdsBearOneRowSpacing2], 2);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
         end;
       end;
     end;
     if not fExportSourceData then Exit;
 
-    WriteLn(tf, '');
-    WriteLn(tf, '');
+    fr.WriteLn('');
+    fr.WriteLn('');
 
     CompareTypeCount.FillRewind;
     while CompareTypeCount.FillOne do
     begin
       s := '第%d次组合（N）连和：';
       s := Format(s, [CompareTypeCount.Value]);
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, '');
-      WriteLn(tf, s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
 
       CompareType.FillPrepare(fDatabase, 'TypeCount = ? ORDER BY Number', [CompareTypeCount.Value]);
       while CompareType.FillOne do
       begin
         s := CompareType.Number3.ToString + BuildCompareTypeString(CompareType, 1);
-        WriteLn(tf, '');
-        WriteLn(tf, '');
-        WriteLn(tf, s);
-        WriteLn(tf, '');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
+        fr.WriteLn('');
 
         Row.FillPrepare(fDatabase, 'CompareType = ? ORDER BY Number', [CompareType.Value]);
         while Row.FillOne do
         begin
           s := BuildCompareDataString(Row, bdsBearOneRowSpacings, 2);
-          WriteLn(tf, '');
-          WriteLn(tf, s);
+          fr.WriteLn('');
+          fr.WriteLn(s);
 
           if Row.FillCurrentRow > 2 then
           begin
             s := CompareType.Remark;
-            WriteLn(tf, '');
-            WriteLn(tf, s);
+            fr.WriteLn('');
+            fr.WriteLn(s);
           end;
         end;
       end;
     end;
   finally
-    CloseFile(tf);
-    CloseFile(tf2);
+    fr.Free;
+    fr2.Free;
   end;
 end;
 

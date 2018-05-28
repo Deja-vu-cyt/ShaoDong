@@ -111,6 +111,11 @@
         <DCCReference Include="..\uTimer.pas"/>
         <DCCReference Include="..\uCommon.pas"/>
         <DCCReference Include="uDataComputer.pas"/>
+        <DCCReference Include="..\uFileWriter.pas"/>
+        <DCCReference Include="ufrmExportSettings.pas">
+            <Form>frmExportSettings</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

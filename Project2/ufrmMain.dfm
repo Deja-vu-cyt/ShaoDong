@@ -20,14 +20,16 @@ object frmMain: TfrmMain
     Top = 173
     Width = 1334
     Height = 510
-    ActivePage = TabSheet2
+    ActivePage = TabSheet1
     Align = alClient
     TabOrder = 0
-    ExplicitWidth = 1056
     object TabSheet3: TTabSheet
       Caption = #19968'.'#26597#35810#65306#12304#21508#34892#38388#12305#30452#12289#26012#36830#12304#23545#24212#21015#12305#32452#21512'     '
       ImageIndex = 2
-      ExplicitWidth = 1048
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label10: TLabel
         Left = 12
         Top = 7
@@ -38,9 +40,9 @@ object frmMain: TfrmMain
       object Label12: TLabel
         Left = 12
         Top = 41
-        Width = 467
+        Width = 473
         Height = 24
-        Caption = #65288'1'#65289'.'#65288#30452#36830#65289'y'#26377'          '#8594'          '#20010#12304#23545#24212#21015#12305#25968#23383
+        Caption = #65288'1'#65289'.'#65288#30452#36830#65289'y'#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
       end
       object Label14: TLabel
         Left = 12
@@ -52,21 +54,21 @@ object frmMain: TfrmMain
       object Label15: TLabel
         Left = 12
         Top = 110
-        Width = 467
+        Width = 473
         Height = 24
-        Caption = #65288'1'#65289'.'#65288#26012#36830#65289'y'#26377'          '#8594'          '#20010#12304#23545#24212#21015#12305#25968#23383
+        Caption = #65288'1'#65289'.'#65288#26012#36830#65289'y'#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
       end
       object Label16: TLabel
         Left = 12
         Top = 180
-        Width = 650
+        Width = 905
         Height = 24
         Alignment = taRightJustify
-        Caption = '7.'#35774#32622#8220#23548#20986#12304#31532'N-N'#34892#12305#30452#12289#26012#36830#12304#31532'1-N'#34892#20026#39318#34892#12305#21015#8216' N '#8217#20010#20197#19978#32452#21512#8221#65306
+        Caption = '7. '#35774#32622#8220#23548#20986#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#12289#26012#36830' ['#65288#31532'N-1'#34892#65289#65288#31532'1-N'#30452#12289#26012#36830#34892#65289']'#12305#21015#8220'N'#8221#20010#20197#19978#32452#21512#8221#65306
       end
       object Label17: TLabel
         Left = 5
-        Top = 276
+        Top = 281
         Width = 684
         Height = 24
         Caption = #12304#25490#21015#12305' '#65288'2'#65289'---'#65288'6'#65289'.'#8220'N'#8221#20010#20197#19978#21508#20010#32452#21512#65288#30456#21516#20195#21495#12289#19981#21516#39318#34892#65289#65292#22914#19979#65306
@@ -74,17 +76,10 @@ object frmMain: TfrmMain
       object Label18: TLabel
         Left = 10
         Top = 145
-        Width = 652
+        Width = 907
         Height = 24
         Alignment = taRightJustify
-        Caption = '6.'#35774#32622#8220#26597#35810#12304#31532'N-N'#34892#12305#30452#12289#26012#36830#12304#31532'1  -  N'#34892#20026#39318#34892#12305#21015#8216' 1-N '#8217#27425#32452#21512#8221#65306
-      end
-      object Label19: TLabel
-        Left = 721
-        Top = 212
-        Width = 381
-        Height = 24
-        Caption = #20445#30041#65288#22823#12289#31561#20110#8805#65289#19981#21516#65288#30452#36830#65289#39318#34892#25968' '#65306
+        Caption = '6.'#35774#32622#8220#26597#35810#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#12289#26012#36830' ['#65288#31532'N-1'#34892#65289#65288#31532'1-N'#30452#12289#26012#36830#34892#65289']'#12305#21015#8220'  1-N   '#8221#27425#32452#21512#8221#65306
       end
       object edtVVertSameValueCount2: TEdit
         Left = 267
@@ -172,7 +167,7 @@ object frmMain: TfrmMain
       end
       object btnVertSlantCompare: TButton
         Left = 5
-        Top = 414
+        Top = 419
         Width = 249
         Height = 30
         Caption = '9.'#8220#24320#22987#26597#35810#8221#24182#8220#23548#20986#25968#25454#8221
@@ -180,9 +175,9 @@ object frmMain: TfrmMain
         OnClick = btnCompareClick
       end
       object edtExportGroupValueCount: TEdit
-        Left = 665
+        Left = 920
         Top = 180
-        Width = 50
+        Width = 100
         Height = 29
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -195,7 +190,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertSlantFile: TCheckBox
         Left = 5
-        Top = 244
+        Top = 249
         Width = 588
         Height = 25
         Caption = #65288'1'#65289'.'#12304#25490#21015#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#39318#34892#12289#19981#21516#32452#21512']'#30340#32452#21512#12305'   '
@@ -203,7 +198,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertSlantFile2: TCheckBox
         Left = 5
-        Top = 311
+        Top = 316
         Width = 330
         Height = 25
         Caption = #65288'2'#65289'.[ '#19981#21516#39318#34892#25968#65306#26368#22810#8594#23569' ]'
@@ -211,7 +206,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertSlantFile3: TCheckBox
         Left = 358
-        Top = 311
+        Top = 316
         Width = 380
         Height = 25
         Caption = #65288'3'#65289'.[ '#37051#34892#36317#65306#26368#22823#8595#8594#23567#8595']'
@@ -219,7 +214,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertSlantFile4: TCheckBox
         Left = 5
-        Top = 343
+        Top = 348
         Width = 330
         Height = 25
         Caption = #65288'4'#65289'.[ '#32452#21512#25968#65306#26368#22810#8594#23569#20010' ]'
@@ -227,7 +222,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertSlantFile5: TCheckBox
         Left = 358
-        Top = 343
+        Top = 348
         Width = 380
         Height = 25
         Caption = #65288'5'#65289'.[ '#26080#12304#23545#24212#21015#12305#25968#65306#26368#22810#8594#23569#21015' ]'
@@ -235,7 +230,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertSlantFile6: TCheckBox
         Left = 5
-        Top = 376
+        Top = 381
         Width = 836
         Height = 25
         Caption = #65288'6'#65289'.'#12304#31616#21270#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#32452#21512#12289#19981#21516#39318#34892']'#30340#32452#21512#12305
@@ -243,7 +238,7 @@ object frmMain: TfrmMain
       end
       object chkVertSlantSelectAll: TCheckBox
         Left = 5
-        Top = 213
+        Top = 218
         Width = 710
         Height = 25
         Caption = '8.'#20840#36873'[ '#27880#65306#23548#20986#65288'1'#65289'.'#12304#25490#21015#12305'-'#65288'6'#65289'.'#12304#31616#21270#12305#20840#37096#65288'TXT'#65289#25991#26412' ]'#65292#22914#19979#65306
@@ -251,9 +246,9 @@ object frmMain: TfrmMain
         OnClick = chkVertSlantSelectAllClick
       end
       object edtCompareGroupValueCount: TEdit
-        Left = 665
+        Left = 920
         Top = 145
-        Width = 50
+        Width = 100
         Height = 29
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -264,37 +259,34 @@ object frmMain: TfrmMain
         ParentFont = False
         TabOrder = 15
       end
-      object edtVertSlantExportGroupRowCount: TEdit
-        Left = 1108
-        Top = 212
-        Width = 100
-        Height = 29
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -17
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        NumbersOnly = True
-        ParentFont = False
+      object btnVertSlantExportSettings: TButton
+        Left = 721
+        Top = 215
+        Width = 520
+        Height = 30
+        Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '#65292#20998#39029#38190' '#65307
         TabOrder = 16
-        Text = '0'
+        OnClick = btnExportSettingsClick
       end
     end
     object TabSheet2: TTabSheet
       Caption = '  '#20108'.'#26597#35810#65306#12304#21508#34892#38388#12305#30452#36830#12304#23545#24212#21015#12305#32452#21512'      '
       ImageIndex = 1
-      ExplicitWidth = 1048
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label11: TLabel
-        Left = 12
+        Left = 9
         Top = 119
-        Width = 610
+        Width = 837
         Height = 24
         Alignment = taRightJustify
-        Caption = '6.'#35774#32622#8220#23548#20986#12304#31532'N-N'#34892#12305#30452#36830#12304#31532'1-N'#34892#20026#39318#34892#12305#21015#8216' N '#8217#20010#20197#19978#32452#21512#8221#65306
+        Caption = '6. '#35774#32622#8220#23548#20986#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#36830' ['#65288#31532'N-1'#34892#65289#65288#31532' 1-N '#30452#36830#34892#65289']'#12305#21015#8220'N'#8221#20010#20197#19978#32452#21512#8221#65306
       end
       object Label13: TLabel
         Left = 5
-        Top = 215
+        Top = 220
         Width = 684
         Height = 24
         Caption = #12304#25490#21015#12305' '#65288'2'#65289'---'#65288'6'#65289'.'#8220'N'#8221#20010#20197#19978#21508#20010#32452#21512#65288#30456#21516#20195#21495#12289#19981#21516#39318#34892#65289#65292#22914#19979#65306
@@ -309,28 +301,21 @@ object frmMain: TfrmMain
       object Label9: TLabel
         Left = 12
         Top = 49
-        Width = 467
+        Width = 473
         Height = 24
-        Caption = #65288'1'#65289'.'#65288#30452#36830#65289'y'#26377'          '#8594'          '#20010#12304#23545#24212#21015#12305#25968#23383
+        Caption = #65288'1'#65289'.'#65288#30452#36830#65289'y'#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
       end
       object Label8: TLabel
-        Left = 10
+        Left = 7
         Top = 84
-        Width = 612
+        Width = 839
         Height = 24
         Alignment = taRightJustify
-        Caption = '5.'#35774#32622#8220#26597#35810#12304#31532'N-N'#34892#12305#30452#36830#12304#31532'1-N'#34892#20026#39318#34892#12305#21015#8216' 1  -  N '#8217#27425#32452#21512#8221#65306
-      end
-      object Label20: TLabel
-        Left = 721
-        Top = 151
-        Width = 381
-        Height = 24
-        Caption = #20445#30041#65288#22823#12289#31561#20110#8805#65289#19981#21516#65288#30452#36830#65289#39318#34892#25968' '#65306
+        Caption = '5. '#35774#32622#8220#26597#35810#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#36830' ['#65288#31532'N-1'#34892#65289#65288#31532' 1-N '#30452#36830#34892#65289']'#12305#21015#8220'  1-N  '#8221#27425#32452#21512#8221#65306
       end
       object btnVertCompare: TButton
         Left = 5
-        Top = 353
+        Top = 358
         Width = 249
         Height = 30
         Caption = '8.'#8220#24320#22987#26597#35810#8221#24182#8220#23548#20986#25968#25454#8221
@@ -338,9 +323,9 @@ object frmMain: TfrmMain
         OnClick = btnCompareClick
       end
       object edtVertExportTypeCount: TEdit
-        Left = 625
+        Left = 849
         Top = 119
-        Width = 50
+        Width = 100
         Height = 29
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -353,7 +338,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertFile: TCheckBox
         Left = 5
-        Top = 183
+        Top = 188
         Width = 617
         Height = 25
         Caption = #65288'1'#65289'.'#12304#25490#21015#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#39318#34892#12289#19981#21516#32452#21512']'#30340#32452#21512#12305
@@ -361,7 +346,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertFile2: TCheckBox
         Left = 5
-        Top = 250
+        Top = 255
         Width = 330
         Height = 25
         Caption = #65288'2'#65289'.[ '#19981#21516#39318#34892#25968#65306#26368#22810#8594#23569' ]'
@@ -369,7 +354,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertFile3: TCheckBox
         Left = 358
-        Top = 250
+        Top = 255
         Width = 380
         Height = 25
         Caption = #65288'3'#65289'.[ '#37051#34892#36317#65306#26368#22823#8595#8594#23567#8595']'
@@ -377,7 +362,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertFile4: TCheckBox
         Left = 5
-        Top = 282
+        Top = 287
         Width = 330
         Height = 25
         Caption = #65288'4'#65289'.[ '#32452#21512#25968#65306#26368#22810#8594#23569#20010' ]'
@@ -385,7 +370,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertFile5: TCheckBox
         Left = 358
-        Top = 282
+        Top = 287
         Width = 380
         Height = 25
         Caption = #65288'5'#65289'.[ '#26080#12304#23545#24212#21015#12305#25968#65306#26368#22810#8594#23569#21015' ]'
@@ -393,7 +378,7 @@ object frmMain: TfrmMain
       end
       object chkExportVertFile6: TCheckBox
         Left = 5
-        Top = 315
+        Top = 320
         Width = 836
         Height = 25
         Caption = #65288'6'#65289'.'#12304#31616#21270#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#32452#21512#12289#19981#21516#39318#34892']'#30340#32452#21512#12305
@@ -401,7 +386,7 @@ object frmMain: TfrmMain
       end
       object chkVertSelectAll: TCheckBox
         Left = 5
-        Top = 152
+        Top = 157
         Width = 710
         Height = 25
         Caption = '7.'#20840#36873'[ '#27880#65306#23548#20986#65288'1'#65289'.'#12304#25490#21015#12305'-'#65288'6'#65289'.'#12304#31616#21270#12305#20840#37096#65288'TXT'#65289#25991#26412' ]'#65292#22914#19979#65306
@@ -439,7 +424,7 @@ object frmMain: TfrmMain
       object edtVertCompareSpacing: TEdit
         Left = 839
         Top = 15
-        Width = 50
+        Width = 100
         Height = 29
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -451,9 +436,9 @@ object frmMain: TfrmMain
         TabOrder = 11
       end
       object edtVertCompareTypeCount: TEdit
-        Left = 625
+        Left = 849
         Top = 84
-        Width = 50
+        Width = 100
         Height = 29
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -464,36 +449,29 @@ object frmMain: TfrmMain
         ParentFont = False
         TabOrder = 12
       end
-      object edtVertExportGroupRowCount: TEdit
-        Left = 1108
-        Top = 151
-        Width = 100
-        Height = 29
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -17
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        NumbersOnly = True
-        ParentFont = False
+      object btnVertExportSettings: TButton
+        Left = 721
+        Top = 154
+        Width = 520
+        Height = 30
+        Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '#65292#20998#39029#38190' '#65307
         TabOrder = 13
-        Text = '0'
+        OnClick = btnExportSettingsClick
       end
     end
     object TabSheet1: TTabSheet
       Caption = '  '#19977'.'#26597#35810#65306#12304#21508#34892#38388#12305#26012#36830#12304#23545#24212#21015#12305#32452#21512'     '
-      ExplicitWidth = 1048
       object Label5: TLabel
         Left = 12
         Top = 47
-        Width = 610
+        Width = 688
         Height = 24
         Alignment = taRightJustify
-        Caption = '5.'#35774#32622#8220#23548#20986#12304#31532'N-N'#34892#12305#26012#36830#12304#31532'1-N'#34892#20026#39318#34892#12305#21015#8216' N '#8217#20010#20197#19978#32452#21512#8221#65306
+        Caption = '5. '#35774#32622#8220#23548#20986#12304#65288#31532' N-N '#34892#20026#39318#34892#65289#26012#36830#65288#31532' N-1 '#34892#65289#12305#21015#8220' N '#8221#20010#20197#19978#32452#21512#8221#65306
       end
       object Label6: TLabel
         Left = 15
-        Top = 143
+        Top = 151
         Width = 684
         Height = 24
         Caption = #12304#25490#21015#12305' '#65288'2'#65289'---'#65288'6'#65289'.'#8220'N'#8221#20010#20197#19978#21508#20010#32452#21512#65288#30456#21516#20195#21495#12289#19981#21516#39318#34892#65289#65292#22914#19979#65306
@@ -501,21 +479,14 @@ object frmMain: TfrmMain
       object Label2: TLabel
         Left = 10
         Top = 12
-        Width = 612
+        Width = 690
         Height = 24
         Alignment = taRightJustify
-        Caption = '4.'#35774#32622#8220#26597#35810#12304#31532'N-N'#34892#12305#26012#36830#12304#31532'1  -  N'#34892#20026#39318#34892#12305#21015#8216' 1-N '#8217#27425#32452#21512#8221#65306
-      end
-      object Label21: TLabel
-        Left = 581
-        Top = 78
-        Width = 381
-        Height = 24
-        Caption = #20445#30041#65288#22823#12289#31561#20110#8805#65289#19981#21516#65288#30452#36830#65289#39318#34892#25968' '#65306
+        Caption = '4. '#35774#32622#8220#26597#35810#12304#65288#31532' N-N '#34892#20026#39318#34892#65289#26012#36830#65288#31532' N-1 '#34892#65289#12305#21015#8220'   1-N   '#8221#27425#32452#21512#8221#65306
       end
       object btnSlantCompare: TButton
         Left = 15
-        Top = 282
+        Top = 290
         Width = 249
         Height = 30
         Caption = '7.'#8220#24320#22987#26597#35810#8221#24182#8220#23548#20986#25968#25454#8221
@@ -523,9 +494,9 @@ object frmMain: TfrmMain
         OnClick = btnCompareClick
       end
       object edtExportTypeCount: TEdit
-        Left = 628
+        Left = 706
         Top = 47
-        Width = 50
+        Width = 100
         Height = 29
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -538,15 +509,15 @@ object frmMain: TfrmMain
       end
       object chkExportFile: TCheckBox
         Left = 15
-        Top = 108
-        Width = 684
+        Top = 116
+        Width = 770
         Height = 25
-        Caption = #65288'1'#65289'.'#12304#25490#21015#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#39318#34892#12289#19981#21516#32452#21512']'#30340#32452#21512#12305
+        Caption = #65288'1'#65289'.'#12304#25490#21015#12305#8220'N'#8221#20010#20197#19978#12304' [ '#30456#21516#65288#31532#8220'N'#8221#34892#20026#39318#34892#65289'] '#12289#65288#19981#21516#20195#21495#65289#12305#30340#32452#21512' '#65307
         TabOrder = 2
       end
       object chkExportFile2: TCheckBox
         Left = 15
-        Top = 175
+        Top = 183
         Width = 330
         Height = 25
         Caption = #65288'2'#65289'.[ '#19981#21516#39318#34892#25968#65306#26368#22810#8594#23569' ]'
@@ -554,7 +525,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile3: TCheckBox
         Left = 368
-        Top = 175
+        Top = 183
         Width = 380
         Height = 25
         Caption = #65288'3'#65289'.[ '#37051#34892#36317#65306#26368#22823#8595#8594#23567#8595']'
@@ -562,7 +533,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile4: TCheckBox
         Left = 15
-        Top = 207
+        Top = 215
         Width = 330
         Height = 25
         Caption = #65288'4'#65289'.[ '#32452#21512#25968#65306#26368#22810#8594#23569#20010' ]'
@@ -570,7 +541,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile5: TCheckBox
         Left = 368
-        Top = 207
+        Top = 215
         Width = 380
         Height = 25
         Caption = #65288'5'#65289'.[ '#26080#12304#23545#24212#21015#12305#25968#65306#26368#22810#8594#23569#21015' ]'
@@ -578,7 +549,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile6: TCheckBox
         Left = 15
-        Top = 240
+        Top = 248
         Width = 663
         Height = 25
         Caption = #65288'6'#65289'.'#12304#31616#21270#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#32452#21512#12289#19981#21516#39318#34892']'#30340#32452#21512#12305
@@ -586,7 +557,7 @@ object frmMain: TfrmMain
       end
       object chkSelectAll: TCheckBox
         Left = 15
-        Top = 77
+        Top = 85
         Width = 560
         Height = 25
         Caption = '6.'#20840#36873'[ '#27880#65306#23548#20986#65288'1'#65289'.'#12304#25490#21015#12305'-'#65288'6'#65289'.'#12304#20445#23384#12305' ]'#65292#22914#19979#65306
@@ -595,7 +566,7 @@ object frmMain: TfrmMain
       end
       object btnExportCompareRow: TButton
         Left = 270
-        Top = 282
+        Top = 290
         Width = 75
         Height = 30
         Caption = #23548#20986#34892
@@ -604,9 +575,9 @@ object frmMain: TfrmMain
         OnClick = btnExportCompareRowClick
       end
       object edtCompareSpacing: TEdit
-        Left = 628
+        Left = 706
         Top = 12
-        Width = 50
+        Width = 100
         Height = 29
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -617,20 +588,14 @@ object frmMain: TfrmMain
         ParentFont = False
         TabOrder = 10
       end
-      object edtSlantExportGroupRowCount: TEdit
-        Left = 968
-        Top = 78
-        Width = 100
-        Height = 29
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -17
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        NumbersOnly = True
-        ParentFont = False
+      object btnSlantExportSettings: TButton
+        Left = 581
+        Top = 82
+        Width = 520
+        Height = 30
+        Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '#65292#20998#39029#38190' '#65307
         TabOrder = 11
-        Text = '0'
+        OnClick = btnExportSettingsClick
       end
     end
   end
@@ -641,7 +606,9 @@ object frmMain: TfrmMain
     Height = 173
     Align = alTop
     TabOrder = 1
-    ExplicitWidth = 1056
+    DesignSize = (
+      1334
+      173)
     object Label1: TLabel
       Left = 16
       Top = 52
@@ -666,18 +633,19 @@ object frmMain: TfrmMain
       Caption = '2.'#35774#32622#8220#26597#35810#65288#24635#21644#21306#22495#65289#8221#21015#25968#65306
     end
     object Label4: TLabel
-      Left = 13
+      Left = 16
       Top = 122
-      Width = 296
+      Width = 293
       Height = 24
       Alignment = taRightJustify
-      Caption = '3.'#35774#32622#8220#26597#35810#65288#31532'1  '#21306#22495#65289#8221#21015#25968#65306
+      Caption = '3.'#35774#32622#8220#26597#35810#65288#31532#19968#21306#22495#65289#8221#21015#25968#65306
     end
     object edtFileName: TEdit
       Left = 291
       Top = 52
-      Width = 900
+      Width = 1014
       Height = 29
+      Anchors = [akLeft, akTop, akRight]
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -17

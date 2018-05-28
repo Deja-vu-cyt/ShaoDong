@@ -13,6 +13,9 @@ object frmMain: TfrmMain
   Position = poDesktopCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  DesignSize = (
+    1120
+    656)
   PixelsPerInch = 96
   TextHeight = 24
   object Label1: TLabel
@@ -82,8 +85,9 @@ object frmMain: TfrmMain
   object edtFileName: TEdit
     Left = 326
     Top = 41
-    Width = 900
+    Width = 700
     Height = 32
+    Anchors = [akLeft, akTop, akRight]
     TabOrder = 0
     OnClick = edtFileNameClick
   end
@@ -115,7 +119,7 @@ object frmMain: TfrmMain
   object edtCompareRowCount: TEdit
     Left = 261
     Top = 79
-    Width = 100
+    Width = 188
     Height = 32
     NumbersOnly = True
     TabOrder = 4
@@ -136,22 +140,13 @@ object frmMain: TfrmMain
     NumbersOnly = True
     TabOrder = 6
   end
-  object Panel1: TPanel
-    Left = 0
-    Top = 641
-    Width = 5000
-    Height = 2
-    BevelWidth = 3
-    BorderWidth = 3
-    TabOrder = 7
-  end
   object chkExportRowSpacingFile: TCheckBox
     Left = 8
     Top = 311
     Width = 593
     Height = 25
     Caption = #65288'1'#65289'.'#65288#25490#24207#65289#32452#21512#27425#25968#65288#26368#22810' '#8594' '#23569#65289#65306#65288'1'#65289
-    TabOrder = 8
+    TabOrder = 7
   end
   object chkExportRowSpacingFile2: TCheckBox
     Left = 8
@@ -159,7 +154,7 @@ object frmMain: TfrmMain
     Width = 921
     Height = 25
     Caption = #65288'2'#65289'.'#65288#25490#24207#65289#9312'.'#19981#21516#39318#34892' ['#20195#21495#65306'N.'#65288'N'#12289'N'#65307'..'#65289']'#65306#65288'N'#65289#65288'N'#65289#65307#26368#21491#30340#65288'N'#65289#65288#26368#22823#8594#23567#65289#65288'2'#65289
-    TabOrder = 9
+    TabOrder = 8
   end
   object chkExportRowSpacingFile3: TCheckBox
     Left = 8
@@ -167,7 +162,7 @@ object frmMain: TfrmMain
     Width = 593
     Height = 25
     Caption = #65288'3'#65289'.'#65288#25490#24207#65289#9313'....'#65288#31532'N'#20010#38388#24046#65306'N'#65289#65288#26368#22823' '#8594' '#23567#65289#65306#65288'3'#65289' '
-    TabOrder = 10
+    TabOrder = 9
   end
   object chkExportRowSpacingFile4: TCheckBox
     Left = 8
@@ -175,7 +170,7 @@ object frmMain: TfrmMain
     Width = 593
     Height = 25
     Caption = #65288'4'#65289'.'#65288#25490#24207#65289#9314'.'#12304#31532'N-N'#20010#38388#24046#65306'N'#12305#65288#26368#22823' '#8594' '#23567#65289#65306#65288'4'#65289
-    TabOrder = 11
+    TabOrder = 10
   end
   object chkExportBearOneRowSpacingFile: TCheckBox
     Left = 8
@@ -183,7 +178,7 @@ object frmMain: TfrmMain
     Width = 593
     Height = 25
     Caption = #9312'. '#65288#25490#24207#65289#32452#21512#27425#25968#65288#36830#21644#65306'+1'#20197#19978#65289#65288#26368#22810' '#8594' '#23569#65289#65306#12304'1'#12305
-    TabOrder = 12
+    TabOrder = 11
   end
   object chkExportBearOneRowSpacingFile2: TCheckBox
     Left = 8
@@ -191,7 +186,7 @@ object frmMain: TfrmMain
     Width = 593
     Height = 25
     Caption = #9312'.'#65288#25490#24207#65289#9312'.'#9313'.'#9314'...'#65288#36830#21644#65306'+1'#20197#19978#65289#65288#26368#22823' '#8594' '#23567#65289#65306#12304'2'#12305
-    TabOrder = 13
+    TabOrder = 12
   end
   object chkSelectAll: TCheckBox
     Left = 8
@@ -199,7 +194,7 @@ object frmMain: TfrmMain
     Width = 420
     Height = 25
     Caption = #20840#36873'  [ '#27880#65306#23548#20986#20840#37096#65288'TXT '#25991#26412#65289']'#65292#22914#19979#65306
-    TabOrder = 14
+    TabOrder = 13
     OnClick = chkSelectAllClick
   end
   object chkExportBearOneRowSpacingFile3: TCheckBox
@@ -208,7 +203,7 @@ object frmMain: TfrmMain
     Width = 593
     Height = 25
     Caption = #9312'.'#65288#25490#24207#65289#9312'.'#9313'.'#9314'...'#65288#36830#21644#65306'+2'#20197#19978#65289#65288#26368#22823' '#8594' '#23567#65289#65306#12304'3'#12305
-    TabOrder = 15
+    TabOrder = 14
   end
   object chkExportBearOneRowSpacingFile4: TCheckBox
     Left = 8
@@ -216,7 +211,7 @@ object frmMain: TfrmMain
     Width = 593
     Height = 25
     Caption = #9312'.'#65288#25490#24207#65289#9312'.'#9313'.'#9314'...'#65288#36830#21644#65306'+3'#20197#19978#65289#65288#26368#22823' '#8594' '#23567#65289#65306#12304'4'#12305
-    TabOrder = 16
+    TabOrder = 15
   end
   object chkExportBearOneRowSpacingFile5: TCheckBox
     Left = 8
@@ -224,7 +219,7 @@ object frmMain: TfrmMain
     Width = 593
     Height = 25
     Caption = #9312'.'#65288#25490#24207#65289#9312'.'#9313'.'#9314'...'#65288#36830#21644#65306'+4'#20197#19978#65289#65288#26368#22823' '#8594' '#23567#65289#65306#12304'5'#12305
-    TabOrder = 17
+    TabOrder = 16
   end
   object chkExportBearOneRowSpacingFile6: TCheckBox
     Left = 607
@@ -232,7 +227,7 @@ object frmMain: TfrmMain
     Width = 510
     Height = 25
     Caption = #9312'.'#65288#25490#24207#65289'...'#65288#36830#21644#65306'+5'#20197#19978#65289#65288#26368#22823' '#8594' '#23567#65289#65306#12304'6'#12305
-    TabOrder = 18
+    TabOrder = 17
   end
   object chkExportBearOneRowSpacingFile7: TCheckBox
     Left = 607
@@ -240,7 +235,7 @@ object frmMain: TfrmMain
     Width = 510
     Height = 25
     Caption = #9312'.'#65288#25490#24207#65289'...'#65288#36830#21644#65306'+6'#20197#19978#65289#65288#26368#22823' '#8594' '#23567#65289#65306#12304'7'#12305
-    TabOrder = 19
+    TabOrder = 18
   end
   object chkExportBearOneRowSpacingFile8: TCheckBox
     Left = 607
@@ -248,7 +243,7 @@ object frmMain: TfrmMain
     Width = 510
     Height = 25
     Caption = #9312'.'#65288#25490#24207#65289'...'#65288#36830#21644#65306'+7'#20197#19978#65289#65288#26368#22823' '#8594' '#23567#65289#65306#12304'8'#12305
-    TabOrder = 20
+    TabOrder = 19
   end
   object chkExportBearOneRowSpacingFile9: TCheckBox
     Left = 607
@@ -256,15 +251,15 @@ object frmMain: TfrmMain
     Width = 510
     Height = 25
     Caption = #9312'.'#65288#25490#24207#65289'...'#65288#36830#21644#65306'+8'#20197#19978#65289#65288#26368#22823' '#8594' '#23567#65289#65306#12304'9'#12305
-    TabOrder = 21
+    TabOrder = 20
   end
   object chkNotExportSourceData: TCheckBox
     Left = 434
     Top = 280
-    Width = 90
+    Width = 559
     Height = 25
-    Caption = #19981#26174#31034
-    TabOrder = 22
+    Caption = #19981#26174#31034' '#12304' '#37197#22871' '#12305#9312'.[ '#23548#20986#20840#37096#65288'TXT'#65289#25991#26412' ] '#30340#32452#21512#20869#23481' '
+    TabOrder = 21
   end
   object OpenDialog: TOpenDialog
     Filter = #25991#26412#25991#20214'|*.txt'

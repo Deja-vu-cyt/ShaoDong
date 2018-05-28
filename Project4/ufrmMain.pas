@@ -31,7 +31,6 @@ type
     Label7: TLabel;
     edtExportFileCount: TEdit;
     edtExportTypeCount2: TEdit;
-    Panel1: TPanel;
     Label8: TLabel;
     chkExportRowSpacingFile: TCheckBox;
     chkExportRowSpacingFile2: TCheckBox;
