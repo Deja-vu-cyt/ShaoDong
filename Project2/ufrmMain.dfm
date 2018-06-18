@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  ClientHeight = 683
+  ClientHeight = 711
   ClientWidth = 1334
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,19 +17,19 @@ object frmMain: TfrmMain
   TextHeight = 24
   object PageControl1: TPageControl
     Left = 0
-    Top = 173
+    Top = 196
     Width = 1334
-    Height = 510
-    ActivePage = TabSheet1
+    Height = 515
+    ActivePage = TabSheet3
     Align = alClient
     TabOrder = 0
+    ExplicitTop = 173
+    ExplicitHeight = 510
     object TabSheet3: TTabSheet
       Caption = #19968'.'#26597#35810#65306#12304#21508#34892#38388#12305#30452#12289#26012#36830#12304#23545#24212#21015#12305#32452#21512'     '
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitLeft = 8
+      ExplicitHeight = 470
       object Label10: TLabel
         Left = 12
         Top = 7
@@ -262,9 +262,9 @@ object frmMain: TfrmMain
       object btnVertSlantExportSettings: TButton
         Left = 721
         Top = 215
-        Width = 520
+        Width = 420
         Height = 30
-        Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '#65292#20998#39029#38190' '#65307
+        Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '
         TabOrder = 16
         OnClick = btnExportSettingsClick
       end
@@ -272,10 +272,7 @@ object frmMain: TfrmMain
     object TabSheet2: TTabSheet
       Caption = '  '#20108'.'#26597#35810#65306#12304#21508#34892#38388#12305#30452#36830#12304#23545#24212#21015#12305#32452#21512'      '
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 471
       object Label11: TLabel
         Left = 9
         Top = 119
@@ -452,15 +449,16 @@ object frmMain: TfrmMain
       object btnVertExportSettings: TButton
         Left = 721
         Top = 154
-        Width = 520
+        Width = 420
         Height = 30
-        Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '#65292#20998#39029#38190' '#65307
+        Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '
         TabOrder = 13
         OnClick = btnExportSettingsClick
       end
     end
     object TabSheet1: TTabSheet
       Caption = '  '#19977'.'#26597#35810#65306#12304#21508#34892#38388#12305#26012#36830#12304#23545#24212#21015#12305#32452#21512'     '
+      ExplicitHeight = 471
       object Label5: TLabel
         Left = 12
         Top = 47
@@ -550,9 +548,9 @@ object frmMain: TfrmMain
       object chkExportFile6: TCheckBox
         Left = 15
         Top = 248
-        Width = 663
+        Width = 770
         Height = 25
-        Caption = #65288'6'#65289'.'#12304#31616#21270#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#32452#21512#12289#19981#21516#39318#34892']'#30340#32452#21512#12305
+        Caption = #65288'6'#65289'.'#12304#20445#23384#12305#8220'N'#8221#20010#20197#19978#21508#20010#32452#21512#65288#30456#21516#20195#21495#12289#19981#21516#39318#34892#65289#30340#65288#20195#21495#65306'NZ. NY '#65289
         TabOrder = 7
       end
       object chkSelectAll: TCheckBox
@@ -591,9 +589,9 @@ object frmMain: TfrmMain
       object btnSlantExportSettings: TButton
         Left = 581
         Top = 82
-        Width = 520
+        Width = 420
         Height = 30
-        Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '#65292#20998#39029#38190' '#65307
+        Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '
         TabOrder = 11
         OnClick = btnExportSettingsClick
       end
@@ -603,12 +601,12 @@ object frmMain: TfrmMain
     Left = 0
     Top = 0
     Width = 1334
-    Height = 173
+    Height = 196
     Align = alTop
     TabOrder = 1
     DesignSize = (
       1334
-      173)
+      196)
     object Label1: TLabel
       Left = 16
       Top = 52
@@ -652,6 +650,7 @@ object frmMain: TfrmMain
       Font.Name = 'Tahoma'
       Font.Style = []
       ParentFont = False
+      ReadOnly = True
       TabOrder = 0
       OnClick = edtFileNameClick
     end
@@ -682,6 +681,14 @@ object frmMain: TfrmMain
       NumbersOnly = True
       ParentFont = False
       TabOrder = 2
+    end
+    object chkCompareCrossRange: TCheckBox
+      Left = 16
+      Top = 152
+      Width = 137
+      Height = 25
+      Caption = #27604#36739#36328#21306#22495
+      TabOrder = 3
     end
   end
   object OpenDialog: TOpenDialog

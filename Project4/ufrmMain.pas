@@ -20,7 +20,7 @@ type
     Label3: TLabel;
     Label4: TLabel;
     lblUseTime: TLabel;
-    edtFileName: TEdit;
+    edtFileDirectory: TEdit;
     btnCompare: TButton;
     edtCompareTypeCount: TEdit;
     edtExportTypeCount: TEdit;
@@ -49,7 +49,7 @@ type
     chkNotExportSourceData: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure edtFileNameClick(Sender: TObject);
+    procedure edtFileDirectoryClick(Sender: TObject);
     procedure btnCompareClick(Sender: TObject);
     procedure chkSelectAllClick(Sender: TObject);
   private
@@ -94,10 +94,12 @@ begin
   end;
 end;
 
-procedure TfrmMain.edtFileNameClick(Sender: TObject);
+procedure TfrmMain.edtFileDirectoryClick(Sender: TObject);
+var
+  FileDirectory: string;
 begin
-  if not OpenDialog.Execute then Exit;
-  TEdit(Sender).Text := OpenDialog.FileName;
+  if not SelectDirectory('', '', FileDirectory) then Exit;
+  TEdit(Sender).Text := FileDirectory;
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
@@ -200,7 +202,7 @@ begin
       try
         if ExportFiles <> [] then
         begin
-          fDataComputer.LoadRow(edtFileName.Text, CompareRowCount);
+          fDataComputer.LoadRow(edtFileDirectory.Text, CompareRowCount);
           fDataComputer.Compare(CompareTypeCount);
           fDataComputer.ExportCompareData(ExportTypeCount, ExportTypeCount, ExportFiles, ExportSourceData);
         end;

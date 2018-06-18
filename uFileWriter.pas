@@ -11,19 +11,29 @@ type
     fFiles: TStringDynArray;
     fWriting: Boolean;
     fFileDirectory: string;
-    fFileNo: Byte;
+    fFileNo: Word;
     fRowCount: Cardinal;
     fFileName: string;
     fActiveFileName: string;
     fTextFile: TextFile;
-
-    procedure BuildActiveFileName;
+    fRebuildFileEvent: TFunc<Cardinal, Boolean>;
+    fRebuildFileNameEvent: TFunc<TFileWriter, string>;
+    fLastFileNo: Boolean;
   public
     constructor Create(aFileName: string);
     destructor Destroy; override;
+    procedure BuildActiveFileName;
     procedure WriteLn(s: string);
     procedure CloseFile;
+    procedure WriteFinish;
+    procedure RenameLastFile(aFileName: string = '');
+    property FileName: string read fFileName;
     property Files: TStringDynArray read fFiles;
+    property RowCount: Cardinal read fRowCount;
+    property FileNo: Word read fFileNo;
+    property LastFileNo: Boolean read fLastFileNo;
+    property RebuildFileEvent: TFunc<Cardinal, Boolean> read fRebuildFileEvent write fRebuildFileEvent;
+    property RebuildFileNameEvent: TFunc<TFileWriter, string> read fRebuildFileNameEvent write fRebuildFileNameEvent;
   end;
 
 implementation
@@ -33,10 +43,13 @@ begin
   inherited Create;
   SetLength(fFiles, 0);
   fWriting := False;
-  fFileName := TPath.GetDirectoryName(aFileName);
-  if fFileName.Substring(fFileName.Length - 1) <> '\' then fFileName := fFileName + '\';
-  fFileName := fFileName + TPath.GetFileNameWithoutExtension(aFileName);
+  fFileDirectory := TPath.GetDirectoryName(aFileName);
+  if fFileDirectory.Substring(fFileDirectory.Length - 1) <> '\' then
+    fFileDirectory := fFileDirectory + '\';
+  fFileName := TPath.GetFileNameWithoutExtension(aFileName);
   fFileNo := 0;
+  fLastFileNo := False;
+
   BuildActiveFileName;
 end;
 
@@ -48,13 +61,16 @@ end;
 
 procedure TFileWriter.BuildActiveFileName;
 begin
+  CloseFile;
   fRowCount := 0;
   fFileNo := fFileNo + 1;
   fActiveFileName := fFileName;
   if fFileNo > 1 then
-    fActiveFileName := fActiveFileName + Format('- %d', [fFileNo - 1]);
-  fActiveFileName := fActiveFileName + '.txt';
-  CloseFile;
+  begin
+    if Assigned(fRebuildFileNameEvent) then
+      fActiveFileName := fRebuildFileNameEvent(Self);
+  end;
+  fActiveFileName := fFileDirectory + fActiveFileName + '.txt';
 end;
 
 procedure TFileWriter.WriteLn(s: string);
@@ -80,7 +96,8 @@ begin
     c2 := c;
   end;
   fRowCount := fRowCount + iCount;
-  if fRowCount >= 300000 then BuildActiveFileName;
+
+  if Assigned(fRebuildFileEvent) and fRebuildFileEvent(fRowCount) then BuildActiveFileName;
 end;
 
 procedure TFileWriter.CloseFile;
@@ -90,6 +107,31 @@ begin
     System.CloseFile(fTextFile);
     fWriting := False;
   end;
+end;
+
+procedure TFileWriter.WriteFinish;
+begin
+  fLastFileNo := True;
+end;
+
+procedure TFileWriter.RenameLastFile(aFileName: string );
+var
+  LastFileName: string;
+begin
+  CloseFile;
+  WriteFinish;
+  LastFileName := fActiveFileName;
+  if fFileNo > 1 then
+  begin
+    if not aFileName.IsEmpty then
+       fActiveFileName := aFileName
+    else if Assigned(fRebuildFileNameEvent) then
+      fActiveFileName := fRebuildFileNameEvent(Self);
+
+    fActiveFileName := fFileDirectory + fActiveFileName + '.txt';
+  end;
+  if not LastFileName.Equals(fActiveFileName) then
+    RenameFile(LastFileName, fActiveFileName);
 end;
 
 end.

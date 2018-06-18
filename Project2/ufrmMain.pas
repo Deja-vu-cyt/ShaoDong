@@ -86,6 +86,7 @@ type
     btnVertSlantExportSettings: TButton;
     btnVertExportSettings: TButton;
     btnSlantExportSettings: TButton;
+    chkCompareCrossRange: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure edtFileNameClick(Sender: TObject);
@@ -100,7 +101,8 @@ type
     fDataComputer: TDataComputer;
     procedure OnStateChange(Working: Boolean);
     procedure Init(var MaxValue: Word; var FirstRangeValue: Word);
-    procedure InitCompare(var VertCompareSpacing: Cardinal; var VertSameValueCount: Byte;
+    procedure InitCompare(var CompareCrossRange: Boolean;
+      var VertCompareSpacing: Cardinal; var VertSameValueCount: Byte;
       var VertSameValueCount2: Byte; var SlantCompareSpacing: Cardinal;
       var SlantSameValueCount: Byte; var SlantSameValueCount2: Byte;
       var CompareGroupValueCount: Byte; var ExportGroupValueCount: Byte);
@@ -146,7 +148,7 @@ begin
 
 end;
 
-procedure TfrmMain.InitCompare(
+procedure TfrmMain.InitCompare(var CompareCrossRange: Boolean;
   var VertCompareSpacing: Cardinal; var VertSameValueCount: Byte;
   var VertSameValueCount2: Byte; var SlantCompareSpacing: Cardinal;
   var SlantSameValueCount: Byte; var SlantSameValueCount2: Byte;
@@ -154,6 +156,7 @@ procedure TfrmMain.InitCompare(
 var
   v: Integer;
 begin
+  CompareCrossRange := chkCompareCrossRange.Checked;
   case fDataComputer.CompareMode of
     cmSlant:
     begin
@@ -230,6 +233,9 @@ end;
 
 procedure TfrmMain.btnExportSettingsClick(Sender: TObject);
 begin
+  if Sender = btnVertExportSettings then frmExportSettings.Flag := 1
+  else if Sender = btnSlantExportSettings then frmExportSettings.Flag := 2
+  else frmExportSettings.Flag := 0;
   frmExportSettings.ShowModal;
 end;
 
@@ -286,6 +292,7 @@ begin
   fDataComputer.InitEvent := Init;
   fDataComputer.InitCompareEvent := InitCompare;
 
+  chkCompareCrossRange.Checked := fDataComputer.CompareCrossRange;
   if fDataComputer.MaxValue > 0 then
   begin
     edtMaxValue.ReadOnly := True;
@@ -414,8 +421,10 @@ begin
       try
         fDataComputer.LoadRow(edtFileName.Text);
         fDataComputer.Compare;
-        fDataComputer.ExportCompareData(ExportFiles, frmExportSettings.KeepMaxRowSpacing,
-          frmExportSettings.MinGroupRowCount);
+        fDataComputer.ExportCompareData(ExportFiles,
+          frmExportSettings.KeepMaxRowSpacing,
+          frmExportSettings.GroupRowCount,
+          frmExportSettings.GroupCount);
         StopTime;
         ShowMessage('²éÑ¯Íê±Ï');
       except
