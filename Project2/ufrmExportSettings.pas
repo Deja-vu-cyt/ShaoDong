@@ -23,6 +23,14 @@ type
     Label7: TLabel;
     Label10: TLabel;
     Label11: TLabel;
+    Label15: TLabel;
+    Label16: TLabel;
+    Label17: TLabel;
+    Label18: TLabel;
+    Label12: TLabel;
+    Label13: TLabel;
+    edtReEnabledGroupCount: TEdit;
+    Label14: TLabel;
     procedure btnOKClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
   private
@@ -30,12 +38,14 @@ type
     fKeepMaxRowSpacing: Cardinal;
     fGroupRowCount: Cardinal;
     fGroupCount: Cardinal;
+    fReEnabledGroupCount: Cardinal;
     procedure SetFlag(aValue: Byte);
   public
     property Flag: Byte read fFlag write SetFlag;
     property KeepMaxRowSpacing: Cardinal read fKeepMaxRowSpacing;
     property GroupRowCount: Cardinal read fGroupRowCount;
     property GroupCount: Cardinal read fGroupCount;
+    property ReEnabledGroupCount: Cardinal read fReEnabledGroupCount;
   end;
 
 var
@@ -101,6 +111,13 @@ begin
     if not TryStrToInt(Trim(edtMinGroupCount.Text), v) then
       raise Exception.Create('请输入有效序行号');
     fGroupCount := v;
+  end;
+  fReEnabledGroupCount := 0;
+  if not Trim(edtReEnabledGroupCount.Text).IsEmpty then
+  begin
+    if not TryStrToInt(Trim(edtReEnabledGroupCount.Text), v) then
+      raise Exception.Create('请输入有效最前序行号');
+    fReEnabledGroupCount := v;
   end;
   ModalResult := mrOK;
 end;

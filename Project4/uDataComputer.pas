@@ -153,7 +153,8 @@ type
     fExportSourceData: Boolean;
     fMinBearOneRowSpacingCount: Word;
     function RebuildFile(RowCount: Cardinal): Boolean;
-    function RebuildFileName(FileName: string; FileNo: Word): string;
+    function NumberToString(Value: Cardinal): string;
+    function RebuildFileName(Sender: TFileWriter): string;
     procedure DeleteBearOneRowSpacingCount(SpacingCount: Word);
     function BuildCompareTypeString(CompareType: TSQLCompareType; NumberFlag: Byte = 2): string;
     function BuildCompareDataString(Row: TSQLRow; BuildDataStrings: TBuildDataStrings; NumberFlag: Byte = 1): string;
@@ -708,15 +709,41 @@ begin
   Result := RowCount >= EachFileRowCount;
 end;
 
-function TDataComputer.RebuildFileName(FileName: string; FileNo: Word): string;
+function TDataComputer.NumberToString(Value: Cardinal): string;
+var
+  i: Integer;
+begin
+  Result := '';
+  i := Value div 100000000;
+  Value := Value mod 100000000;
+  if i > 0 then Result := Result + Format(' %d 亿', [i]);
+  i:= Value div 10000;
+  Value := Value mod 10000;
+  if i > 0 then Result := Result + Format(' %d 万', [i]);
+  if Value > 0 then
+    Result := Result + Format(' %d', [Value]);
+end;
+
+function TDataComputer.RebuildFileName(Sender: TFileWriter): string;
 var
   sSub, sSub2: string;
+  RowCount: Cardinal;
+  i: Integer;
 begin
-  sSub := Format('【最末第%d万=行】', [FileNo]);
-  if FileName.Contains('（最多 → 少）') then
-    Result := FileName.Replace('（最多 → 少）', '（最多 → 少）' + sSub)
+  RowCount := Sender.FileNo * EachFileRowCount;
+  if Sender.LastFileNo then
+    RowCount := (Sender.FileNo - 1) * EachFileRowCount + Sender.RowCount;
+  sSub := NumberToString(RowCount);
+
+  i := Sender.FileName.IndexOf('.');
+  Result := Sender.FileName.SubString(0, i);
+
+  if Result.Substring(0, 2).Equals('①-') then
+    sSub2 := Format('【%s】', [Result.Replace('①-', '')])
   else
-    Result := FileName.Replace('（最大 → 小）', '（最大 → 小）' + sSub);
+    sSub2 := Result;
+
+  Result := Result + Format('.【最末第%s = 行】%s- %d', [sSub, sSub2, Sender.FileNo - 1])
 end;
 
 procedure TDataComputer.DeleteBearOneRowSpacingCount(SpacingCount: Word);
@@ -1231,6 +1258,8 @@ begin
         end;
       end;
     end;
+    fr.RenameLastFile;
+    fr2.RenameLastFile;
   finally
     fr.Free;
     fr2.Free;
@@ -1345,6 +1374,8 @@ begin
         end;
       end;
     end;
+    fr.RenameLastFile;
+    fr2.RenameLastFile;
   finally
     fr.Free;
     fr2.Free;
@@ -1459,6 +1490,8 @@ begin
         end;
       end;
     end;
+    fr.RenameLastFile;
+    fr2.RenameLastFile;
   finally
     fr.Free;
     fr2.Free;
@@ -1573,6 +1606,8 @@ begin
         end;
       end;
     end;
+    fr.RenameLastFile;
+    fr2.RenameLastFile;
   finally
     fr.Free;
     fr2.Free;
@@ -1686,6 +1721,8 @@ begin
         end;
       end;
     end;
+    fr.RenameLastFile;
+    fr2.RenameLastFile;
   finally
     fr.Free;
     fr2.Free;
@@ -1888,6 +1925,8 @@ begin
         end;
       end;
     end;
+    fr.RenameLastFile;
+    fr2.RenameLastFile;
   finally
     fr.Free;
     fr2.Free;

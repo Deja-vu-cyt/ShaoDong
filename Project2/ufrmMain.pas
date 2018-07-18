@@ -424,7 +424,8 @@ begin
         fDataComputer.ExportCompareData(ExportFiles,
           frmExportSettings.KeepMaxRowSpacing,
           frmExportSettings.GroupRowCount,
-          frmExportSettings.GroupCount);
+          frmExportSettings.GroupCount,
+          frmExportSettings.ReEnabledGroupCount);
         StopTime;
         ShowMessage('²éÑ¯Íê±Ï');
       except

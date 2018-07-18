@@ -3,6 +3,10 @@ unit uDataComputer;
 interface
 
 uses
+  mORMot,
+  mORMotSQLite3,
+  SynSQLite3Static,
+  SynCommons,
   System.Classes,
   System.Variants,
   System.SysUtils,
@@ -10,10 +14,6 @@ uses
   System.IOUtils,
   System.Threading,
   System.Generics.Collections,
-  mORMot,
-  mORMotSQLite3,
-  SynSQLite3Static,
-  SynCommons,
   uCommon,
   uFileWriter;
 
@@ -27,7 +27,7 @@ type
     property Value: Variant read fValue write fValue;
   end;
 
-  TSQLData = class(TSQLRecord)
+  {TSQLData = class(TSQLRecord)
   private
     fField1: Int64;
     fField2: Int64;
@@ -59,7 +59,7 @@ type
     fNumber: Cardinal;
   published
     property Number: Cardinal read fNumber write fNumber;
-  end;
+  end;}
 
   TSQLCompareData = class(TSQLData)
   private type
@@ -145,7 +145,6 @@ type
     fValue: RawUTF8;
     fValue2: RawUTF8;
     fValueCount: Byte;
-    fSize: RawUTF8;
     fRowCount: Cardinal;
     fMaxRowSpacing: Cardinal;
     fMaxTotalValueCount: Word;
@@ -153,6 +152,10 @@ type
     fLastFirstRow: Cardinal;
     fOneRowSpacingCount: Cardinal;
     fEnabled: Boolean;
+    fReEnabled: Boolean;
+    fReEnabledFirstRow: Cardinal;
+    fReEnabledFirstRow2: Cardinal;
+    fReEnabledRowSpacing: Cardinal;
   public
     procedure BuildValue2;
   published
@@ -166,6 +169,10 @@ type
     property LastFirstRow: Cardinal read fLastFirstRow write fLastFirstRow;
     property OneRowSpacingCount: Cardinal read fOneRowSpacingCount write fOneRowSpacingCount;
     property Enabled: Boolean read fEnabled write fEnabled;
+    property ReEnabled: Boolean read fReEnabled write fReEnabled;
+    property ReEnabledFirstRow: Cardinal read fReEnabledFirstRow write fReEnabledFirstRow;
+    property ReEnabledFirstRow2: Cardinal read fReEnabledFirstRow2 write fReEnabledFirstRow2;
+    property ReEnabledRowSpacing: Cardinal read fReEnabledRowSpacing write fReEnabledRowSpacing;
   end;
 
   TDataComputer = class
@@ -216,13 +223,12 @@ type
     fSlantSameValueCount2: Byte;
     fCompareGroupValueCount: Byte;
     fExportGroupValueCount: Byte;
+    fExportFiles: TExportFiles;
     fReCalc: Boolean;
     fKeepMaxRowSpacing: Cardinal;
     fGroupRowCount: Cardinal;
     fGroupCount: Cardinal;
-
-    GroupMaxRowNoList: TDictionary<string, Cardinal>;
-    GroupMaxRowNoList2: TDictionary<string, Cardinal>;
+    fReEnabledGroupCount: Cardinal;
 
     function GetKeyValue(Key: string): Variant;
     procedure SetKeyValue(Key: string; Value: Variant);
@@ -231,7 +237,7 @@ type
     function BuildSlantGroupValue(Value: string): string;
     //function CompareTypeToString(Value: Int64; Flag: Byte = 0): string;
     //function VertCompareTypeToString(Value: Int64): string;
-    function DataToString(Values: SynCommons.TWordDynArray): string;
+    function DataToString(Values: TWordDynArray): string;
     procedure CalcRowSpacing(CompareData: TSQLCompareData);
     procedure CalcFirstRowGroup(FirstRow: TSQLFirstRow; Enabled: Boolean = False);
     procedure ReCalc;
@@ -240,33 +246,15 @@ type
     function RebuildFileName(Sender: TFileWriter): string;
     function RebuildFileName2(Sender: TFileWriter): string; overload;
     function RebuildFileName2(Sender: TFileWriter; aRowNumber: Cardinal): string; overload;
+    procedure WriteGroupReEnableTips(fr: TFileWriter; Group: TSQLCompareGroup);
 
-    {procedure SaveSlantGroupByFirstRow;
-    procedure SaveSlantGroupByCompareTypeSortByRowcount;
-    procedure SaveSlantGroupByCompareTypeSortByMaxRowSpacing;
-    procedure SaveSlantGroupByCompareTypeSortByCompareTypeCount;
-    procedure SaveSlantGroupByCompareTypeSortByMaxValueCount;
-    procedure SaveSlantGroupByCompareTypeSortByLastFirstRow;
-    procedure SaveSlantGroupByCompareTypeSortByOneRowSpacingCount;}
     procedure SaveSlantCompareType;
 
-    {procedure SaveVertGroupByFirstRow;
-    procedure SaveVertGroupByCompareTypeSortByRowcount;
-    procedure SaveVertGroupByCompareTypeSortByMaxRowSpacing;
-    procedure SaveVertGroupByCompareTypeSortByCompareTypeCount;
-    procedure SaveVertGroupByCompareTypeSortByMaxValueCount;
-    procedure SaveVertGroupByCompareTypeSortByLastFirstRow;}
     procedure SaveVertGroupByCompareTypeSortByLastFirstRow2;
     procedure SaveVertCompareType;  //同5
 
     procedure SaveCompareData(fr: TFileWriter; Data: TSQLCompareData; SaveValues: Boolean = True);
-    {procedure SaveVertSlantGroupByFirstRow;
-    procedure SaveVertSlantGroupByCompareTypeSortByRowcount;
-    procedure SaveVertSlantGroupByCompareTypeSortByMaxRowSpacing;
-    procedure SaveVertSlantGroupByCompareTypeSortByCompareTypeCount;}
     procedure SaveVertSlantGroupByCompareTypeSortByMaxValueCount;
-    {procedure SaveVertSlantGroupByCompareTypeSortByLastFirstRow;
-    procedure SaveVertSlantGroupByCompareTypeSortByLastFirstRow2;}
     procedure SaveVertSlantCompareType;  //同5
 
     procedure SaveGroupByFirstRow;
@@ -277,6 +265,10 @@ type
     procedure SaveGroupByCompareTypeSortByMaxValueCount;
     procedure SaveGroupByCompareTypeSortByLastFirstRow;
     procedure SaveGroupByCompareTypeSortByOneRowSpacingCount;
+    procedure SaveCompareDataSortByValueCount(FileName: string); overload;
+    procedure SaveVertSlantCompareDataSortByValueCount; overload;
+    procedure SaveVertSlantCompareDataSortByValueCount2;
+    procedure SaveReEnabledGroup;
   public
     constructor Create;
     destructor Destroy;
@@ -284,7 +276,7 @@ type
     procedure Compare;
     procedure ExportCompareRow;
     procedure ExportCompareData(ExportFiles: TExportFiles;
-      RowSpacing, GroupRowCount, GroupCount: Cardinal);
+      RowSpacing, GroupRowCount, GroupCount, ReEnabledGroupCount: Cardinal);
   published
     property InitEvent: TInitEvent read fInitEvent write fInitEvent;
     property InitCompareEvent: TInitCompareEvent read fInitCompareEvent write fInitCompareEvent;
@@ -306,10 +298,11 @@ type
 const
   EachFileRowCount: Cardinal = 1000000;
   EachFileRowNumber: Cardinal = 10000;
+  EachPageRowCount: Word = 1000;
 
 implementation
 
-function TSQLData.ReadValues: SynCommons.TWordDynArray;
+{function TSQLData.ReadValues: SynCommons.TWordDynArray;
 var
   i, i2, i3: Integer;
   v: Int64;
@@ -408,7 +401,7 @@ begin
     if v <= FirstRangeValue then fValueCount := fValueCount + 1;
     fTotalValueCount := fTotalValueCount + 1;
   end;
-end;
+end;}
 
 procedure TSQLCompareData.CalcCompareValueCount(FirstRangeValue: Byte);
 var
@@ -444,7 +437,7 @@ var
   v: Cardinal;
 begin
   fValue2 := '';
-  for s in string(fValue).Split(['.']) do
+  for s in string(fValue).Split(['、']) do
   begin
     for i := s.Length + 1 to 6 do fValue2 := fValue2 + '0';
     fValue2 := fValue2 + s;
@@ -502,9 +495,9 @@ var
   v: Cardinal;
 begin
   Result := '';
-  for s in Value.Split(['.']) do
+  for s in Value.Split(['、']) do
   begin
-    if not Result.IsEmpty then Result := Result + '.';
+    if not Result.IsEmpty then Result := Result + '、';
     v := s.ToInteger;
     Result := Result + ((v + 1) div 2).ToString;
     if v mod 2 = 0 then Result := Result + 'Z'
@@ -542,7 +535,7 @@ begin
   end;
 end;}
 
-function TDataComputer.DataToString(Values: SynCommons.TWordDynArray): string;
+function TDataComputer.DataToString(Values: TWordDynArray): string;
 var
   v: Word;
   s: string;
@@ -688,9 +681,6 @@ begin
   fVertSlantCompareSpacing := fVertCompareSpacing;
   if fSlantCompareSpacing > fVertCompareSpacing then
     fVertSlantCompareSpacing := fSlantCompareSpacing;
-
-  GroupMaxRowNoList := TDictionary<string, Cardinal>.Create;
-  GroupMaxRowNoList2 := TDictionary<string, Cardinal>.Create;
 end;
 
 destructor TDataComputer.Destroy;
@@ -698,8 +688,6 @@ begin
   fKeyValue.Free;
   fDatabase.Free;
   fModel.Free;
-  GroupMaxRowNoList.Free;
-  GroupMaxRowNoList2.Free;
   inherited Destroy;
 end;
 
@@ -1062,7 +1050,7 @@ begin
                 begin
                   CompareData.FillRow(RowNoArray[i], CompareData2);
                   if CompareData.GroupValue <> '' then
-                    CompareData.GroupValue := CompareData.GroupValue + '.';
+                    CompareData.GroupValue := CompareData.GroupValue + '、';
                   CompareData.GroupValue := CompareData.GroupValue + CompareData2.GroupValue;
                   CompareData.GroupValueCount := CompareData.GroupValueCount + 1;
                   CompareData.AddValues(CompareData2);
@@ -1270,27 +1258,64 @@ var
   DataRowCount, LastEnabledFirstRow: Cardinal;
   RecalcRowSpacing: Boolean;
   LastNotEnabledFirstRowID: TID;
-begin
-  //计算可导出代号
-  TSQLCompareGroup.AutoFree(Group, fDatabase, 'ORDER BY RowCount DESC', []);
-  fDatabase.TransactionBegin(TSQLCompareGroup);
-  try
-    while Group.FillOne do
-    begin
-      Group.Enabled := Group.FillCurrentRow - 1 <= fGroupCount;
-      if not Group.Enabled and (fGroupRowCount > 0) then
-        Group.Enabled := Group.RowCount > fGroupRowCount;
+  s: string;
+  PageIndex: Integer;
 
-      fDatabase.Update(Group);
-    end;
-    fDatabase.Commit(1, True);
-  except
-    on e: Exception do
+  procedure ReEnabledFirstCompareData(FirstRowValue, ReEnabledFirstRow, ReEnabledFirstRow2: Cardinal);
+  begin
+    //前N个代号恢复显示
+    Data.FillPrepare(fDatabase, 'FirstRow = ? LIMIT ?', [FirstRowValue, fReEnabledGroupCount]);
+    while Data.FillOne do
     begin
-      fDatabase.RollBack;
-      raise Exception.Create(e.Message);
+      Data.Enabled := True;
+      fDatabase.Update(Data);
+      //恢复对应代号
+      Group.FillPrepare(fDatabase, 'Value = ?', [Data.GroupValue]);
+      Group.FillOne;
+      if not Group.Enabled then
+      begin
+        Group.Enabled := True;
+        Group.ReEnabled := True;
+        Group.ReEnabledFirstRow := ReEnabledFirstRow;
+        if ReEnabledFirstRow2 > 0 then
+          Group.ReEnabledFirstRow2 := ReEnabledFirstRow2
+        else
+          Group.ReEnabledFirstRow2 := fVertSlantCompareSpacing + 1;
+        Group.ReEnabledRowSpacing := Group.ReEnabledFirstRow - Group.ReEnabledFirstRow2;
+        fDatabase.Update(Group);
+      end;
     end;
   end;
+begin
+  //计算可导出代号
+  TSQLCompareGroup.AutoFree(Group);
+  PageIndex := 0;
+  repeat
+    s := 'ORDER BY RowCount DESC LIMIT ? OFFSET ?';
+    Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+    fDatabase.TransactionBegin(TSQLCompareGroup);
+    try
+      while Group.FillOne do
+      begin
+        Group.Enabled := Group.FillCurrentRow - 1 <= fGroupCount;
+        if not Group.Enabled and (fGroupRowCount > 0) then
+          Group.Enabled := Group.RowCount >= fGroupRowCount;
+        Group.ReEnabled := False;
+        Group.ReEnabledFirstRow := 0;
+        Group.ReEnabledFirstRow2 := 0;
+        Group.ReEnabledRowSpacing := 0;
+        fDatabase.Update(Group);
+      end;
+      fDatabase.Commit(1, True);
+    except
+      on e: Exception do
+      begin
+        fDatabase.RollBack;
+        raise Exception.Create(e.Message);
+      end;
+    end;
+    Inc(PageIndex);
+  until Group.FillTable.RowCount = 0;
   //计算可导出首行
   TSQLFirstRow.AutoFree(FirstRow, fDatabase, '', []);
   TSQLFirstRow.AutoFree(FirstRow2);
@@ -1302,18 +1327,22 @@ begin
     while FirstRow.FillOne do
     begin
       //首行数不符合的代号不导出
-      Data.FillPrepare(fDatabase, 'FirstRow = ?', [FirstRow.Value]);
-      DataRowCount := Data.FillTable.RowCount;
-      while Data.FillOne do
-      begin
-        Data.Enabled := False;
-
-        Group.FillPrepare(fDatabase, 'Value = ?', [Data.GroupValue]);
-        if Group.FillOne then
-          Data.Enabled := Group.Enabled;
-        if not Data.Enabled then DataRowCount := DataRowCount - 1;
-        fDatabase.Update(Data);
-      end;
+      DataRowCount := FirstRow.RowCount;
+      PageIndex := 0;
+      repeat
+        s := 'FirstRow = ? LIMIT ? OFFSET ?';
+        Data.FillPrepare(fDatabase, s, [FirstRow.Value, EachPageRowCount, PageIndex * EachPageRowCount]);
+        while Data.FillOne do
+        begin
+          Data.Enabled := False;
+          Group.FillPrepare(fDatabase, 'Value = ?', [Data.GroupValue]);
+          if Group.FillOne then
+            Data.Enabled := Group.Enabled;
+          if not Data.Enabled then DataRowCount := DataRowCount - 1;
+          fDatabase.Update(Data);
+        end;
+        Inc(PageIndex);
+      until Data.FillTable.RowCount = 0;
       //没有代号的首行不显示
       FirstRow.RowSpacing2 := FirstRow.RowSpacing;
       FirstRow.RowCount2 := DataRowCount;
@@ -1324,7 +1353,7 @@ begin
         if RecalcRowSpacing then
         begin
           if LastEnabledFirstRow > 0 then
-            FirstRow.RowSpacing2 := FirstRow.Value - FirstRow2.Value
+            FirstRow.RowSpacing2 := FirstRow.Value - LastEnabledFirstRow
           else
             FirstRow.RowSpacing2 := FirstRow.Value - fVertSlantCompareSpacing - 1;
           //如果临行距大于最小临行距，上一不显示首行恢复显示
@@ -1335,6 +1364,8 @@ begin
             begin
               FirstRow2.Enabled := True;
               fDatabase.Update(FirstRow2);
+
+              ReEnabledFirstCompareData(FirstRow2.Value, FirstRow.Value, LastEnabledFirstRow);
             end;
           end;
         end;
@@ -1352,6 +1383,8 @@ begin
           begin
             FirstRow.RowSpacing2 := FirstRow.RowSpacing;
             FirstRow.Enabled := True;
+
+            ReEnabledFirstCompareData(FirstRow.Value, fRowCount + 1, LastEnabledFirstRow);
           end;
         end
         else
@@ -1419,7 +1452,7 @@ end;
 
 function TDataComputer.RebuildFileName(Sender: TFileWriter): string;
 var
-  sSub, s: string;
+  sSub: string;
   RowCount: Cardinal;
   i: Integer;
 begin
@@ -1461,542 +1494,35 @@ begin
   end;
 end;
 
-{procedure TDataComputer.SaveSlantGroupByFirstRow;
+procedure TDataComputer.WriteGroupReEnableTips(fr: TFileWriter; Group: TSQLCompareGroup);
 var
-  RowSpacingList: TStringList;
-
-  procedure AddRowSpacing(RowSpacing: Word; s: string);
-  var
-    sRowSpacing: string;
-  begin
-    sRowSpacing := RowSpacing.ToString;
-    while sRowSpacing.Length < 3 do sRowSpacing := '0' + sRowSpacing;
-    if RowSpacingList.IndexOfName(sRowSpacing) = -1 then
-    begin
-      s := s.Substring(0, s.IndexOf('，同行数')) + '）';
-      RowSpacingList.Values[sRowSpacing] := s;
-    end;
-  end;
-
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName, sRowSpacing: string;
-  i: Integer;
-  FirstRow: TSQLFirstRow;
-  Data: TSQLCompareData;
+  s: string;
 begin
-  TxtFileName := '（1）.【排列】“%d”个以上【 [ 相同（第“N”行为首行）] 、（不同代号）】的组合.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  if TFile.Exists(FileName) then TFile.Delete(FileName);
-  fr := TFileWriter.Create(FileName);
-  try
-    s := 'ORDER BY Value DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLFirstRow.AutoFree(FirstRow, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    RowSpacingList := TStringList.Create;
-    try
-      while FirstRow.FillOne do
-      begin
-        if FirstRow.FillCurrentRow = 2 then
-        begin
-          s := '1.（第%d行为首行）（邻行距 ↓%d，同行数：%d）';
-          s := Format(s, [fRowCount + 1, fRowCount + 1 - FirstRow.Value, FirstRow.RowCount]);
-
-          AddRowSpacing(fRowCount + 1 - FirstRow.Value, s);
-        end;
-        s := '%d.（第%d行为首行）（邻行距 ↓%d，同行数：%d）';
-        if fReCalc then
-          s := Format(s, [FirstRow.FillCurrentRow, FirstRow.Value, FirstRow.RowSpacing2, FirstRow.RowCount2])
-        else
-          s := Format(s, [FirstRow.FillCurrentRow, FirstRow.Value, FirstRow.RowSpacing, FirstRow.RowCount]);
-        AddRowSpacing(FirstRow.RowSpacing, s);
-      end;
-
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('最大-小的邻行距 1-100 行内：');
-      RowSpacingList.Sort;
-      for i := RowSpacingList.Count - 1 downto RowSpacingList.Count - 100 do
-      begin
-        if i < 0 then Break;
-        fr.WriteLn('');
-        fr.WriteLn(RowSpacingList.ValueFromIndex[i]);
-      end;
-    finally
-      RowSpacingList.Free;
-    end;
-
-    FirstRow.FillRewind;
-    while FirstRow.FillOne do
-    begin
-      if FirstRow.FillCurrentRow = 2 then
-      begin
-        s := '1.（第%d行为首行）；（邻行距 ↓%d）';
-        s := Format(s, [fRowCount + 1, fRowCount + 1 - FirstRow.Value]);
-        fr.WriteLn('');
-        fr.WriteLn('');
-        fr.WriteLn('');
-        fr.WriteLn(s);
-      end;
-
-      s := '%d.（第%d行为首行）（邻行距 ↓%d，同行数：%d）';
-      if fReCalc then
-        s := Format(s, [FirstRow.FillCurrentRow, FirstRow.Value, FirstRow.RowSpacing2, FirstRow.RowCount2])
-      else
-        s := Format(s, [FirstRow.FillCurrentRow, FirstRow.Value, FirstRow.RowSpacing, FirstRow.RowCount]);
-      if FirstRow.FillCurrentRow > 2 then
-      begin
-        fr.WriteLn('');
-        fr.WriteLn('');
-      end;
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      s := 'FirstRow = ?';
-      if fReCalc then s := s + ' AND Enabled = 1';
-      Data.FillPrepare(fDatabase, s, [FirstRow.Value]);
-      while Data.FillOne do
-      begin
-        s := Format('（%d）.[代号：（第%s个）%s ]', [
-          Data.FillCurrentRow - 1,
-          Data.GroupValue,
-          BuildSlantGroupValue(Data.GroupValue)
-        ]);
-        if fFirstRangeValue = 0 then
-          s := s + Format(' = 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-        else
-          s := s + Format(' = 【 %d-%d 】列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-        s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-
-        fr.WriteLn('');
-        fr.WriteLn(s);
-      end;
-    end;
-    s := '%d.（第%d行为最末首行）';
-    s := Format(s, [
-      FirstRow.FillTable.RowCount + 2,
-      fSlantCompareSpacing + 1
-    ]);
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    fr.CloseFile;
-    for s in fr.Files do
-      if TFile.Exists(s) then TFile.Copy(s, fExportDirectory + TPath.GetFileName(s));
-  finally
-    fr.Free;
-  end;
+  s := '保留原因 ：';
+  fr.WriteLn('');
+  fr.WriteLn(s);
+  s := '上一个：[ %s连（第 %d 行为首行）] （ 减去- ）下一个：[ %s连（第 %d 行为首行）] = [ 邻行距↓ %d ] ；';
+  s := Format(s, [
+    CompareModeString,
+    Group.ReEnabledFirstRow,
+    CompareModeString,
+    Group.ReEnabledFirstRow2,
+    Group.ReEnabledRowSpacing
+  ]);
+  fr.WriteLn('');
+  fr.WriteLn(s);
+  s := '再（ 减去- ）【 配套 】1.保持[（1）.【排列】【...】]（最大邻行距↓）：（小、等于 ≤）【 %d 】= [ 邻行距↓ %d ] 。';
+  s := Format(s, [fKeepMaxRowSpacing, Group.ReEnabledRowSpacing - fKeepMaxRowSpacing]);
+  fr.WriteLn('');
+  fr.WriteLn(s);
 end;
-
-procedure TDataComputer.SaveSlantGroupByCompareTypeSortByRowcount;
-var
-  fr, fr2, fr3, fr4: TFileWriter;
-  s, sCompareType, sCompareType2, FileName, FileName2, FileName3, FileName4, TxtFileName: string;
-  Group, Group2: TSQLCompareGroup;
-  Data: TSQLCompareData;
-  RowNo, MaxRowCount, RowCountNumber: Cardinal;
-begin
-  TxtFileName := '（2-1）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（不同首行数：最多 - 最少行）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  TxtFileName := '（2-2）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（不同首行数：最多 - 最少行）（2）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName2 := fExportDirectory + TxtFileName;
-  TxtFileName := '（2-3）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（不同首行数：最多 - 最少行）（3）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName3 := fExportDirectory + TxtFileName;
-  TxtFileName := '（2）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（不同首行数：最多 - 最少行）（1）-（简化并统计）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName4 := fExportDirectory + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  fr2 := TFileWriter.Create(FileName2);
-  fr3 := TFileWriter.Create(FileName3);
-  fr4 := TFileWriter.Create(FileName4);
-  try
-    RowNo := 0;
-    s := 'ORDER BY RowCount DESC, ValueCount, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareGroup.AutoFree(Group2);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      sCompareType := CompareTypeToString(Group.Value);
-      sCompareType2 := CompareTypeToString(Group.Value, 1);
-
-      s := '%d.[代号：（第%s个）%s ] ；[ 不同（斜连）首行数：%d行 ]';
-      s := Format(s, [Group.FillCurrentRow - 1, sCompareType, sCompareType2, Group.RowCount]);
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-      fr2.WriteLn('');
-      fr2.WriteLn('');
-      fr2.WriteLn(s);
-      fr2.WriteLn('');
-      RowCountNumber := RowCountNumber + 1;
-      if Group.FillCurrentRow = 2 then MaxRowCount := Group.RowCount;
-      if Group.FillCurrentRow <= Group.FillTable.RowCount then
-        Group.FillRow(Group.FillCurrentRow, Group2);
-      if (Group.FillCurrentRow > Group.FillTable.RowCount) or (Group.RowCount <> Group2.RowCount) then
-      begin
-        fr4.WriteLn('');
-        fr4.WriteLn('');
-        fr4.WriteLn('');
-        fr4.WriteLn(s);
-        s := '统计：[ 不同（斜连）首行数：%d ] ；总共 ：%d 个 ；';
-        s := Format(s, [Group.RowCount, RowCountNumber]);
-        if Group.RowCount <> MaxRowCount then
-        begin
-          s := s + '[ 不同（斜连）首行数：%d-%d ] ；总共 ：%d 个 ；';
-          s := Format(s, [MaxRowCount, Group.RowCount, Group.FillCurrentRow - 1]);
-        end;
-        fr4.WriteLn('');
-        fr4.WriteLn(s);
-        RowCountNumber := 0;
-      end;
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          RowNo := RowNo + 1;
-          s := '1=[（第%s个）%s ] ：（%d）（%d）';
-          s := Format(s, [sCompareType, sCompareType2, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr2.WriteLn(s);
-          s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-          s := Format(s, [RowNo, sCompareType, sCompareType2, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr3.WriteLn(s);
-        end;
-
-        s := Format('（%d）（第%d行为首行）', [Data.FillCurrentRow - 1, Data.FirstRow]);
-        if fFirstRangeValue = 0 then
-          s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-        else
-          s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-        s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-        s := Format(s, [Data.FillCurrentRow, sCompareType, sCompareType2, Data.FirstRow, Data.RowSpacing]);
-        fr2.WriteLn(s);
-        RowNo := RowNo + 1;
-        s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-        s := Format(s, [RowNo, sCompareType, sCompareType2, Data.FirstRow, Data.RowSpacing]);
-        fr3.WriteLn(s);
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d=[（第%s个）%s ] ：（%d）（0）';
-          s := Format(s, [Data.FillCurrentRow + 1, sCompareType, sCompareType2, fSlantCompareSpacing + 1]);
-          fr2.WriteLn(s);
-          s := '%d=[（第%s个）%s ] ：（%d）（0）';
-          s := Format(s, [RowNo, sCompareType, sCompareType2, fSlantCompareSpacing + 1]);
-          fr3.WriteLn(s);
-        end;
-      end;
-    end;
-
-    fr.CloseFile;
-    for s in fr.Files do
-    begin
-      TxtFileName := TPath.GetFileName(s).Replace('最少行）', '最少行）（1）');
-      if TFile.Exists(s) then TFile.Copy(s, fExportDirectory + TxtFileName);
-    end;
-  finally
-    fr.Free;
-    fr2.Free;
-    fr3.Free;
-    fr4.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveSlantGroupByCompareTypeSortByMaxRowSpacing;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-begin
-  TxtFileName := '（3）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（邻行距：最大↓“N”- 最小↓“N”）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  if TFile.Exists(FileName) then TFile.Delete(FileName);
-  fr := TFileWriter.Create(FileName);
-  try
-    s := 'ORDER BY MaxRowSpacing DESC, ValueCount, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      s := '%d.[代号：（第%s个）%s ] ；（最大邻行距 ↓%d）';
-      s := Format(s, [
-        Group.FillCurrentRow - 1,
-        CompareTypeToString(Group.Value),
-        CompareTypeToString(Group.Value, 1),
-        Group.MaxRowSpacing
-      ]);
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          s := '（1）（第%d行为首行）；（邻行距 ↓%d）';
-          s := Format(s, [fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
-
-        s := Format('（%d）（第%d行为首行）（邻行距 ↓%d）', [Data.FillCurrentRow, Data.FirstRow, Data.RowSpacing]);
-        if fFirstRangeValue = 0 then
-          s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-        else
-          s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-        s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          s := '（%d）（第%d行为最末首行）';
-          s := Format(s, [Data.FillCurrentRow + 1, fSlantCompareSpacing + 1]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveSlantGroupByCompareTypeSortByCompareTypeCount;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-begin
-  TxtFileName := '（4）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（组合数：最多 - 最少个）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  if TFile.Exists(FileName) then TFile.Delete(FileName);
-  fr := TFileWriter.Create(FileName);
-  try
-    s := 'ORDER BY ValueCount DESC, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      s := '%d.[代号：（第%s个）%s ] ；（组合数：%d个）';
-      s := Format(s, [
-        Group.FillCurrentRow - 1,
-        CompareTypeToString(Group.Value),
-        CompareTypeToString(Group.Value, 1),
-        Group.ValueCount
-      ]);
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        s := Format('（%d）（第%d行为首行）', [Data.FillCurrentRow - 1, Data.FirstRow]);
-        if fFirstRangeValue = 0 then
-          s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-        else
-          s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-        s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveSlantGroupByCompareTypeSortByMaxValueCount;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-begin
-  TxtFileName := '（5）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（无【对应列】数：最多 - 最少列）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  if TFile.Exists(FileName) then TFile.Delete(FileName);
-  fr := TFileWriter.Create(FileName);
-  try
-    s := 'ORDER BY MaxTotalValueCount DESC, MaxValueCount DESC, ValueCount, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      s := '%d.[代号：（第%s个）%s ] ；';
-      s := Format(s, [
-        Group.FillCurrentRow - 1,
-        CompareTypeToString(Group.Value),
-        CompareTypeToString(Group.Value, 1)
-      ]);
-      if fFirstRangeValue = 0 then
-        s := s + Format('（ 最多 [ 无【对应列】数：%d列 ] ）', [Group.MaxTotalValueCount])
-      else
-        s := s + Format('（ 最多 [ 无【对应列】数：%d-%d列 ] ）', [Group.MaxValueCount, Group.MaxTotalValueCount - Group.MaxValueCount]);
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        s := Format('（%d）（第%d行为首行）', [Data.FillCurrentRow - 1, Data.FirstRow]);
-        if fFirstRangeValue = 0 then
-          s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-        else
-          s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-        s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-      end;
-    end;
-  finally
-    fr.Free;
-  end
-end;
-
-procedure TDataComputer.SaveSlantGroupByCompareTypeSortByLastFirstRow;
-var
-  fr: TFileWriter;
-  s, sCompareType, sCompareType2, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-  RowNo: Cardinal;
-begin
-  TxtFileName := '（2-4）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（邻行距：最大 → 小）（4）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory + TxtFileName;
-  if TFile.Exists(FileName) then TFile.Delete(FileName);
-  fr := TFileWriter.Create(FileName);
-  try
-    RowNo := 0;
-    s := 'ORDER BY LastFirstRow, ValueCount, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      sCompareType := CompareTypeToString(Group.Value);
-      sCompareType2 := CompareTypeToString(Group.Value, 1);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-          s := Format(s, [RowNo, sCompareType, sCompareType2, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr.WriteLn(s);
-        end;
-
-        RowNo := RowNo + 1;
-        s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-        s := Format(s, [RowNo, sCompareType, sCompareType2, Data.FirstRow, Data.RowSpacing]);
-        fr.WriteLn(s);
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d=[（第%s个）%s ] ：（%d）（0）';
-          s := Format(s, [RowNo, sCompareType, sCompareType2, fSlantCompareSpacing + 1]);
-          fr.WriteLn(s);
-        end;
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveSlantGroupByCompareTypeSortByOneRowSpacingCount;
-var
-  fr: TFileWriter;
-  s, sCompareType, sCompareType2, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-  RowNo: Cardinal;
-begin
-  TxtFileName := '（2-5）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（邻行距：最小 → 大）（5）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory + TxtFileName;
-  if TFile.Exists(FileName) then TFile.Delete(FileName);
-  fr := TFileWriter.Create(FileName);
-  try
-    RowNo := 0;
-    s := 'ORDER BY OneRowSpacingCount DESC, LastFirstRow DESC, ValueCount, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      sCompareType := CompareTypeToString(Group.Value);
-      sCompareType2 := CompareTypeToString(Group.Value, 1);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-          s := Format(s, [RowNo, sCompareType, sCompareType2, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr.WriteLn(s);
-        end;
-
-        RowNo := RowNo + 1;
-        s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-        s := Format(s, [RowNo, sCompareType, sCompareType2, Data.FirstRow, Data.RowSpacing]);
-        fr.WriteLn(s);
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d=[（第%s个）%s ] ：（%d）（0）';
-          s := Format(s, [RowNo, sCompareType, sCompareType2, fSlantCompareSpacing + 1]);
-          fr.WriteLn(s);
-        end;
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;}
 
 procedure TDataComputer.SaveSlantCompareType;
 var
   fr: TFileWriter;
   s, FileName, TxtFileName: string;
-  i, j: Integer;
   Group: TSQLCompareGroup;
+  PageIndex: Integer;
 begin
   TxtFileName := '（6）.【保存】“%d”个以上各个组合（相同代号、不同首行）的（代号：NZ. NY ）.txt';
   TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
@@ -2006,589 +1532,24 @@ begin
   fr.RebuildFileEvent := RebuildFile;
   fr.RebuildFileNameEvent := RebuildFileName;
   try
-    s := 'ORDER BY ValueCount, Value2';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    while Group.FillOne do
-    begin
-      s := Format('%d=%s', [Group.FillCurrentRow - 1, BuildSlantGroupValue(Group.Value)]);
-      fr.WriteLn(s);
-    end;
+    TSQLCompareGroup.AutoFree(Group);
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY ValueCount, Value2 LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
+      begin
+        s := Format('%d=%s', [Group.FillCurrentRow - 1, BuildSlantGroupValue(Group.Value)]);
+        fr.WriteLn(s);
+      end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
     fr.RenameLastFile;
   finally
     fr.Free;
   end
 end;
-
-{procedure TDataComputer.SaveVertGroupByFirstRow;
-var
-  RowSpacingList: TStringList;
-
-  procedure AddRowSpacing(RowSpacing: Word; s: string);
-  var
-    sRowSpacing: string;
-  begin
-    sRowSpacing := RowSpacing.ToString;
-    while sRowSpacing.Length < 3 do sRowSpacing := '0' + sRowSpacing;
-    if RowSpacingList.IndexOfName(sRowSpacing) = -1 then
-      RowSpacingList.Values[sRowSpacing] := s;
-  end;
-
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName, sRowSpacing, sCompareTypeValueCount: string;
-  i: Integer;
-  FirstRow: TSQLFirstRow;
-  Data: TSQLCompareData;
-  LastGroupValueCount: Byte;
-  GroupNumber: Word;
-  RowSpacing: Cardinal;
-  GroupValueCount: Word;
-  MaxGroupValueCount: Byte;
-  MaxRowCountGroupValueCount: Byte;
-  MaxGroupValueCountRowCount: Cardinal;
-begin
-  TxtFileName := '（1）.【排列】【“%d”个以上[相同首行、不同组合]的组合】.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    s := 'ORDER BY Value DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLFirstRow.AutoFree(FirstRow, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    RowSpacingList := TStringList.Create;
-    try
-      while FirstRow.FillOne do
-      begin
-        if FirstRow.FillCurrentRow = 2 then
-        begin
-          s := '1.[ 直连（第%d行为首行）]；[ 邻行距 ↓%d ]';
-          s := Format(s, [fRowCount + 1, fRowCount + 1 - FirstRow.Value]);
-
-          AddRowSpacing(fRowCount + 1 - FirstRow.Value, s);
-        end;
-        RowSpacing := FirstRow.RowSpacing;
-        if fReCalc then RowSpacing := FirstRow.RowSpacing2;
-        s := '%d.[ 直连（第%d行为首行）]；[ 邻行距 ↓%d ]';
-        s := Format(s, [FirstRow.FillCurrentRow, FirstRow.Value, RowSpacing]);
-        AddRowSpacing(FirstRow.RowSpacing, s);
-      end;
-
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('最大-小的邻行距 1-100 行内：');
-      RowSpacingList.Sort;
-      for i := RowSpacingList.Count - 1 downto RowSpacingList.Count - 100 do
-      begin
-        if i < 0 then Break;
-        fr.WriteLn('');
-        fr.WriteLn(RowSpacingList.ValueFromIndex[i]);
-      end;
-    finally
-      RowSpacingList.Free;
-    end;
-
-    FirstRow.FillRewind;
-    while FirstRow.FillOne do
-    begin
-      if FirstRow.FillCurrentRow = 2 then
-      begin
-        s := '1.[ 直连（第%d行为首行）]；[ 邻行距 ↓%d ]';
-        s := Format(s, [fRowCount + 1, fRowCount + 1 - FirstRow.Value]);
-        fr.WriteLn('');
-        fr.WriteLn('');
-        fr.WriteLn('');
-        fr.WriteLn(s);
-      end;
-
-      RowSpacing := FirstRow.RowSpacing;
-      GroupValueCount := FirstRow.GroupValueCount;
-      MaxGroupValueCount := FirstRow.MaxGroupValueCount;
-      MaxRowCountGroupValueCount := FirstRow.MaxRowCountGroupValueCount;
-      MaxGroupValueCountRowCount := FirstRow.MaxGroupValueCountRowCount;
-      if fReCalc then
-      begin
-        RowSpacing := FirstRow.RowSpacing2;
-        GroupValueCount := FirstRow.GroupValueCount2;
-        MaxGroupValueCount := FirstRow.MaxGroupValueCount2;
-        MaxRowCountGroupValueCount := FirstRow.MaxRowCountGroupValueCount2;
-        MaxGroupValueCountRowCount := FirstRow.MaxGroupValueCountRowCount2;
-      end;
-
-      s := '%d.[ 直连（第%d行为首行）]；[ 邻行距 ↓%d ；';
-      s := Format(s, [FirstRow.FillCurrentRow, FirstRow.Value, RowSpacing]);
-      if MaxGroupValueCount > fExportGroupValueCount then
-      begin
-        sCompareTypeValueCount := '';
-        for i := fExportGroupValueCount to MaxGroupValueCount do
-        begin
-          if not sCompareTypeValueCount.IsEmpty then
-            sCompareTypeValueCount := sCompareTypeValueCount + '、';
-          sCompareTypeValueCount := sCompareTypeValueCount + i.ToString;
-        end;
-
-        s := s + Format('（第%s次组合）总共 %d 组 ；', [
-          sCompareTypeValueCount,
-          GroupValueCount
-        ]);
-      end;
-      s := s + Format('最多（第%d次组合）：共 %d 组 ]：', [
-        MaxRowCountGroupValueCount,
-        MaxGroupValueCountRowCount
-      ]);
-      if FirstRow.FillCurrentRow > 2 then
-      begin
-        fr.WriteLn('');
-        fr.WriteLn('');
-      end;
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      s := 'FirstRow = ?';
-      if fReCalc then s := s + ' AND Enabled = 1';
-      Data.FillPrepare(fDatabase, s, [FirstRow.Value]);
-      LastGroupValueCount := 0;
-      GroupNumber := 0;
-      while Data.FillOne do
-      begin
-        if Data.GroupValueCount <> LastGroupValueCount then
-        begin
-          LastGroupValueCount := Data.GroupValueCount;
-          GroupNumber := 0;
-        end;
-        GroupNumber := GroupNumber + 1;
-
-        s := '【%d】.第%d次组合[ 代号：%d.（%s）]：';
-        s := Format(s, [
-          Data.FillCurrentRow - 1,
-          Data.GroupValueCount,
-          GroupNumber,
-          VertCompareTypeToString(Data.GroupValue)
-        ]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        SaveCompareData(fr, Data);
-      end;
-    end;
-    s := '%d.[（第%d行为最末首行）直连（第%d-1行）]';
-    s := Format(s, [
-      FirstRow.FillTable.RowCount + 2,
-      fVertCompareSpacing + 1,
-      fVertCompareSpacing
-    ]);
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    fr.CloseFile;
-    for s in fr.Files do
-      if TFile.Exists(s) then TFile.Copy(s, fExportDirectory + TPath.GetFileName(s));
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveVertGroupByCompareTypeSortByRowcount;
-var
-  fr, fr2, fr3: TFileWriter;
-  s, sCompareType, sCompareType2, FileName, FileName2, FileName3, TxtFileName: string;
-  Group, Group2: TSQLCompareGroup;
-  Data: TSQLCompareData;
-  RowNo: Cardinal;
-  LastFirstRow, MaxRowCount, RowCountNumber: Cardinal;
-begin
-  TxtFileName := '（2-1）.【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  TxtFileName := '（2-2）.【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】（2）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName2 := fExportDirectory + TxtFileName;
-  TxtFileName := '（2）.【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】（1）-（简化并统计）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName3 := fExportDirectory + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  fr2 := TFileWriter.Create(FileName2);
-  fr3 := TFileWriter.Create(FileName3);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-    s := TPath.GetFileNameWithoutExtension(FileName2);
-    fr2.WriteLn('');
-    fr2.WriteLn('');
-    fr2.WriteLn(s);
-    s := TPath.GetFileNameWithoutExtension(FileName3);
-    fr3.WriteLn('');
-    fr3.WriteLn('');
-    fr3.WriteLn(s);
-
-    RowNo := 0;
-    s := 'ORDER BY RowCount DESC, ValueCount, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareGroup.AutoFree(Group2);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      s := '%d.【“%d”个 [ 相同组合、不同（直连）首行]的组合 [ 不同（直连）首行数：%d ]】：';
-      s := Format(s, [
-        Group.FillCurrentRow - 1,
-        Group.ValueCount,
-        Group.RowCount
-      ]);
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-      fr2.WriteLn('');
-      fr2.WriteLn('');
-      fr2.WriteLn('');
-      RowCountNumber := RowCountNumber + 1;
-      if Group.FillCurrentRow = 2 then MaxRowCount := Group.RowCount;
-      if Group.FillCurrentRow <= Group.FillTable.RowCount then
-        Group.FillRow(Group.FillCurrentRow, Group2);
-      if (Group.FillCurrentRow > Group.FillTable.RowCount) or (Group.RowCount <> Group2.RowCount) then
-      begin
-        fr3.WriteLn('');
-        fr3.WriteLn('');
-        fr3.WriteLn('');
-        fr3.WriteLn(s);
-        s := '统计：[ 不同（直连）首行数：%d ] ；总共 ：%d 个 ；';
-        s := Format(s, [Group.RowCount, RowCountNumber]);
-        if Group.RowCount <> MaxRowCount then
-        begin
-          s := s + '[ 不同（直连）首行数：%d-%d ] ；总共 ：%d 个 ；';
-          s := Format(s, [MaxRowCount, Group.RowCount, Group.FillCurrentRow - 1]);
-        end;
-        fr3.WriteLn('');
-        fr3.WriteLn(s);
-        RowCountNumber := 0;
-      end;
-
-      LastFirstRow := 0;
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        sCompareType := VertCompareTypeToString(Group.Value);
-
-        if Data.FillCurrentRow = 2 then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d= 第%d次组合[ 代号：3.（%s）]：（%d）（%d）';
-          s := Format(s, [RowNo, Data.GroupValueCount, sCompareType, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr2.WriteLn('');
-          fr2.WriteLn(s);
-        end;
-
-        if LastFirstRow <> Data.FirstRow then
-        begin
-          LastFirstRow := Data.FirstRow;
-          s := '【%d】.第%d次组合[ 代号：1.（%s）]：';
-          s := Format(s, [Data.FillCurrentRow - 1, Data.GroupValueCount, sCompareType]);
-
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
-
-        SaveCompareData(fr, Data);
-
-        RowNo := RowNo + 1;
-        s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）';
-        s := Format(s, [RowNo, Data.GroupValueCount, sCompareType, Data.FirstRow, Data.RowSpacing]);
-        fr2.WriteLn('');
-        fr2.WriteLn(s);
-
-        SaveCompareData(fr2, Data, False);
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（0）';
-          s := Format(s, [RowNo, Data.GroupValueCount, sCompareType, fVertCompareSpacing + 1]);
-          fr2.WriteLn('');
-          fr2.WriteLn(s);
-        end;
-      end;
-    end;
-
-    fr.CloseFile;
-    for s in fr.Files do
-    begin
-      TxtFileName := TPath.GetFileName(s).Replace(']】', ']】（1）');
-      if TFile.Exists(s) then TFile.Copy(s, fExportDirectory + TxtFileName);
-    end;
-  finally
-    fr.Free;
-    fr2.Free;
-    fr3.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveVertGroupByCompareTypeSortByMaxRowSpacing;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data, Data2: TSQLCompareData;
-  RowNo: Word;
-begin
-  TxtFileName := '（3）.【排列】【“%d”个以上[相同组合、不同首行]的组合[邻行距：最大↓→小↓]】.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    s := 'ORDER BY MaxRowSpacing DESC, ValueCount DESC, Size';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    TSQLCompareData.AutoFree(Data2);
-    while Group.FillOne do
-    begin
-      RowNo := 2;
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          s := '%d.[ 直连（第%d行为首行）] .（最大邻行距 ↓%d ）：';
-          s := Format(s, [
-            Group.FillCurrentRow - 1,
-            fRowCount + 1,
-            Group.MaxRowSpacing
-          ]);
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          s := '（1）.[ 直连（第%d行为首行）] .（邻行距 ↓%d ）：';
-          s := Format(s, [
-            fRowCount + 1,
-            fRowCount + 1 - Data.FirstRow
-          ]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          s := '（2）.[ 直连（第%d行为首行）] .（邻行距 ↓%d ）：';
-          s := Format(s, [Data.FirstRow, Data.RowSpacing]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
-
-        s := '【%d】.第%d次组合[ 代号：3.（%s）]：';
-        s := Format(s, [
-          Data.FillCurrentRow - 1,
-          Data.GroupValueCount,
-          VertCompareTypeToString(Group.Value)
-        ]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        SaveCompareData(fr, Data);
-
-        RowNo := RowNo + 1;
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          s := '（%d）.[（第%d行为最末首行）直连（第%d-1行）]';
-          s := Format(s, [RowNo, fVertCompareSpacing + 1, fVertCompareSpacing]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end
-        else
-        begin
-          Data.FillRow(Data.FillCurrentRow, Data2);
-          if Data.FillCurrentRow = Data.FillTable.RowCount then
-            Data2.RowSpacing := 0;
-
-          s := '（%d）.[ 直连（第%d行为首行）] .（邻行距 ↓%d ）：';
-          s := Format(s, [RowNo, Data2.FirstRow, Data2.RowSpacing]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveVertGroupByCompareTypeSortByCompareTypeCount;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-begin
-  TxtFileName := '（4）.【排列】【“%d”个以上[相同组合、不同首行]的组合[组合数：最多→少个]】.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    s := 'ORDER BY ValueCount DESC, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      s := '%d.[ 第%d次组合；代号：1.（%s）]；（组合数：%d个）：';
-      s := Format(s, [
-        Group.FillCurrentRow - 1,
-        Group.ValueCount,
-        VertCompareTypeToString(Group.Value),
-        Group.ValueCount
-      ]);
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow > 2 then fr.WriteLn('');
-        SaveCompareData(fr, Data);
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveVertGroupByCompareTypeSortByMaxValueCount;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-begin
-  TxtFileName := '（5）.【排列】【“%d”个以上[相同组合、不同首行]的组合[无【对应列】数：最多→少列]】.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    s := 'ORDER BY MaxValueCount DESC, MaxTotalValueCount - MaxValueCount DESC, ValueCount, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      s := '%d.[ 第%d次组合；代号：1.（%s）]；（ w无【对应列】总数：';
-      s := Format(s, [Group.FillCurrentRow - 1, Group.ValueCount, VertCompareTypeToString(Group.Value)]);
-      if fFirstRangeValue = 0 then
-        s := s + Format('%d列', [Group.MaxTotalValueCount])
-      else
-        s := s + Format('%d-%d列', [Group.MaxValueCount, Group.MaxTotalValueCount - Group.MaxValueCount]);
-      s := s + '）：';
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow > 2 then fr.WriteLn('');
-        SaveCompareData(fr, Data);
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveVertGroupByCompareTypeSortByLastFirstRow;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName, sCompareType: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-  RowNo: Word;
-begin
-  TxtFileName := '（2-3）.【排列】【“%d”个以上[相同组合、不同首行]的组合 [首行邻行距：最大↓→小↓]】（3）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    RowNo := 0;
-
-    s := 'ORDER BY LastFirstRow, ValueCount DESC, Size';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      sCompareType := VertCompareTypeToString(Group.Value);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）	';
-          s := Format(s, [RowNo, Data.GroupValueCount, sCompareType, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-        end;
-
-        RowNo := RowNo + 1;
-        s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）	';
-        s := Format(s, [RowNo, Data.GroupValueCount, sCompareType, Data.FirstRow, Data.RowSpacing]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        SaveCompareData(fr, Data, False);
-
-        if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（0）	';
-          s := Format(s, [RowNo, Data.GroupValueCount, sCompareType, fVertCompareSpacing + 1]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-        end;
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end; }
 
 procedure TDataComputer.SaveVertGroupByCompareTypeSortByLastFirstRow2;
 var
@@ -2597,6 +1558,7 @@ var
   Group: TSQLCompareGroup;
   Data: TSQLCompareData;
   RowNo: Word;
+  PageIndex: Integer;
 begin
   TxtFileName := '（2-4）.【排列】【“%d”个以上[相同组合、不同首行]的组合 [首行邻行距：最小↓→大↓]】（4）.txt';
   TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
@@ -2609,54 +1571,56 @@ begin
     fr.WriteLn('');
     fr.WriteLn(s);
 
-    RowNo := 0;
-
-    s := 'ORDER BY LastFirstRow DESC, ValueCount, Value2';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
+    TSQLCompareGroup.AutoFree(Group);
     TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
+    RowNo := 0;
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY LastFirstRow DESC, ValueCount, Value2 LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
       begin
-        if Data.FillCurrentRow = 2 then
+        Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
+        while Data.FillOne do
         begin
+          if Data.FillCurrentRow = 2 then
+          begin
+            RowNo := RowNo + 1;
+            s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）	';
+            s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+            fr.WriteLn('');
+            fr.WriteLn('');
+            fr.WriteLn('');
+            fr.WriteLn(s);
+
+            if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
+          end;
+
           RowNo := RowNo + 1;
           s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）	';
-          s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr.WriteLn('');
-          fr.WriteLn('');
+          s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, Data.FirstRow, Data.RowSpacing]);
           fr.WriteLn('');
           fr.WriteLn(s);
 
-          if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-        end;
-
-        RowNo := RowNo + 1;
-        s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）	';
-        s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, Data.FirstRow, Data.RowSpacing]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        SaveCompareData(fr, Data, False);
-
-        if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（0）	';
-          s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, fVertCompareSpacing + 1]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
+          SaveCompareData(fr, Data, False);
 
           if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
 
-          GroupMaxRowNoList2.AddOrSetValue(Group.Value, RowNo);
+          if Data.FillCurrentRow > Data.FillTable.RowCount then
+          begin
+            RowNo := RowNo + 1;
+            s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（0）	';
+            s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, fVertCompareSpacing + 1]);
+            fr.WriteLn('');
+            fr.WriteLn(s);
+
+            if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
+          end;
         end;
       end;
-    end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
     fr.WriteFinish;
     fr.RenameLastFile(RebuildFileName2(fr, RowNo));
   finally
@@ -2670,6 +1634,7 @@ var
   s, FileName, TxtFileName, sCompareType: string;
   Group: TSQLCompareGroup;
   Data: TSQLCompareData;
+  PageIndex: Integer;
 begin
   TxtFileName := '（6）.【简化】【“%d”个以上[相同组合、不同首行]的组合】.txt';
   TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
@@ -2683,31 +1648,36 @@ begin
     fr.WriteLn('');
     fr.WriteLn(s);
 
-    s := 'ORDER BY MaxValueCount DESC, MaxTotalValueCount - MaxValueCount DESC, ValueCount, Value2';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
+    TSQLCompareGroup.AutoFree(Group);
     TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      s := '%d.[ 第%d次组合；代号：1.（%s）]；（ w无【对应列】总数：';
-      s := Format(s, [Group.FillCurrentRow - 1, Group.ValueCount, Group.Value]);
-      if fFirstRangeValue = 0 then
-        s := s + Format('%d列', [Group.MaxTotalValueCount])
-      else
-        s := s + Format('%d-%d列', [Group.MaxValueCount, Group.MaxTotalValueCount - Group.MaxValueCount]);
-      s := s + '）：';
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY MaxValueCount DESC, MaxTotalValueCount - MaxValueCount DESC, ValueCount, Value2 LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
       begin
-        if Data.FillCurrentRow > 2 then fr.WriteLn('');
-        SaveCompareData(fr, Data);
+        s := '%d.[ 第%d次组合；代号：1.（%s）]；（ w无【对应列】总数：';
+        s := Format(s, [Group.FillCurrentRow - 1, Group.ValueCount, Group.Value]);
+        if fFirstRangeValue = 0 then
+          s := s + Format('%d列', [Group.MaxTotalValueCount])
+        else
+          s := s + Format('%d-%d列', [Group.MaxValueCount, Group.MaxTotalValueCount - Group.MaxValueCount]);
+        s := s + '）：';
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
+
+        Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
+        while Data.FillOne do
+        begin
+          if Data.FillCurrentRow > 2 then fr.WriteLn('');
+          SaveCompareData(fr, Data);
+        end;
       end;
-    end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
     fr.RenameLastFile;
   finally
     fr.Free;
@@ -2786,684 +1756,86 @@ begin
   end;
 end;
 
-{procedure TDataComputer.SaveVertSlantGroupByFirstRow;
-var
-  RowSpacingList: TStringList;
-
-  procedure AddRowSpacing(RowSpacing: Word; s: string);
-  var
-    sRowSpacing: string;
-  begin
-    sRowSpacing := RowSpacing.ToString;
-    while sRowSpacing.Length < 3 do sRowSpacing := '0' + sRowSpacing;
-    if RowSpacingList.IndexOfName(sRowSpacing) = -1 then
-      RowSpacingList.Values[sRowSpacing] := s;
-  end;
-
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName, sRowSpacing, sGroupValueCount: string;
-  i: Integer;
-  FirstRow: TSQLFirstRow;
-  Data: TSQLCompareData;
-  LastGroupValueCount: Byte;
-  GroupNumber: Word;
-  RowSpacing: Cardinal;
-  GroupValueCount: Word;
-  MaxGroupValueCount: Byte;
-  MaxRowCountGroupValueCount: Byte;
-  MaxGroupValueCountRowCount: Cardinal;
-begin
-  TxtFileName := '（1）.【排列】【“%d”个以上[相同首行、不同组合]的组合】.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    s := 'ORDER BY Value DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLFirstRow.AutoFree(FirstRow, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    RowSpacingList := TStringList.Create;
-    try
-      while FirstRow.FillOne do
-      begin
-        if FirstRow.FillCurrentRow = 2 then
-        begin
-          s := '1.[ 直、斜连（第%d行为首行）]；[ 邻行距 ↓%d ]';
-          s := Format(s, [fRowCount + 1, fRowCount + 1 - FirstRow.Value]);
-
-          AddRowSpacing(fRowCount + 1 - FirstRow.Value, s);
-        end;
-
-        RowSpacing := FirstRow.RowSpacing;
-        if fReCalc then RowSpacing := FirstRow.RowSpacing2;
-        s := '%d.[ 直、斜连（第%d行为首行）]；[ 邻行距 ↓%d ]';
-        s := Format(s, [FirstRow.FillCurrentRow, FirstRow.Value, RowSpacing]);
-        AddRowSpacing(FirstRow.RowSpacing, s);
-      end;
-
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('最大-小的邻行距 1-100 行内：');
-      RowSpacingList.Sort;
-      for i := RowSpacingList.Count - 1 downto RowSpacingList.Count - 100 do
-      begin
-        if i < 0 then Break;
-        fr.WriteLn('');
-        fr.WriteLn(RowSpacingList.ValueFromIndex[i]);
-      end;
-    finally
-      RowSpacingList.Free;
-    end;
-
-    FirstRow.FillRewind;
-    while FirstRow.FillOne do
-    begin
-      if FirstRow.FillCurrentRow = 2 then
-      begin
-        s := '1.[ 直、斜连（第%d行为首行）]；[ 邻行距 ↓%d ]';
-        s := Format(s, [fRowCount + 1, fRowCount + 1 - FirstRow.Value]);
-        fr.WriteLn('');
-        fr.WriteLn('');
-        fr.WriteLn('');
-        fr.WriteLn(s);
-      end;
-
-      RowSpacing := FirstRow.RowSpacing;
-      GroupValueCount := FirstRow.GroupValueCount;
-      MaxGroupValueCount := FirstRow.MaxGroupValueCount;
-      MaxRowCountGroupValueCount := FirstRow.MaxRowCountGroupValueCount;
-      MaxGroupValueCountRowCount := FirstRow.MaxGroupValueCountRowCount;
-      if fReCalc then
-      begin
-        RowSpacing := FirstRow.RowSpacing2;
-        GroupValueCount := FirstRow.GroupValueCount2;
-        MaxGroupValueCount := FirstRow.MaxGroupValueCount2;
-        MaxRowCountGroupValueCount := FirstRow.MaxRowCountGroupValueCount2;
-        MaxGroupValueCountRowCount := FirstRow.MaxGroupValueCountRowCount2;
-      end;
-
-      s := '%d.[ 直、斜连（第%d行为首行）]；[ 邻行距 ↓%d ；';
-      s := Format(s, [FirstRow.FillCurrentRow, FirstRow.Value, RowSpacing]);
-      if MaxGroupValueCount > fExportGroupValueCount then
-      begin
-        sGroupValueCount := '';
-        for i := fExportGroupValueCount to MaxGroupValueCount do
-        begin
-          if not sGroupValueCount.IsEmpty then
-            sGroupValueCount := sGroupValueCount + '、';
-          sGroupValueCount := sGroupValueCount + i.ToString;
-        end;
-
-        s := s + Format('（第%s次组合）总共 %d 组 ；', [
-          sGroupValueCount,
-          GroupValueCount
-        ]);
-      end;
-      s := s + Format('最多（第%d次组合）：共 %d 组 ]：', [
-        MaxRowCountGroupValueCount,
-        MaxGroupValueCountRowCount
-      ]);
-      if FirstRow.FillCurrentRow > 2 then
-      begin
-        fr.WriteLn('');
-        fr.WriteLn('');
-      end;
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      s := 'FirstRow = ?';
-      if fReCalc then s := s + ' AND Enabled = 1';
-      Data.FillPrepare(fDatabase, s, [FirstRow.Value]);
-      LastGroupValueCount := 0;
-      GroupNumber := 0;
-      while Data.FillOne do
-      begin
-        if Data.GroupValueCount <> LastGroupValueCount then
-        begin
-          LastGroupValueCount := Data.GroupValueCount;
-          GroupNumber := 0;
-        end;
-        GroupNumber := GroupNumber + 1;
-
-        s := '【%d】.第%d次组合[ 代号：%d.（%s）]：';
-        s := Format(s, [
-          Data.FillCurrentRow - 1,
-          Data.GroupValueCount,
-          GroupNumber,
-          VertCompareTypeToString(Data.GroupValue)
-        ]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        SaveCompareData(fr, Data);
-      end;
-    end;
-    s := '%d.[（第%d行为最末首行）直连（第%d-%d行）]';
-    s := Format(s, [
-      FirstRow.FillTable.RowCount + 2,
-      fVertSlantCompareSpacing + 1,
-      fVertSlantCompareSpacing,
-      fVertSlantCompareSpacing + 1 - fVertCompareSpacing
-    ]);
-    fr.WriteLn('');
-    fr.WriteLn(s);
-    s := '%d.[（第%d行为最末首行）直连（第%d-%d行）]';
-    s := Format(s, [
-      FirstRow.FillTable.RowCount + 3,
-      fVertSlantCompareSpacing + 1,
-      fVertSlantCompareSpacing,
-      fVertSlantCompareSpacing + 1 - fSlantCompareSpacing
-    ]);
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    fr.CloseFile;
-    for s in fr.Files do
-      if TFile.Exists(s) then TFile.Copy(s, fExportDirectory + TPath.GetFileName(s));
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveVertSlantGroupByCompareTypeSortByRowcount;
-var
-  fr, fr2, fr3: TFileWriter;
-  s, sCompareType, sCompareType2, FileName, FileName2, FileName3, FileName4, TxtFileName: string;
-  Group, Group2: TSQLCompareGroup;
-  Data: TSQLCompareData;
-  RowNo: Cardinal;
-  LastFirstRow, MaxRowCount, RowCountNumber: Cardinal;
-begin
-  TxtFileName := '（2）.【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  TxtFileName := '（2-2）.【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】（2）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName2 := fExportDirectory + TxtFileName;
-  TxtFileName := '（2-3）.【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】（3）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName3 := fExportDirectory + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  fr2 := TFileWriter.Create(FileName2);
-  fr3 := TFileWriter.Create(FileName3);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-    s := TPath.GetFileNameWithoutExtension(FileName2);
-    fr2.WriteLn('');
-    fr2.WriteLn('');
-    fr2.WriteLn(s);
-    s := TPath.GetFileNameWithoutExtension(FileName3);
-    fr3.WriteLn('');
-    fr3.WriteLn('');
-    fr3.WriteLn(s);
-
-    s := 'ORDER BY RowCount DESC, ValueCount, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareGroup.AutoFree(Group2);
-    TSQLCompareData.AutoFree(Data);
-    RowNo := 0;
-    RowCountNumber := 0;
-    while Group.FillOne do
-    begin
-      s := '%d.【“%d”个 [ 相同组合、不同（直、斜连）首行]的组合 [ 不同（直、斜连）首行数：%d ]】：';
-      s := Format(s, [
-        Group.FillCurrentRow - 1,
-        Group.ValueCount,
-        Group.RowCount
-      ]);
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-      fr2.WriteLn('');
-      fr2.WriteLn('');
-      fr2.WriteLn('');
-      fr2.WriteLn(s);
-      fr3.WriteLn('');
-      fr3.WriteLn('');
-      fr3.WriteLn('');
-
-      LastFirstRow := 0;
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        sCompareType := VertCompareTypeToString(Group.Value);
-
-        if Data.FillCurrentRow = 2 then
-        begin
-          RowNo := RowNo + 1;
-
-          s := '%d= 第%d次组合[ 代号：3.（%s）]：（%d）（%d）';
-          s := Format(s, [RowNo, Group.ValueCount, sCompareType, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr2.WriteLn('');
-          fr2.WriteLn(s);
-
-          s := '%d=[ 代号：3.（%s）]：（%d）（%d）';
-          s := Format(s, [RowNo, sCompareType, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr3.WriteLn('');
-          fr3.WriteLn(s);
-        end;
-
-        if LastFirstRow <> Data.FirstRow then
-        begin
-          LastFirstRow := Data.FirstRow;
-          s := '【%d】.第%d次组合[ 代号：1.（%s）]：';
-          s := Format(s, [Data.FillCurrentRow - 1, Group.ValueCount, sCompareType]);
-
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
-
-        SaveCompareData(fr, Data);
-
-        RowNo := RowNo + 1;
-
-        s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）';
-        s := Format(s, [RowNo, Group.ValueCount, sCompareType, Data.FirstRow, Data.RowSpacing]);
-        fr2.WriteLn('');
-        fr2.WriteLn(s);
-
-        SaveCompareData(fr2, Data);
-
-        s := '%d=[ 代号：1.（%s）]：（%d）（%d）';
-        s := Format(s, [RowNo, sCompareType, Data.FirstRow, Data.RowSpacing]);
-        fr3.WriteLn('');
-        fr3.WriteLn(s);
-
-        SaveCompareData(fr3, Data, False);
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-
-          s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（0）';
-          s := Format(s, [RowNo, Group.ValueCount, sCompareType, fVertSlantCompareSpacing + 1]);
-          fr2.WriteLn('');
-          fr2.WriteLn(s);
-
-          s := '%d=[ 代号：1.（%s）]：（%d）（0）';
-          s := Format(s, [RowNo, sCompareType, fVertSlantCompareSpacing + 1]);
-          fr3.WriteLn('');
-          fr3.WriteLn(s);
-        end;
-      end;
-    end;
-
-    fr.CloseFile;
-    for s in fr.Files do
-    begin
-      TxtFileName := TPath.GetFileName(s).Replace(']】', ']】（1）').Replace('（2）', '（2-1）');
-      if TFile.Exists(s) then TFile.Copy(s, fExportDirectory + TxtFileName);
-    end;
-  finally
-    fr.Free;
-    fr2.Free;
-    fr3.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveVertSlantGroupByCompareTypeSortByMaxRowSpacing;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data, Data2: TSQLCompareData;
-  RowNo: Word;
-begin
-  TxtFileName := '（3）.【排列】【“%d”个以上[相同组合、不同首行]的组合[邻行距：最大↓→小↓]】.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    s := 'ORDER BY MaxRowSpacing DESC, ValueCount DESC, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    TSQLCompareData.AutoFree(Data2);
-    while Group.FillOne do
-    begin
-      RowNo := 2;
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          s := '%d.[ 直连（第%d行为首行）] .（最大邻行距 ↓%d ）：';
-          s := Format(s, [
-            Group.FillCurrentRow - 1,
-            fRowCount + 1,
-            Group.MaxRowSpacing
-          ]);
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          s := '（1）.[ 直连（第%d行为首行）] .（邻行距 ↓%d ）：';
-          s := Format(s, [
-            fRowCount + 1,
-            fRowCount + 1 - Data.FirstRow
-          ]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          s := '（2）.[ 直连（第%d行为首行）] .（邻行距 ↓%d ）：';
-          s := Format(s, [Data.FirstRow, Data.RowSpacing]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
-
-        s := '【%d】.第%d次组合[ 代号：3.（%s）]：';
-        s := Format(s, [
-          Data.FillCurrentRow - 1,
-          Group.ValueCount,
-          VertCompareTypeToString(Data.GroupValue)
-        ]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        SaveCompareData(fr, Data);
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          s := '（%d）.[（第%d行为最末首行）直连（第%d-%d行）]';
-          s := Format(s, [RowNo, fVertSlantCompareSpacing + 1, fVertSlantCompareSpacing, fVertSlantCompareSpacing + 1 - fVertCompareSpacing]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          RowNo := RowNo + 1;
-          s := '（%d）.[（第%d行为最末首行）斜连（第%d-%d行）]';
-          s := Format(s, [RowNo, fVertSlantCompareSpacing + 1, fVertSlantCompareSpacing, fVertSlantCompareSpacing + 1 - fSlantCompareSpacing]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end
-        else
-        begin
-          RowNo := RowNo + 1;
-
-          Data.FillRow(Data.FillCurrentRow, Data2);
-          if Data.FillCurrentRow = Data.FillTable.RowCount then
-            Data2.RowSpacing := 0;
-
-          s := '（%d）.[ 直、斜（第%d行为首行）] .（邻行距 ↓%d ）：';
-          s := Format(s, [RowNo, Data2.FirstRow, Data2.RowSpacing]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveVertSlantGroupByCompareTypeSortByCompareTypeCount;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-begin
-  TxtFileName := '（4）.【排列】【“%d”个以上[相同组合、不同首行]的组合[组合数：最多→少个]】.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory2 + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    s := 'ORDER BY ValueCount DESC, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      s := '%d.[ 第%d次组合；代号：1.（%s）]；（组合数：%d个）：';
-      s := Format(s, [
-        Group.FillCurrentRow - 1,
-        Group.ValueCount,
-        VertCompareTypeToString(Group.Value),
-        Group.ValueCount
-      ]);
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC LIMIT 1', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow > 2 then fr.WriteLn('');
-        SaveCompareData(fr, Data);
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;  }
-
 procedure TDataComputer.SaveVertSlantGroupByCompareTypeSortByMaxValueCount;
 var
-  fr: TFileWriter;
-  s, FileName, TxtFileName: string;
-  Group: TSQLCompareGroup;
+  fr, fr2: TFileWriter;
+  s, FileName, FileName2, TxtFileName: string;
   Data: TSQLCompareData;
+  PageIndex: Integer;
 begin
   TxtFileName := '（5）.【排列】【“%d”个以上[相同组合、不同首行]的组合[无【对应列】数：最多→少列]】.txt';
   TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
   FileName := fExportDirectory2 + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  fr.RebuildFileEvent := RebuildFile;
-  fr.RebuildFileNameEvent := RebuildFileName;
+  TxtFileName := '（6）.【简化】【“%d”个以上[相同组合、不同首行]的组合】.txt';
+  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
+  FileName2 := fExportDirectory2 + TxtFileName;
+
+  if efFile5 in fExportFiles then
+  begin
+    fr := TFileWriter.Create(FileName);
+    fr.RebuildFileEvent := RebuildFile;
+    fr.RebuildFileNameEvent := RebuildFileName;
+  end;
+  if efFile6 in fExportFiles then
+  begin
+    fr2 := TFileWriter.Create(FileName);
+    fr2.RebuildFileEvent := RebuildFile;
+    fr2.RebuildFileNameEvent := RebuildFileName;
+  end;
   try
     s := TPath.GetFileNameWithoutExtension(FileName);
     fr.WriteLn('');
     fr.WriteLn('');
     fr.WriteLn(s);
 
-    s := 'ORDER BY DifferentValueCount DESC, TotalDifferentValueCount - DifferentValueCount DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareData.AutoFree(Data, fDatabase, s, []);
-    while Data.FillOne do
-    begin
-      s := '%d.[ 第%d次组合；代号：1.（%s）]；（ ';
-      s := Format(s, [Data.FillCurrentRow - 1, Data.GroupValueCount, Data.GroupValue]);
-      if Data.TotalSameValueCount > 0 then
+    TSQLCompareData.AutoFree(Data);
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY DifferentValueCount DESC, TotalDifferentValueCount - DifferentValueCount DESC LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Data.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Data.FillOne do
       begin
-        s := s + 'y有【对应列】总数：';
-        if fFirstRangeValue = 0 then
-          s := s + Format('%d列', [Data.TotalSameValueCount])
-        else
-          s := s + Format('%d-%d列', [Data.SameValueCount, Data.TotalSameValueCount - Data.SameValueCount])
-      end;
-      if Data.TotalDifferentValueCount > 0 then
-      begin
-        if Data.TotalSameValueCount > 0 then s := s + '、';
+        s := '%d.[ 第%d次组合；代号：1.（%s）]；（ ';
+        s := Format(s, [Data.FillCurrentRow - 1, Data.GroupValueCount, Data.GroupValue]);
+        if Data.TotalSameValueCount > 0 then
+        begin
+          s := s + 'y有【对应列】总数：';
+          if fFirstRangeValue = 0 then
+            s := s + Format('%d列', [Data.TotalSameValueCount])
+          else
+            s := s + Format('%d-%d列', [Data.SameValueCount, Data.TotalSameValueCount - Data.SameValueCount])
+        end;
+        if Data.TotalDifferentValueCount > 0 then
+        begin
+          if Data.TotalSameValueCount > 0 then s := s + '、';
 
-        s := s + 'w无【对应列】总数：';
-        if fFirstRangeValue = 0 then
-          s := s + Format('%d列', [Data.TotalDifferentValueCount])
-        else
-          s := s + Format('%d-%d列', [Data.DifferentValueCount, Data.TotalDifferentValueCount - Data.DifferentValueCount])
-      end;
-      s := s + '）：';
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
+          s := s + 'w无【对应列】总数：';
+          if fFirstRangeValue = 0 then
+            s := s + Format('%d列', [Data.TotalDifferentValueCount])
+          else
+            s := s + Format('%d-%d列', [Data.DifferentValueCount, Data.TotalDifferentValueCount - Data.DifferentValueCount])
+        end;
+        s := s + '）：';
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
 
-      SaveCompareData(fr, Data);
-    end;
+        SaveCompareData(fr, Data);
+      end;
+      Inc(PageIndex);
+    until Data.FillTable.RowCount = 0;
     fr.RenameLastFile;
   finally
     fr.Free;
   end;
 end;
 
-{procedure TDataComputer.SaveVertSlantGroupByCompareTypeSortByLastFirstRow;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName, sCompareType: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-  RowNo: Cardinal;
-begin
-  TxtFileName := '（2-4）.【排列】【“%d”个以上[相同组合、不同首行]的组合 [首行邻行距：最大↓→小↓]】（4）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    RowNo := 0;
-
-    s := 'ORDER BY LastFirstRow, ValueCount DESC, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      sCompareType := VertCompareTypeToString(Group.Value);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
-          s := Format(s, [RowNo, sCompareType, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
-
-        RowNo := RowNo + 1;
-        s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
-        s := Format(s, [RowNo, sCompareType, Data.FirstRow, Data.RowSpacing]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        SaveCompareData(fr, Data, False);
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
-          s := Format(s, [RowNo, sCompareType, fVertSlantCompareSpacing + 1]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          GroupMaxRowNoList.AddOrSetValue(Group.Value, RowNo);
-        end;
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end;
-
-procedure TDataComputer.SaveVertSlantGroupByCompareTypeSortByLastFirstRow2;
-var
-  fr: TFileWriter;
-  s, FileName, TxtFileName, sCompareType: string;
-  Group: TSQLCompareGroup;
-  Data: TSQLCompareData;
-  RowNo: Word;
-begin
-  TxtFileName := '（2-5）.【排列】【“%d”个以上[相同组合、不同首行]的组合 [首行邻行距：最小↓→大↓]】（5）.txt';
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
-  FileName := fExportDirectory + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  try
-    s := TPath.GetFileNameWithoutExtension(FileName);
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-
-    RowNo := 0;
-
-    s := 'ORDER BY OneRowSpacingCount DESC, ValueCount, Size DESC';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      sCompareType := VertCompareTypeToString(Group.Value);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
-      begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
-          s := Format(s, [RowNo, sCompareType, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-        end;
-
-        RowNo := RowNo + 1;
-        s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
-        s := Format(s, [RowNo, sCompareType, Data.FirstRow, Data.RowSpacing]);
-        fr.WriteLn('');
-        fr.WriteLn(s);
-
-        SaveCompareData(fr, Data, False);
-
-        if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
-          s := Format(s, [RowNo, sCompareType, fVertSlantCompareSpacing + 1]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
-
-          if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-
-          GroupMaxRowNoList2.AddOrSetValue(Group.Value, RowNo);
-        end;
-      end;
-    end;
-  finally
-    fr.Free;
-  end;
-end; }
-
 procedure TDataComputer.SaveVertSlantCompareType;
 var
   fr: TFileWriter;
   s, FileName, TxtFileName, sCompareType: string;
-  Group: TSQLCompareGroup;
   Data: TSQLCompareData;
 begin
   TxtFileName := '（6）.【简化】【“%d”个以上[相同组合、不同首行]的组合】.txt';
@@ -3528,13 +1900,17 @@ var
     sRowSpacing := RowSpacing.ToString;
     while sRowSpacing.Length < 3 do sRowSpacing := '0' + sRowSpacing;
     if RowSpacingList.IndexOfName(sRowSpacing) = -1 then
+    begin
+      if (fCompareMode = cmSlant) and s.Contains('，同行数') then
+        s := s.Substring(0, s.IndexOf('，同行数')) + '）';
       RowSpacingList.Values[sRowSpacing] := s;
+    end;
   end;
 
 var
   fr: TFileWriter;
   s, FileName, TxtFileName, sRowSpacing, sGroupValueCount: string;
-  i: Integer;
+  i, PageIndex: Integer;
   FirstRow: TSQLFirstRow;
   Data: TSQLCompareData;
   LastGroupValueCount: Byte;
@@ -3555,10 +1931,12 @@ begin
     fr.WriteLn('');
     fr.WriteLn(s);
 
+    TSQLFirstRow.AutoFree(FirstRow);
+    TSQLCompareData.AutoFree(Data);
+
     s := 'ORDER BY Value DESC';
     if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLFirstRow.AutoFree(FirstRow, fDatabase, s, []);
-    TSQLCompareData.AutoFree(Data);
+    FirstRow.FillPrepare(fDatabase, s, []);
     RowSpacingList := TStringList.Create;
     try
       while FirstRow.FillOne do
@@ -3584,10 +1962,6 @@ begin
         begin
           FirstRow.RowSpacing := FirstRow.RowSpacing2;
           FirstRow.RowCount := FirstRow.RowCount2;
-          FirstRow.GroupValueCount := FirstRow.GroupValueCount2;
-          FirstRow.MaxGroupValueCount := FirstRow.MaxGroupValueCount2;
-          FirstRow.MaxRowCountGroupValueCount := FirstRow.MaxRowCountGroupValueCount2;
-          FirstRow.MaxGroupValueCountRowCount := FirstRow.MaxGroupValueCountRowCount2;
         end;
         case fCompareMode of
           cmSlant:
@@ -3642,6 +2016,15 @@ begin
         fr.WriteLn(s);
       end;
 
+      if fReCalc then
+      begin
+        FirstRow.RowSpacing := FirstRow.RowSpacing2;
+        FirstRow.RowCount := FirstRow.RowCount2;
+        FirstRow.GroupValueCount := FirstRow.GroupValueCount2;
+        FirstRow.MaxGroupValueCount := FirstRow.MaxGroupValueCount2;
+        FirstRow.MaxRowCountGroupValueCount := FirstRow.MaxRowCountGroupValueCount2;
+        FirstRow.MaxGroupValueCountRowCount := FirstRow.MaxGroupValueCountRowCount2;
+      end;
       case fCompareMode of
         cmSlant:
         begin
@@ -3681,52 +2064,56 @@ begin
       fr.WriteLn('');
       fr.WriteLn(s);
 
-      s := 'FirstRow = ?';
-      if fReCalc then s := s + ' AND Enabled = 1';
-      Data.FillPrepare(fDatabase, s, [FirstRow.Value]);
-      LastGroupValueCount := 0;
-      GroupNumber := 0;
-      while Data.FillOne do
-      begin
-        case fCompareMode of
-          cmSlant:
-          begin
-            s := Format('（%d）.[代号：（第%s个）%s ]', [
-              Data.FillCurrentRow - 1,
-              Data.GroupValue,
-              BuildSlantGroupValue(Data.GroupValue)
-            ]);
-            if fFirstRangeValue = 0 then
-              s := s + Format(' = 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-            else
-              s := s + Format(' = 【 %d-%d 】列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-            s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-            fr.WriteLn('');
-            fr.WriteLn(s);
-          end;
-          else
-          begin
-            if Data.GroupValueCount <> LastGroupValueCount then
+      PageIndex := 0;
+      repeat
+        s := 'FirstRow = ? LIMIT ? OFFSET ?';
+        if fReCalc then s := s + ' AND Enabled = 1';
+        Data.FillPrepare(fDatabase, s, [FirstRow.Value, EachPageRowCount, PageIndex * EachPageRowCount]);
+        LastGroupValueCount := 0;
+        GroupNumber := 0;
+        while Data.FillOne do
+        begin
+          case fCompareMode of
+            cmSlant:
             begin
-              LastGroupValueCount := Data.GroupValueCount;
-              GroupNumber := 0;
+              s := Format('（%d）.[代号：（第%s个）%s ]', [
+                Data.FillCurrentRow - 1,
+                Data.GroupValue,
+                BuildSlantGroupValue(Data.GroupValue)
+              ]);
+              if fFirstRangeValue = 0 then
+                s := s + Format(' = 无【对应列】数： %d列 ；', [Data.TotalValueCount])
+              else
+                s := s + Format(' = 【 %d-%d 】列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
+              s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
+              fr.WriteLn('');
+              fr.WriteLn(s);
             end;
-            GroupNumber := GroupNumber + 1;
+            else
+            begin
+              if Data.GroupValueCount <> LastGroupValueCount then
+              begin
+                LastGroupValueCount := Data.GroupValueCount;
+                GroupNumber := 0;
+              end;
+              GroupNumber := GroupNumber + 1;
 
-            s := '【%d】.第%d次组合[ 代号：%d.（%s）]：';
-            s := Format(s, [
-              Data.FillCurrentRow - 1,
-              Data.GroupValueCount,
-              GroupNumber,
-              Data.GroupValue
-            ]);
-            fr.WriteLn('');
-            fr.WriteLn(s);
+              s := '【%d】.第%d次组合[ 代号：%d.（%s）]：';
+              s := Format(s, [
+                Data.FillCurrentRow - 1,
+                Data.GroupValueCount,
+                GroupNumber,
+                Data.GroupValue
+              ]);
+              fr.WriteLn('');
+              fr.WriteLn(s);
 
-            SaveCompareData(fr, Data);
+              SaveCompareData(fr, Data);
+            end;
           end;
         end;
-      end;
+        Inc(PageIndex);
+      until Data.FillTable.RowCount = 0;
     end;
     case fCompareMode of
       cmVert:
@@ -3789,6 +2176,7 @@ var
   Data: TSQLCompareData;
   RowNo: Cardinal;
   LastFirstRow: Cardinal;
+  PageIndex: Integer;
 begin
   case fCompareMode of
     cmSlant: TxtFileName := '（2）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（不同首行数：最多 - 最少行）.txt';
@@ -3845,192 +2233,97 @@ begin
       end;
     end;
 
-    s := 'ORDER BY RowCount DESC, ValueCount, Value2';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
+    TSQLCompareGroup.AutoFree(Group);
     TSQLCompareData.AutoFree(Data);
     RowNo := 0;
-    while Group.FillOne do
-    begin
-      case fCompareMode of
-        cmSlant:
-        begin
-          SlantGroupValue := BuildSlantGroupValue(Group.Value);
-
-          s := '%d.[代号：（第%s个）%s ] ；[ 不同（斜连）首行数：%d行 ]';
-          s := Format(s, [Group.FillCurrentRow - 1, Group.Value, SlantGroupValue, Group.RowCount]);
-        end;
-        else
-        begin
-          s := '%d.【“%d”个 [ 相同组合、不同（%s连）首行]的组合 [ 不同（%s连）首行数：%d ]】：';
-          s := Format(s, [
-            Group.FillCurrentRow - 1,
-            Group.ValueCount,
-            CompareModeString,
-            CompareModeString,
-            Group.RowCount
-          ]);
-        end;
-      end;
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-      fr2.WriteLn('');
-      fr2.WriteLn('');
-      fr2.WriteLn('');
-      case fCompareMode of
-        cmSlant:
-        begin
-          fr2.WriteLn(s);
-          fr2.WriteLn('');
-        end;
-        cmVertSlant:
-        begin
-          fr2.WriteLn(s);
-          fr3.WriteLn('');
-          fr3.WriteLn('');
-          fr3.WriteLn('');
-        end;
-      end;
-
-      LastFirstRow := 0;
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY RowCount DESC, ValueCount, Value2 LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
       begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          RowNo := RowNo + 1;
-
-          case fCompareMode of
-            cmSlant:
-            begin
-              s := '1=[（第%s个）%s ] ：（%d）（%d）';
-              s := Format(s, [Group.Value, SlantGroupValue, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-              fr2.WriteLn(s);
-            end;
-            else
-            begin
-              s := '%d= 第%d次组合[ 代号：3.（%s）]：（%d）（%d）';
-              s := Format(s, [RowNo, Group.ValueCount, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-              fr2.WriteLn('');
-              fr2.WriteLn(s);
-
-              if RowNo mod EachFileRowNumber = 0 then fr2.BuildActiveFileName;
-            end;
-          end;
-
-          case fCompareMode of
-            cmSlant:
-            begin
-              s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-              s := Format(s, [RowNo, Group.Value, SlantGroupValue, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-              fr3.WriteLn(s);
-
-              if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
-            end;
-            cmVertSlant:
-            begin
-              s := '%d=[ 代号：3.（%s）]：（%d）（%d）';
-              s := Format(s, [RowNo, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-              fr3.WriteLn('');
-              fr3.WriteLn(s);
-
-              if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
-            end;
-          end;
-        end;
-
-        RowNo := RowNo + 1;
         case fCompareMode of
           cmSlant:
           begin
-            s := Format('（%d）（第%d行为首行）', [Data.FillCurrentRow - 1, Data.FirstRow]);
-            if fFirstRangeValue = 0 then
-              s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-            else
-              s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-            s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-            fr.WriteLn('');
-            fr.WriteLn(s);
+            SlantGroupValue := BuildSlantGroupValue(Group.Value);
 
-            s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-            s := Format(s, [Data.FillCurrentRow, Group.Value, SlantGroupValue, Data.FirstRow, Data.RowSpacing]);
-            fr2.WriteLn(s);
-
-            s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-            s := Format(s, [RowNo, Group.Value, SlantGroupValue, Data.FirstRow, Data.RowSpacing]);
-            fr3.WriteLn(s);
-
-            if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
+            s := '%d.[代号：（第%s个）%s ] ；[ 不同（斜连）首行数：%d行 ]';
+            s := Format(s, [Group.FillCurrentRow - 1, Group.Value, SlantGroupValue, Group.RowCount]);
           end;
           else
           begin
-            if LastFirstRow <> Data.FirstRow then
-            begin
-              LastFirstRow := Data.FirstRow;
-              s := '【%d】.第%d次组合[ 代号：1.（%s）]：';
-              s := Format(s, [Data.FillCurrentRow - 1, Group.ValueCount, Group.Value]);
-
-              fr.WriteLn('');
-              fr.WriteLn(s);
-            end;
-
-            SaveCompareData(fr, Data);
-
-            s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）';
-            s := Format(s, [RowNo, Group.ValueCount, Group.Value, Data.FirstRow, Data.RowSpacing]);
-            fr2.WriteLn('');
+            s := '%d.【“%d”个 [ 相同组合、不同（%s连）首行]的组合 [ 不同（%s连）首行数：%d ]】：';
+            s := Format(s, [
+              Group.FillCurrentRow - 1,
+              Group.ValueCount,
+              CompareModeString,
+              CompareModeString,
+              Group.RowCount
+            ]);
+          end;
+        end;
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
+        fr2.WriteLn('');
+        fr2.WriteLn('');
+        fr2.WriteLn('');
+        case fCompareMode of
+          cmSlant:
+          begin
             fr2.WriteLn(s);
-
-            SaveCompareData(fr2, Data);
-
-            if RowNo mod EachFileRowNumber = 0 then fr2.BuildActiveFileName;
-
-            if fCompareMode = cmVertSlant then
-            begin
-              s := '%d=[ 代号：1.（%s）]：（%d）（%d）';
-              s := Format(s, [RowNo, Group.Value, Data.FirstRow, Data.RowSpacing]);
-              fr3.WriteLn('');
-              fr3.WriteLn(s);
-
-              SaveCompareData(fr3, Data, False);
-
-              if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
-            end;
+            fr2.WriteLn('');
+          end;
+          cmVertSlant:
+          begin
+            fr2.WriteLn(s);
+            fr3.WriteLn('');
+            fr3.WriteLn('');
+            fr3.WriteLn('');
           end;
         end;
 
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
+        LastFirstRow := 0;
+        Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
+        while Data.FillOne do
         begin
-          RowNo := RowNo + 1;
+          if Data.FillCurrentRow = 2 then
+          begin
+            RowNo := RowNo + 1;
 
-          case fCompareMode of
-            cmSlant:
-            begin
-              s := '%d=[（第%s个）%s ] ：（%d）（0）';
-              s := Format(s, [Data.FillCurrentRow + 1, Group.Value, SlantGroupValue, fSlantCompareSpacing + 1]);
-              fr2.WriteLn(s);
-
-              s := '%d=[（第%s个）%s ] ：（%d）（0）';
-              s := Format(s, [RowNo, Group.Value, SlantGroupValue, fSlantCompareSpacing + 1]);
-              fr3.WriteLn(s);
-
-              if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
-            end
-            else
-            begin
-              s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（0）';
-              s := Format(s, [RowNo, Group.ValueCount, Group.Value, fVertSlantCompareSpacing + 1]);
-              fr2.WriteLn('');
-              fr2.WriteLn(s);
-
-              if RowNo mod EachFileRowNumber = 0 then fr2.BuildActiveFileName;
-
-              if fCompareMode = cmVertSlant then
+            case fCompareMode of
+              cmSlant:
               begin
-                s := '%d=[ 代号：1.（%s）]：（%d）（0）';
-                s := Format(s, [RowNo, Group.Value, fVertSlantCompareSpacing + 1]);
+                s := '1=[（第%s个）%s ] ：（%d）（%d）';
+                s := Format(s, [Group.Value, SlantGroupValue, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+                fr2.WriteLn(s);
+              end;
+              else
+              begin
+                s := '%d= 第%d次组合[ 代号：3.（%s）]：（%d）（%d）';
+                s := Format(s, [RowNo, Group.ValueCount, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+                fr2.WriteLn('');
+                fr2.WriteLn(s);
+
+                if RowNo mod EachFileRowNumber = 0 then fr2.BuildActiveFileName;
+              end;
+            end;
+
+            case fCompareMode of
+              cmSlant:
+              begin
+                s := '%d=[（第%s个）%s ] ：（%d）（%d）';
+                s := Format(s, [RowNo, Group.Value, SlantGroupValue, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+                fr3.WriteLn(s);
+
+                if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
+              end;
+              cmVertSlant:
+              begin
+                s := '%d=[ 代号：3.（%s）]：（%d）（%d）';
+                s := Format(s, [RowNo, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
                 fr3.WriteLn('');
                 fr3.WriteLn(s);
 
@@ -4038,9 +2331,109 @@ begin
               end;
             end;
           end;
+
+          RowNo := RowNo + 1;
+          case fCompareMode of
+            cmSlant:
+            begin
+              s := Format('（%d）（第%d行为首行）', [Data.FillCurrentRow - 1, Data.FirstRow]);
+              if fFirstRangeValue = 0 then
+                s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
+              else
+                s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
+              s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
+              fr.WriteLn('');
+              fr.WriteLn(s);
+
+              s := '%d=[（第%s个）%s ] ：（%d）（%d）';
+              s := Format(s, [Data.FillCurrentRow, Group.Value, SlantGroupValue, Data.FirstRow, Data.RowSpacing]);
+              fr2.WriteLn(s);
+
+              s := '%d=[（第%s个）%s ] ：（%d）（%d）';
+              s := Format(s, [RowNo, Group.Value, SlantGroupValue, Data.FirstRow, Data.RowSpacing]);
+              fr3.WriteLn(s);
+
+              if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
+            end;
+            else
+            begin
+              if LastFirstRow <> Data.FirstRow then
+              begin
+                LastFirstRow := Data.FirstRow;
+                s := '【%d】.第%d次组合[ 代号：1.（%s）]：';
+                s := Format(s, [Data.FillCurrentRow - 1, Group.ValueCount, Group.Value]);
+
+                fr.WriteLn('');
+                fr.WriteLn(s);
+              end;
+
+              SaveCompareData(fr, Data);
+
+              s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）';
+              s := Format(s, [RowNo, Group.ValueCount, Group.Value, Data.FirstRow, Data.RowSpacing]);
+              fr2.WriteLn('');
+              fr2.WriteLn(s);
+
+              SaveCompareData(fr2, Data);
+
+              if RowNo mod EachFileRowNumber = 0 then fr2.BuildActiveFileName;
+
+              if fCompareMode = cmVertSlant then
+              begin
+                s := '%d=[ 代号：1.（%s）]：（%d）（%d）';
+                s := Format(s, [RowNo, Group.Value, Data.FirstRow, Data.RowSpacing]);
+                fr3.WriteLn('');
+                fr3.WriteLn(s);
+
+                SaveCompareData(fr3, Data, False);
+
+                if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
+              end;
+            end;
+          end;
+
+          if Data.FillCurrentRow > Data.FillTable.RowCount then
+          begin
+            RowNo := RowNo + 1;
+
+            case fCompareMode of
+              cmSlant:
+              begin
+                s := '%d=[（第%s个）%s ] ：（%d）（0）';
+                s := Format(s, [Data.FillCurrentRow + 1, Group.Value, SlantGroupValue, fSlantCompareSpacing + 1]);
+                fr2.WriteLn(s);
+
+                s := '%d=[（第%s个）%s ] ：（%d）（0）';
+                s := Format(s, [RowNo, Group.Value, SlantGroupValue, fSlantCompareSpacing + 1]);
+                fr3.WriteLn(s);
+
+                if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
+              end
+              else
+              begin
+                s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（0）';
+                s := Format(s, [RowNo, Group.ValueCount, Group.Value, fVertSlantCompareSpacing + 1]);
+                fr2.WriteLn('');
+                fr2.WriteLn(s);
+
+                if RowNo mod EachFileRowNumber = 0 then fr2.BuildActiveFileName;
+
+                if fCompareMode = cmVertSlant then
+                begin
+                  s := '%d=[ 代号：1.（%s）]：（%d）（0）';
+                  s := Format(s, [RowNo, Group.Value, fVertSlantCompareSpacing + 1]);
+                  fr3.WriteLn('');
+                  fr3.WriteLn(s);
+
+                  if RowNo mod EachFileRowNumber = 0 then fr3.BuildActiveFileName;
+                end;
+              end;
+            end;
+          end;
         end;
       end;
-    end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
 
     fr.RenameLastFile;
     for s in fr.Files do
@@ -4073,8 +2466,9 @@ procedure TDataComputer.SaveGroupByCompareTypeSortByRowcount2;
 var
   fr, fr2: TFileWriter;
   s, FileName, FileName2, TxtFileName: string;
-  Group, Group2, Group3, Group4: TSQLCompareGroup;
+  Group, Group2: TSQLCompareGroup;
   CompareSpacing, RowNo, MaxRowCount, RowCountNumber, RowCountNumber2: Cardinal;
+  PageIndex: Integer;
 begin
   case fCompareMode of
     cmSlant: TxtFileName := '（2）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（不同首行数：最多 - 最少行）（1、3）-（简化并统计）.txt';
@@ -4082,12 +2476,8 @@ begin
   end;
   TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
   FileName := fExportDirectory + TxtFileName;
-  case fCompareMode of
-    cmSlant: TxtFileName := '（2-0）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（不同首行数：最多 - 最少行）（1、3、4、5）-（简化并统计）.txt';
-    cmVert: TxtFileName := '（2-0）.【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】（1、2、3、4）-（简化并统计）.txt';
-    cmVertSlant: TxtFileName := '（2-0）.【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】（1、3、4、5）-（简化并统计）.txt';
-  end;
-  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
+
+  TxtFileName := '（2）. 符合（3）.【配套】1.①.②.③.的（1、3）-（简化并统计）保留原因的每个代号及其对应内容.txt';
   FileName2 := fExportDirectory + TxtFileName;
   fr := TFileWriter.Create(FileName);
   fr.RebuildFileEvent := RebuildFile;
@@ -4105,9 +2495,8 @@ begin
     fr2.WriteLn('');
     fr2.WriteLn(s);
 
-    s := 'ORDER BY RowCount DESC, ValueCount, Value2';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
+
+    TSQLCompareGroup.AutoFree(Group);
     TSQLCompareGroup.AutoFree(Group2);
 
     case fCompareMode of
@@ -4119,145 +2508,123 @@ begin
     RowNo := 0;
     RowCountNumber := 0;
     RowCountNumber2 := 0;
-    while Group.FillOne do
-    begin
-      s := '%d.【“%d”个 [ 相同组合、不同（%s连）首行]的组合 [ 不同（%s连）首行数：%d ]】：';
-      s := Format(s, [
-        Group.FillCurrentRow - 1,
-        Group.ValueCount,
-        CompareModeString,
-        CompareModeString,
-        Group.RowCount
-      ]);
-
-
-      RowNo := RowNo + Group.RowCount + 2;
-      RowCountNumber := RowCountNumber + 1;
-      RowCountNumber2 := RowCountNumber2 + Group.RowCount;
-      if Group.FillCurrentRow = 2 then MaxRowCount := Group.RowCount;
-      if Group.FillCurrentRow <= Group.FillTable.RowCount then
-        Group.FillRow(Group.FillCurrentRow, Group2);
-      if (Group.FillCurrentRow > Group.FillTable.RowCount) or (Group.RowCount <> Group2.RowCount) then
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY RowCount DESC, ValueCount, Value2 LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
       begin
+        s := '%d.【“%d”个 [ 相同组合、不同（%s连）首行]的组合 [ 不同（%s连）首行数：%d ]】：';
+        s := Format(s, [
+          Group.FillCurrentRow - 1,
+          Group.ValueCount,
+          CompareModeString,
+          CompareModeString,
+          Group.RowCount
+        ]);
+
+        RowNo := RowNo + Group.RowCount + 2;
+        RowCountNumber := RowCountNumber + 1;
+        RowCountNumber2 := RowCountNumber2 + Group.RowCount;
+        if Group.FillCurrentRow = 2 then MaxRowCount := Group.RowCount;
+        if Group.FillCurrentRow <= Group.FillTable.RowCount then
+          Group.FillRow(Group.FillCurrentRow, Group2);
+        if (Group.FillCurrentRow > Group.FillTable.RowCount) or (Group.RowCount <> Group2.RowCount) then
+        begin
+          fr.WriteLn('');
+          fr.WriteLn('');
+          fr.WriteLn('');
+          fr.WriteLn(s);
+
+          s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
+          s := Format(s, [RowNo, Group.Value, CompareSpacing + 1]);
+          fr.WriteLn('');
+          fr.WriteLn(s);
+
+          s := '统计：[ 不同（%s连）首行数：%d-%d ] ；共 %d 次、总共 ：%d 个 ；';
+          s := Format(s, [CompareModeString, MaxRowCount, Group.RowCount, RowCountNumber2, RowCountNumber]);
+          fr.WriteLn('');
+          fr.WriteLn(s);
+
+          if Group.ReEnabled then WriteGroupReEnableTips(fr, Group);
+        end;
+      end;
+
+      s := TPath.GetFileNameWithoutExtension(FileName) + '（详细资料）：';
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+
+      RowNo := 0;
+      RowCountNumber := 0;
+      RowCountNumber2 := 0;
+      Group.FillRewind;
+      while Group.FillOne do
+      begin
+        s := '%d.【“%d”个 [ 相同组合、不同（%s连）首行]的组合 [ 不同（%s连）首行数：%d ]】：';
+        s := Format(s, [
+          Group.FillCurrentRow - 1,
+          Group.ValueCount,
+          CompareModeString,
+          CompareModeString,
+          Group.RowCount
+        ]);
         fr.WriteLn('');
         fr.WriteLn('');
         fr.WriteLn('');
         fr.WriteLn(s);
-        fr2.WriteLn('');
-        fr2.WriteLn('');
-        fr2.WriteLn('');
-        fr2.WriteLn(s);
+        if Group.ReEnabled then
+        begin
+          fr2.WriteLn('');
+          fr2.WriteLn('');
+          fr2.WriteLn('');
+          fr2.WriteLn(s);
+        end;
 
+        RowNo := RowNo + Group.RowCount + 2;
         s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
         s := Format(s, [RowNo, Group.Value, CompareSpacing + 1]);
         fr.WriteLn('');
         fr.WriteLn(s);
-        fr2.WriteLn('');
-        fr2.WriteLn(s);
-
-        if GroupMaxRowNoList.ContainsKey(Group.Value) then
+        if Group.ReEnabled then
         begin
-          s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
-          s := Format(s, [GroupMaxRowNoList[Group.Value], Group.Value, CompareSpacing + 1]);
           fr2.WriteLn('');
           fr2.WriteLn(s);
         end;
 
-        if GroupMaxRowNoList2.ContainsKey(Group.Value) then
-        begin
-          s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
-          s := Format(s, [GroupMaxRowNoList2[Group.Value], Group.Value, CompareSpacing + 1]);
-          fr2.WriteLn('');
-          fr2.WriteLn(s);
-        end;
 
+        RowCountNumber := RowCountNumber + 1;
+        RowCountNumber2 := RowCountNumber2 + Group.RowCount;
         s := '统计：[ 不同（%s连）首行数：%d-%d ] ；共 %d 次、总共 ：%d 个 ；';
         s := Format(s, [CompareModeString, MaxRowCount, Group.RowCount, RowCountNumber2, RowCountNumber]);
         fr.WriteLn('');
         fr.WriteLn(s);
-        fr2.WriteLn('');
-        fr2.WriteLn(s);
+        if fRecalc and Group.ReEnabled then
+        begin
+          WriteGroupReEnableTips(fr, Group);
+
+          fr2.WriteLn('');
+          fr2.WriteLn(s);
+          WriteGroupReEnableTips(fr2, Group);
+        end;
       end;
-    end;
-
-    s := TPath.GetFileNameWithoutExtension(FileName) + '（详细资料）：';
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn(s);
-    s := TPath.GetFileNameWithoutExtension(FileName2) + '（详细资料）：';
-    fr2.WriteLn('');
-    fr2.WriteLn('');
-    fr2.WriteLn('');
-    fr.WriteLn('');
-    fr.WriteLn('');
-    fr2.WriteLn(s);
-
-    RowNo := 0;
-    RowCountNumber := 0;
-    RowCountNumber2 := 0;
-    Group.FillRewind;
-    while Group.FillOne do
-    begin
-      s := '%d.【“%d”个 [ 相同组合、不同（%s连）首行]的组合 [ 不同（%s连）首行数：%d ]】：';
-      s := Format(s, [
-        Group.FillCurrentRow - 1,
-        Group.ValueCount,
-        CompareModeString,
-        CompareModeString,
-        Group.RowCount
-      ]);
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-      fr2.WriteLn('');
-      fr2.WriteLn('');
-      fr2.WriteLn('');
-      fr2.WriteLn(s);
-
-      RowNo := RowNo + Group.RowCount + 2;
-      s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
-      s := Format(s, [RowNo, Group.Value, CompareSpacing + 1]);
-      fr.WriteLn('');
-      fr.WriteLn(s);
-      fr2.WriteLn('');
-      fr2.WriteLn(s);
-
-      if GroupMaxRowNoList.ContainsKey(Group.Value) then
-      begin
-        s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
-        s := Format(s, [GroupMaxRowNoList[Group.Value], Group.Value, CompareSpacing + 1]);
-        fr2.WriteLn('');
-        fr2.WriteLn(s);
-      end;
-
-      if GroupMaxRowNoList2.ContainsKey(Group.Value) then
-      begin
-        s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
-        s := Format(s, [GroupMaxRowNoList2[Group.Value], Group.Value, CompareSpacing + 1]);
-        fr2.WriteLn('');
-        fr2.WriteLn(s);
-      end;
-
-      RowCountNumber := RowCountNumber + 1;
-      RowCountNumber2 := RowCountNumber2 + Group.RowCount;
-      s := '统计：[ 不同（%s连）首行数：%d-%d ] ；共 %d 次、总共 ：%d 个 ；';
-      s := Format(s, [CompareModeString, MaxRowCount, Group.RowCount, RowCountNumber2, RowCountNumber]);
-      fr.WriteLn('');
-      fr.WriteLn(s);
-      fr2.WriteLn('');
-      fr2.WriteLn(s);
-    end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
     fr.RenameLastFile;
     fr2.RenameLastFile;
   finally
     fr.Free;
     fr2.Free;
-    GroupMaxRowNoList.Clear;
-    GroupMaxRowNoList2.Clear;
   end;
 end;
 
@@ -4268,6 +2635,7 @@ var
   Group: TSQLCompareGroup;
   Data, Data2: TSQLCompareData;
   RowNo: Word;
+  PageIndex: Integer;
 begin
   case fCompareMode of
     cmSlant: TxtFileName := '（3）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（邻行距：最大↓“N”- 最小↓“N”）.txt';
@@ -4284,147 +2652,154 @@ begin
     fr.WriteLn('');
     fr.WriteLn(s);
 
-    case fCompareMode of
-      cmSlant: s := 'ORDER BY MaxRowSpacing DESC, ValueCount, Value2';
-      else s := 'ORDER BY MaxRowSpacing DESC, ValueCount DESC, Value2';
-    end;
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
+
+    TSQLCompareGroup.AutoFree(Group);
     TSQLCompareData.AutoFree(Data);
     TSQLCompareData.AutoFree(Data2);
-    while Group.FillOne do
-    begin
+    PageIndex := 0;
+    repeat
       case fCompareMode of
-        cmSlant:
-        begin
-          s := '%d.[代号：（第%s个）%s ] ；（最大邻行距 ↓%d）';
-          s := Format(s, [
-            Group.FillCurrentRow - 1,
-            Group.Value,
-            BuildSlantGroupValue(Group.Value),
-            Group.MaxRowSpacing
-          ]);
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn(s);
-        end;
+        cmSlant: s := 'ORDER BY MaxRowSpacing DESC, ValueCount, Value2 LIMIT ? OFFSET ?';
+        else s := 'ORDER BY MaxRowSpacing DESC, ValueCount DESC, Value2 LIMIT ? OFFSET ?';
       end;
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
 
-      RowNo := 2;
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
+      while Group.FillOne do
       begin
-        if Data.FillCurrentRow = 2 then
-        begin
-          case fCompareMode of
-            cmSlant:
-            begin
-              s := '（1）（第%d行为首行）；（邻行距 ↓%d）';
-              s := Format(s, [fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-              fr.WriteLn('');
-              fr.WriteLn(s);
-            end;
-            cmVert, cmVertSlant:
-            begin
-              s := '%d.[ %s连（第%d行为首行）] .（最大邻行距 ↓%d ）：';
-              s := Format(s, [Group.FillCurrentRow - 1, CompareModeString, fRowCount + 1, Group.MaxRowSpacing]);
-              fr.WriteLn('');
-              fr.WriteLn('');
-              fr.WriteLn('');
-              fr.WriteLn(s);
-
-              s := '（1）.[ %s连（第%d行为首行）] .（邻行距 ↓%d ）：';
-              s := Format(s, [CompareModeString, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-              fr.WriteLn('');
-              fr.WriteLn(s);
-
-              s := '（2）.[ %s连（第%d行为首行）] .（邻行距 ↓%d ）：';
-              s := Format(s, [CompareModeString, Data.FirstRow, Data.RowSpacing]);
-              fr.WriteLn('');
-              fr.WriteLn(s);
-            end;
-          end;
-        end;
-
         case fCompareMode of
           cmSlant:
           begin
-            s := Format('（%d）（第%d行为首行）（邻行距 ↓%d）', [Data.FillCurrentRow, Data.FirstRow, Data.RowSpacing]);
-            if fFirstRangeValue = 0 then
-              s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-            else
-              s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-            s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-            fr.WriteLn('');
-            fr.WriteLn(s);
-          end;
-          cmVert, cmVertSlant:
-          begin
-            s := '【%d】.第%d次组合[ 代号：3.（%s）]：';
+            s := '%d.[代号：（第%s个）%s ] ；（最大邻行距 ↓%d）';
             s := Format(s, [
-              Data.FillCurrentRow - 1,
-              Group.ValueCount,
-              Group.Value
+              Group.FillCurrentRow - 1,
+              Group.Value,
+              BuildSlantGroupValue(Group.Value),
+              Group.MaxRowSpacing
             ]);
             fr.WriteLn('');
+            fr.WriteLn('');
+            fr.WriteLn('');
             fr.WriteLn(s);
-
-            SaveCompareData(fr, Data);
           end;
         end;
 
-        RowNo := RowNo + 1;
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
+        RowNo := 2;
+        Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
+        while Data.FillOne do
         begin
+          if Data.FillCurrentRow = 2 then
+          begin
+            case fCompareMode of
+              cmSlant:
+              begin
+                s := '（1）（第%d行为首行）；（邻行距 ↓%d）';
+                s := Format(s, [fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+                fr.WriteLn('');
+                fr.WriteLn(s);
+              end;
+              cmVert, cmVertSlant:
+              begin
+                s := '%d.[ %s连（第%d行为首行）] .（最大邻行距 ↓%d ）：';
+                s := Format(s, [Group.FillCurrentRow - 1, CompareModeString, fRowCount + 1, Group.MaxRowSpacing]);
+                fr.WriteLn('');
+                fr.WriteLn('');
+                fr.WriteLn('');
+                fr.WriteLn(s);
+
+                s := '（1）.[ %s连（第%d行为首行）] .（邻行距 ↓%d ）：';
+                s := Format(s, [CompareModeString, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+                fr.WriteLn('');
+                fr.WriteLn(s);
+
+                s := '（2）.[ %s连（第%d行为首行）] .（邻行距 ↓%d ）：';
+                s := Format(s, [CompareModeString, Data.FirstRow, Data.RowSpacing]);
+                fr.WriteLn('');
+                fr.WriteLn(s);
+              end;
+            end;
+          end;
+
           case fCompareMode of
             cmSlant:
             begin
-              s := '（%d）（第%d行为最末首行）';
-              s := Format(s, [Data.FillCurrentRow + 1, fSlantCompareSpacing + 1]);
+              s := Format('（%d）（第%d行为首行）（邻行距 ↓%d）', [Data.FillCurrentRow, Data.FirstRow, Data.RowSpacing]);
+              if fFirstRangeValue = 0 then
+                s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
+              else
+                s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
+              s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
               fr.WriteLn('');
               fr.WriteLn(s);
             end;
-            cmVert:
-            begin
-              s := '（%d）.[（第%d行为最末首行）直连（第%d-1行）]';
-              s := Format(s, [RowNo, fVertCompareSpacing + 1, fVertCompareSpacing]);
-              fr.WriteLn('');
-              fr.WriteLn(s);
-            end;
-            cmVertSlant:
-            begin
-              s := '（%d）.[（第%d行为最末首行）直连（第%d-%d行）]';
-              s := Format(s, [RowNo, fVertSlantCompareSpacing + 1, fVertSlantCompareSpacing, fVertSlantCompareSpacing + 1 - fVertCompareSpacing]);
-              fr.WriteLn('');
-              fr.WriteLn(s);
-
-              RowNo := RowNo + 1;
-              s := '（%d）.[（第%d行为最末首行）斜连（第%d-%d行）]';
-              s := Format(s, [RowNo, fVertSlantCompareSpacing + 1, fVertSlantCompareSpacing, fVertSlantCompareSpacing + 1 - fSlantCompareSpacing]);
-              fr.WriteLn('');
-              fr.WriteLn(s);
-            end;
-          end;
-        end
-        else
-        begin
-          case fCompareMode of
             cmVert, cmVertSlant:
             begin
-              Data.FillRow(Data.FillCurrentRow, Data2);
-              //if Data.FillCurrentRow = Data.FillTable.RowCount then
-              //  Data2.RowSpacing := 0;
-
-              s := '（%d）.[ %s连（第%d行为首行）] .（邻行距 ↓%d ）：';
-              s := Format(s, [RowNo, CompareModeString, Data2.FirstRow, Data2.RowSpacing]);
+              s := '【%d】.第%d次组合[ 代号：3.（%s）]：';
+              s := Format(s, [
+                Data.FillCurrentRow - 1,
+                Group.ValueCount,
+                Group.Value
+              ]);
               fr.WriteLn('');
               fr.WriteLn(s);
+
+              SaveCompareData(fr, Data);
+            end;
+          end;
+
+          RowNo := RowNo + 1;
+          if Data.FillCurrentRow > Data.FillTable.RowCount then
+          begin
+            case fCompareMode of
+              cmSlant:
+              begin
+                s := '（%d）（第%d行为最末首行）';
+                s := Format(s, [Data.FillCurrentRow + 1, fSlantCompareSpacing + 1]);
+                fr.WriteLn('');
+                fr.WriteLn(s);
+              end;
+              cmVert:
+              begin
+                s := '（%d）.[（第%d行为最末首行）直连（第%d-1行）]';
+                s := Format(s, [RowNo, fVertCompareSpacing + 1, fVertCompareSpacing]);
+                fr.WriteLn('');
+                fr.WriteLn(s);
+              end;
+              cmVertSlant:
+              begin
+                s := '（%d）.[（第%d行为最末首行）直连（第%d-%d行）]';
+                s := Format(s, [RowNo, fVertSlantCompareSpacing + 1, fVertSlantCompareSpacing, fVertSlantCompareSpacing + 1 - fVertCompareSpacing]);
+                fr.WriteLn('');
+                fr.WriteLn(s);
+
+                RowNo := RowNo + 1;
+                s := '（%d）.[（第%d行为最末首行）斜连（第%d-%d行）]';
+                s := Format(s, [RowNo, fVertSlantCompareSpacing + 1, fVertSlantCompareSpacing, fVertSlantCompareSpacing + 1 - fSlantCompareSpacing]);
+                fr.WriteLn('');
+                fr.WriteLn(s);
+              end;
+            end;
+          end
+          else
+          begin
+            case fCompareMode of
+              cmVert, cmVertSlant:
+              begin
+                Data.FillRow(Data.FillCurrentRow, Data2);
+                //if Data.FillCurrentRow = Data.FillTable.RowCount then
+                //  Data2.RowSpacing := 0;
+
+                s := '（%d）.[ %s连（第%d行为首行）] .（邻行距 ↓%d ）：';
+                s := Format(s, [RowNo, CompareModeString, Data2.FirstRow, Data2.RowSpacing]);
+                fr.WriteLn('');
+                fr.WriteLn(s);
+              end;
             end;
           end;
         end;
       end;
-    end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
     fr.RenameLastFile;
   finally
     fr.Free;
@@ -4437,6 +2812,7 @@ var
   s, FileName, TxtFileName: string;
   Group: TSQLCompareGroup;
   Data: TSQLCompareData;
+  PageIndex: Integer;
 begin
   case fCompareMode of
     cmSlant: TxtFileName := '（4）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（组合数：最多 - 最少个）.txt';
@@ -4453,66 +2829,71 @@ begin
     fr.WriteLn('');
     fr.WriteLn(s);
 
-    s := 'ORDER BY ValueCount DESC, Value2';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
+    TSQLCompareGroup.AutoFree(Group);
     TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      case fCompareMode of
-        cmSlant:
-        begin
-          s := '%d.[代号：（第%s个）%s ] ；（组合数：%d个）';
-          s := Format(s, [
-            Group.FillCurrentRow - 1,
-            Group.Value,
-            BuildSlantGroupValue(Group.Value),
-            Group.ValueCount
-          ]);
-        end;
-        cmVert, cmVertSlant:
-        begin
-          s := '%d.[ 第%d次组合；代号：1.（%s）]；（组合数：%d个）：';
-          s := Format(s, [
-            Group.FillCurrentRow - 1,
-            Group.ValueCount,
-            Group.Value,
-            Group.ValueCount
-          ]);
-        end;
-      end;
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      case fCompareMode of
-        cmVert, cmSlant: s := 'GroupValue = ? ORDER BY FirstRow DESC';
-        cmVertSlant: s := 'GroupValue = ? ORDER BY FirstRow DESC LIMIT 1';
-      end;
-      Data.FillPrepare(fDatabase, s, [Group.Value]);
-      while Data.FillOne do
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY ValueCount DESC, Value2 LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
       begin
         case fCompareMode of
           cmSlant:
           begin
-            s := Format('（%d）（第%d行为首行）', [Data.FillCurrentRow - 1, Data.FirstRow]);
-            if fFirstRangeValue = 0 then
-              s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-            else
-              s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-            s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-            fr.WriteLn('');
-            fr.WriteLn(s);
+            s := '%d.[代号：（第%s个）%s ] ；（组合数：%d个）';
+            s := Format(s, [
+              Group.FillCurrentRow - 1,
+              Group.Value,
+              BuildSlantGroupValue(Group.Value),
+              Group.ValueCount
+            ]);
           end;
           cmVert, cmVertSlant:
           begin
-            if Data.FillCurrentRow > 2 then fr.WriteLn('');
-             SaveCompareData(fr, Data);
+            s := '%d.[ 第%d次组合；代号：1.（%s）]；（组合数：%d个）：';
+            s := Format(s, [
+              Group.FillCurrentRow - 1,
+              Group.ValueCount,
+              Group.Value,
+              Group.ValueCount
+            ]);
+          end;
+        end;
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
+
+        case fCompareMode of
+          cmVert, cmSlant: s := 'GroupValue = ? ORDER BY FirstRow DESC';
+          cmVertSlant: s := 'GroupValue = ? ORDER BY FirstRow DESC LIMIT 1';
+        end;
+        Data.FillPrepare(fDatabase, s, [Group.Value]);
+        while Data.FillOne do
+        begin
+          case fCompareMode of
+            cmSlant:
+            begin
+              s := Format('（%d）（第%d行为首行）', [Data.FillCurrentRow - 1, Data.FirstRow]);
+              if fFirstRangeValue = 0 then
+                s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
+              else
+                s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
+              s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
+              fr.WriteLn('');
+              fr.WriteLn(s);
+            end;
+            cmVert, cmVertSlant:
+            begin
+              if Data.FillCurrentRow > 2 then fr.WriteLn('');
+               SaveCompareData(fr, Data);
+            end;
           end;
         end;
       end;
-    end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
     fr.RenameLastFile;
   finally
     fr.Free;
@@ -4525,6 +2906,7 @@ var
   s, FileName, TxtFileName: string;
   Group: TSQLCompareGroup;
   Data: TSQLCompareData;
+  PageIndex: Integer;
 begin
   case fCompareMode of
     cmVert: TxtFileName := '（5）.【排列】【“%d”个以上[相同组合、不同首行]的组合[无【对应列】数：最多→少列]】.txt';
@@ -4541,65 +2923,70 @@ begin
     fr.WriteLn('');
     fr.WriteLn(s);
 
-    s := 'ORDER BY MaxValueCount DESC, MaxTotalValueCount - MaxValueCount DESC, ValueCount, Value2';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
+    TSQLCompareGroup.AutoFree(Group);
     TSQLCompareData.AutoFree(Data);
-    while Group.FillOne do
-    begin
-      case fCompareMode of
-        cmVert:
-        begin
-          s := '%d.[ 第%d次组合；代号：1.（%s）]；（ w无【对应列】总数：';
-          s := Format(s, [Group.FillCurrentRow - 1, Group.ValueCount, Group.Value]);
-          if fFirstRangeValue = 0 then
-            s := s + Format('%d列', [Group.MaxTotalValueCount])
-          else
-            s := s + Format('%d-%d列', [Group.MaxValueCount, Group.MaxTotalValueCount - Group.MaxValueCount]);
-          s := s + '）：';
-        end;
-        cmSlant:
-        begin
-          s := '%d.[代号：（第%s个）%s ] ；';
-          s := Format(s, [
-            Group.FillCurrentRow - 1,
-            Group.Value,
-            BuildSlantGroupValue(Group.Value)
-          ]);
-          if fFirstRangeValue = 0 then
-            s := s + Format('（ 最多 [ 无【对应列】数：%d列 ] ）', [Group.MaxTotalValueCount])
-          else
-            s := s + Format('（ 最多 [ 无【对应列】数：%d-%d列 ] ）', [Group.MaxValueCount, Group.MaxTotalValueCount - Group.MaxValueCount]);
-        end;
-      end;
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn('');
-      fr.WriteLn(s);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY MaxValueCount DESC, MaxTotalValueCount - MaxValueCount DESC, ValueCount, Value2 LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
       begin
         case fCompareMode of
-          cmSlant:
-          begin
-            s := Format('（%d）（第%d行为首行）', [Data.FillCurrentRow - 1, Data.FirstRow]);
-            if fFirstRangeValue = 0 then
-              s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
-            else
-              s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-            s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
-            fr.WriteLn('');
-            fr.WriteLn(s);
-          end;
           cmVert:
           begin
-            if Data.FillCurrentRow > 2 then fr.WriteLn('');
-            SaveCompareData(fr, Data);
+            s := '%d.[ 第%d次组合；代号：1.（%s）]；（ w无【对应列】总数：';
+            s := Format(s, [Group.FillCurrentRow - 1, Group.ValueCount, Group.Value]);
+            if fFirstRangeValue = 0 then
+              s := s + Format('%d列', [Group.MaxTotalValueCount])
+            else
+              s := s + Format('%d-%d列', [Group.MaxValueCount, Group.MaxTotalValueCount - Group.MaxValueCount]);
+            s := s + '）：';
+          end;
+          cmSlant:
+          begin
+            s := '%d.[代号：（第%s个）%s ] ；';
+            s := Format(s, [
+              Group.FillCurrentRow - 1,
+              Group.Value,
+              BuildSlantGroupValue(Group.Value)
+            ]);
+            if fFirstRangeValue = 0 then
+              s := s + Format('（ 最多 [ 无【对应列】数：%d列 ] ）', [Group.MaxTotalValueCount])
+            else
+              s := s + Format('（ 最多 [ 无【对应列】数：%d-%d列 ] ）', [Group.MaxValueCount, Group.MaxTotalValueCount - Group.MaxValueCount]);
+          end;
+        end;
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
+
+        Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
+        while Data.FillOne do
+        begin
+          case fCompareMode of
+            cmSlant:
+            begin
+              s := Format('（%d）（第%d行为首行）', [Data.FillCurrentRow - 1, Data.FirstRow]);
+              if fFirstRangeValue = 0 then
+                s := s + Format('= 无【对应列】数： %d列 ；', [Data.TotalValueCount])
+              else
+                s := s + Format('= 无【对应列】数：%d - %d 列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
+              s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
+              fr.WriteLn('');
+              fr.WriteLn(s);
+            end;
+            cmVert:
+            begin
+              if Data.FillCurrentRow > 2 then fr.WriteLn('');
+              SaveCompareData(fr, Data);
+            end;
           end;
         end;
       end;
-    end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
     fr.RenameLastFile;
   finally
     fr.Free;
@@ -4613,6 +3000,7 @@ var
   Group: TSQLCompareGroup;
   Data: TSQLCompareData;
   RowNo: Cardinal;
+  PageIndex: Integer;
 begin
   case fCompareMode of
     cmSlant: TxtFileName := '（2-4）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（邻行距：最大 → 小）（4）.txt';
@@ -4635,102 +3023,73 @@ begin
       fr.WriteLn('');
     end;
 
-    case fCompareMode of
-      cmSlant: s := 'ORDER BY LastFirstRow, ValueCount, Value2';
-      else s := 'ORDER BY LastFirstRow, ValueCount DESC, Value2';
-    end;
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
+    TSQLCompareGroup.AutoFree(Group);
     TSQLCompareData.AutoFree(Data);
-
     RowNo := 0;
-    while Group.FillOne do
-    begin
-      SlantGroupValue := BuildSlantGroupValue(Group.Value);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
+    PageIndex := 0;
+    repeat
+      case fCompareMode of
+        cmSlant: s := 'ORDER BY LastFirstRow, ValueCount, Value2 LIMIT ? OFFSET ?';
+        else s := 'ORDER BY LastFirstRow, ValueCount DESC, Value2 LIMIT ? OFFSET ?';
+      end;
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
       begin
-        if Data.FillCurrentRow = 2 then
+        SlantGroupValue := BuildSlantGroupValue(Group.Value);
+
+        Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
+        while Data.FillOne do
         begin
+          if Data.FillCurrentRow = 2 then
+          begin
+            RowNo := RowNo + 1;
+            case fCompareMode of
+              cmSlant:
+              begin
+                s := '%d=[（第%s个）%s ] ：（%d）（%d）';
+                s := Format(s, [RowNo, Group.Value, SlantGroupValue, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+              end;
+              cmVert:
+              begin
+                s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）	';
+                s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+              end;
+              cmVertSlant:
+              begin
+                 s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
+                 s := Format(s, [RowNo, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+              end;
+            end;
+            case fCompareMode of
+              cmVert, cmVertSlant:
+              begin
+                fr.WriteLn('');
+                fr.WriteLn('');
+                fr.WriteLn('');
+              end;
+            end;
+            fr.WriteLn(s);
+
+            if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
+          end;
+
           RowNo := RowNo + 1;
           case fCompareMode of
             cmSlant:
             begin
               s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-              s := Format(s, [RowNo, Group.Value, SlantGroupValue, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+              s := Format(s, [RowNo, Group.Value, SlantGroupValue, Data.FirstRow, Data.RowSpacing]);
             end;
             cmVert:
             begin
-              s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）	';
-              s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+               s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）	';
+               s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, Data.FirstRow, Data.RowSpacing]);
             end;
             cmVertSlant:
             begin
                s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
-               s := Format(s, [RowNo, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-            end;
-          end;
-          case fCompareMode of
-            cmVert, cmVertSlant:
-            begin
-              fr.WriteLn('');
-              fr.WriteLn('');
-              fr.WriteLn('');
-            end;
-          end;
-          fr.WriteLn(s);
-
-          if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-        end;
-
-        RowNo := RowNo + 1;
-        case fCompareMode of
-          cmSlant:
-          begin
-            s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-            s := Format(s, [RowNo, Group.Value, SlantGroupValue, Data.FirstRow, Data.RowSpacing]);
-          end;
-          cmVert:
-          begin
-             s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（%d）	';
-             s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, Data.FirstRow, Data.RowSpacing]);
-          end;
-          cmVertSlant:
-          begin
-             s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
-             s := Format(s, [RowNo, Group.Value, Data.FirstRow, Data.RowSpacing]);
-          end;
-        end;
-        case fCompareMode of
-          cmVert, cmVertSlant: fr.WriteLn('');
-        end;
-        fr.WriteLn(s);
-
-        case fCompareMode of
-          cmVert, cmVertSlant: SaveCompareData(fr, Data, False);
-        end;
-
-        if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          case fCompareMode of
-            cmSlant:
-            begin
-              s := '%d=[（第%s个）%s ] ：（%d）（0）';
-              s := Format(s, [RowNo, Group.Value, SlantGroupValue, fSlantCompareSpacing + 1]);
-            end;
-            cmVert:
-            begin
-              s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（0）	';
-              s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, fVertCompareSpacing + 1]);
-            end;
-            cmVertSlant:
-            begin
-              s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
-              s := Format(s, [RowNo, Group.Value, fVertSlantCompareSpacing + 1]);
+               s := Format(s, [RowNo, Group.Value, Data.FirstRow, Data.RowSpacing]);
             end;
           end;
           case fCompareMode of
@@ -4738,12 +3097,43 @@ begin
           end;
           fr.WriteLn(s);
 
+          case fCompareMode of
+            cmVert, cmVertSlant: SaveCompareData(fr, Data, False);
+          end;
+
           if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
 
-          GroupMaxRowNoList.AddOrSetValue(Group.Value, RowNo);
+          if Data.FillCurrentRow > Data.FillTable.RowCount then
+          begin
+            RowNo := RowNo + 1;
+            case fCompareMode of
+              cmSlant:
+              begin
+                s := '%d=[（第%s个）%s ] ：（%d）（0）';
+                s := Format(s, [RowNo, Group.Value, SlantGroupValue, fSlantCompareSpacing + 1]);
+              end;
+              cmVert:
+              begin
+                s := '%d= 第%d次组合[ 代号：1.（%s）]：（%d）（0）	';
+                s := Format(s, [RowNo, Data.GroupValueCount, Group.Value, fVertCompareSpacing + 1]);
+              end;
+              cmVertSlant:
+              begin
+                s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
+                s := Format(s, [RowNo, Group.Value, fVertSlantCompareSpacing + 1]);
+              end;
+            end;
+            case fCompareMode of
+              cmVert, cmVertSlant: fr.WriteLn('');
+            end;
+            fr.WriteLn(s);
+
+            if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
+          end;
         end;
       end;
-    end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
     fr.WriteFinish;
     fr.RenameLastFile(RebuildFileName2(fr, RowNo));
   finally
@@ -4758,6 +3148,7 @@ var
   Group: TSQLCompareGroup;
   Data: TSQLCompareData;
   RowNo: Cardinal;
+  PageIndex: Integer;
 begin
   case fCompareMode of
     cmSlant: TxtFileName := '（2-5）.【排列】“%d”个以上各个组合（相同代号、不同首行）的（邻行距：最小 → 大）（5）.txt';
@@ -4779,21 +3170,49 @@ begin
       fr.WriteLn('');
     end;
 
-    s := 'ORDER BY OneRowSpacingCount DESC, LastFirstRow DESC, ValueCount, Value2';
-    if fReCalc then s := 'Enabled = 1 ' + s;
-    TSQLCompareGroup.AutoFree(Group, fDatabase, s, []);
+    TSQLCompareGroup.AutoFree(Group);
     TSQLCompareData.AutoFree(Data);
-
     RowNo := 0;
-    while Group.FillOne do
-    begin
-      SlantGroupValue := BuildSlantGroupValue(Group.Value);
-
-      Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
-      while Data.FillOne do
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY OneRowSpacingCount DESC, LastFirstRow DESC, ValueCount, Value2 LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
       begin
-        if Data.FillCurrentRow = 2 then
+        SlantGroupValue := BuildSlantGroupValue(Group.Value);
+
+        Data.FillPrepare(fDatabase, 'GroupValue = ? ORDER BY FirstRow DESC', [Group.Value]);
+        while Data.FillOne do
         begin
+          if Data.FillCurrentRow = 2 then
+          begin
+            RowNo := RowNo + 1;
+            case fCompareMode of
+              cmSlant:
+              begin
+                s := '%d=[（第%s个）%s ] ：（%d）（%d）';
+                s := Format(s, [RowNo, Group.Value, SlantGroupValue, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+              end;
+              cmVertSlant:
+              begin
+                 s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
+                 s := Format(s, [RowNo, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
+              end;
+            end;
+            case fCompareMode of
+              cmVertSlant:
+              begin
+                fr.WriteLn('');
+                fr.WriteLn('');
+                fr.WriteLn('');
+              end;
+            end;
+            fr.WriteLn(s);
+
+            if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
+          end;
+
           RowNo := RowNo + 1;
           case fCompareMode of
             cmSlant:
@@ -4804,59 +3223,7 @@ begin
             cmVertSlant:
             begin
                s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
-               s := Format(s, [RowNo, Group.Value, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-            end;
-          end;
-          case fCompareMode of
-            cmVertSlant:
-            begin
-              fr.WriteLn('');
-              fr.WriteLn('');
-              fr.WriteLn('');
-            end;
-          end;
-          fr.WriteLn(s);
-
-          if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-        end;
-
-        RowNo := RowNo + 1;
-        case fCompareMode of
-          cmSlant:
-          begin
-            s := '%d=[（第%s个）%s ] ：（%d）（%d）';
-            s := Format(s, [RowNo, Group.Value, SlantGroupValue, fRowCount + 1, fRowCount + 1 - Data.FirstRow]);
-          end;
-          cmVertSlant:
-          begin
-             s := '%d=[ 代号：1.（%s）]：（%d）（%d）	';
-             s := Format(s, [RowNo, Group.Value, Data.FirstRow, Data.RowSpacing]);
-          end;
-        end;
-        case fCompareMode of
-          cmVertSlant: fr.WriteLn('');
-        end;
-        fr.WriteLn(s);
-
-        case fCompareMode of
-          cmVert, cmVertSlant: SaveCompareData(fr, Data, False);
-        end;
-
-        if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
-
-        if Data.FillCurrentRow > Data.FillTable.RowCount then
-        begin
-          RowNo := RowNo + 1;
-          case fCompareMode of
-            cmSlant:
-            begin
-              s := '%d=[（第%s个）%s ] ：（%d）（0）';
-              s := Format(s, [RowNo, Group.Value, SlantGroupValue, fSlantCompareSpacing + 1]);
-            end;
-            cmVertSlant:
-            begin
-              s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
-              s := Format(s, [RowNo, Group.Value, fVertSlantCompareSpacing + 1]);
+               s := Format(s, [RowNo, Group.Value, Data.FirstRow, Data.RowSpacing]);
             end;
           end;
           case fCompareMode of
@@ -4864,12 +3231,38 @@ begin
           end;
           fr.WriteLn(s);
 
+          case fCompareMode of
+            cmVert, cmVertSlant: SaveCompareData(fr, Data, False);
+          end;
+
           if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
 
-          GroupMaxRowNoList2.AddOrSetValue(Group.Value, RowNo);
+          if Data.FillCurrentRow > Data.FillTable.RowCount then
+          begin
+            RowNo := RowNo + 1;
+            case fCompareMode of
+              cmSlant:
+              begin
+                s := '%d=[（第%s个）%s ] ：（%d）（0）';
+                s := Format(s, [RowNo, Group.Value, SlantGroupValue, fSlantCompareSpacing + 1]);
+              end;
+              cmVertSlant:
+              begin
+                s := '%d=[ 代号：1.（%s）]：（%d）（0）	';
+                s := Format(s, [RowNo, Group.Value, fVertSlantCompareSpacing + 1]);
+              end;
+            end;
+            case fCompareMode of
+              cmVertSlant: fr.WriteLn('');
+            end;
+            fr.WriteLn(s);
+
+            if RowNo mod EachFileRowNumber = 0 then fr.BuildActiveFileName;
+          end;
         end;
       end;
-    end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
     fr.WriteFinish;
     fr.RenameLastFile(RebuildFileName2(fr, RowNo));
   finally
@@ -4877,26 +3270,137 @@ begin
   end;
 end;
 
+procedure TDataComputer.SaveCompareDataSortByValueCount(FileName: string);
+var
+  fr: TFileWriter;
+  s: string;
+  Data: TSQLCompareData;
+  PageIndex: Integer;
+begin
+  fr := TFileWriter.Create(FileName);
+  fr.RebuildFileEvent := RebuildFile;
+  fr.RebuildFileNameEvent := RebuildFileName;
+  try
+    s := TPath.GetFileNameWithoutExtension(FileName);
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn(s);
+
+    TSQLCompareData.AutoFree(Data);
+    PageIndex := 0;
+    repeat
+      s := 'ORDER BY DifferentValueCount DESC, TotalDifferentValueCount - DifferentValueCount DESC LIMIT ? OFFSET ?';
+      if fReCalc then s := 'Enabled = 1 ' + s;
+      Data.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Data.FillOne do
+      begin
+        s := '%d.[ 第%d次组合；代号：1.（%s）]；（ ';
+        s := Format(s, [Data.FillCurrentRow - 1, Data.GroupValueCount, Data.GroupValue]);
+        if Data.TotalSameValueCount > 0 then
+        begin
+          s := s + 'y有【对应列】总数：';
+          if fFirstRangeValue = 0 then
+            s := s + Format('%d列', [Data.TotalSameValueCount])
+          else
+            s := s + Format('%d-%d列', [Data.SameValueCount, Data.TotalSameValueCount - Data.SameValueCount])
+        end;
+        if Data.TotalDifferentValueCount > 0 then
+        begin
+          if Data.TotalSameValueCount > 0 then s := s + '、';
+
+          s := s + 'w无【对应列】总数：';
+          if fFirstRangeValue = 0 then
+            s := s + Format('%d列', [Data.TotalDifferentValueCount])
+          else
+            s := s + Format('%d-%d列', [Data.DifferentValueCount, Data.TotalDifferentValueCount - Data.DifferentValueCount])
+        end;
+        s := s + '）：';
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn('');
+        fr.WriteLn(s);
+
+        SaveCompareData(fr, Data);
+      end;
+      Inc(PageIndex);
+    until Data.FillTable.RowCount = 0;
+    fr.RenameLastFile;
+  finally
+    fr.Free;
+  end;
+end;
+
+procedure TDataComputer.SaveVertSlantCompareDataSortByValueCount;
+var
+  FileName, TxtFileName: string;
+begin
+  TxtFileName := '（5）.【排列】【“%d”个以上[相同组合、不同首行]的组合[无【对应列】数：最多→少列]】.txt';
+  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
+  FileName := fExportDirectory2 + TxtFileName;
+  SaveCompareDataSortByValueCount(FileName);
+end;
+
+procedure TDataComputer.SaveVertSlantCompareDataSortByValueCount2;
+var
+  FileName, TxtFileName: string;
+begin
+  TxtFileName := '（6）.【简化】【“%d”个以上[相同组合、不同首行]的组合】.txt';
+  TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
+  FileName := fExportDirectory2 + TxtFileName;
+  SaveCompareDataSortByValueCount(FileName);
+end;
+
+procedure TDataComputer.SaveReEnabledGroup;
+var
+  fr: TFileWriter;
+  s, FileName, TxtFileName: string;
+  Group: TSQLCompareGroup;
+  PageIndex: Integer;
+begin
+  TxtFileName := '（2）. 符合（3）.【配套】1.①.②.③.的（1、3）-（简化并统计）保留原因的每个代号及其对应内容[ 邻行距↓ N 小 → 大 ].txt';
+  FileName := fExportDirectory + TxtFileName;
+  fr := TFileWriter.Create(FileName);
+  fr.RebuildFileEvent := RebuildFile;
+  fr.RebuildFileNameEvent := RebuildFileName;
+  try
+    s := TPath.GetFileNameWithoutExtension(FileName);
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn(s);
+
+    TSQLCompareGroup.AutoFree(Group);
+    PageIndex := 0;
+    repeat
+      s := 'ReEnabled = 1 ORDER BY ReEnabledRowSpacing LIMIT ? OFFSET ?';
+      Group.FillPrepare(fDatabase, s, [EachPageRowCount, PageIndex * EachPageRowCount]);
+      while Group.FillOne do
+      begin
+        s := '代号：%s';
+        s := Format(s, [Group.Value]);
+        fr.WriteLn('');
+        fr.WriteLn(s);
+
+        WriteGroupReEnableTips(fr, Group);
+      end;
+      Inc(PageIndex);
+    until Group.FillTable.RowCount = 0;
+    fr.RenameLastFile;
+  finally
+    fr.Free;
+  end;
+end;
+
 procedure TDataComputer.ExportCompareData(ExportFiles: TExportFiles;
-  RowSpacing, GroupRowCount, GroupCount: Cardinal);
+  RowSpacing, GroupRowCount, GroupCount, ReEnabledGroupCount: Cardinal);
 var
   s, sMode: string;
-  Tasks: array of ITask;
-
-  procedure AddTask(Proc: TProc);
-  var
-    i: Integer;
-  begin
-    i := Length(Tasks);
-    SetLength(Tasks, i + 1);
-    Tasks[i] := TTask.Create(Proc);
-    Tasks[i].Start;
-  end;
 begin
   fRowCount := fDatabase.TableRowCount(TSQLRow);
+  fExportFiles := ExportFiles;
   fKeepMaxRowSpacing := RowSpacing;
   fGroupRowCount := GroupRowCount;
   fGroupCount := GroupCount;
+  fReEnabledGroupCount := ReEnabledGroupCount;
   fReCalc := (fGroupRowCount > 0) or (fGroupCount > 0);
   if fReCalc then Recalc;
 
@@ -4915,99 +3419,37 @@ begin
     TDirectory.CreateDirectory(fExportDirectory2);
   for s in TDirectory.GetFiles(fExportDirectory2, '*.txt') do TFile.Delete(s);
 
-  {case fCompareMode of
-    cmVert:
-    begin
-      if efFile in ExportFiles then
-        AddTask(SaveVertGroupByFirstRow);
-      if efFile2 in ExportFiles then
-      begin
-        AddTask(SaveVertGroupByCompareTypeSortByRowcount);
-        AddTask(SaveVertGroupByCompareTypeSortByLastFirstRow);
-        AddTask(SaveVertGroupByCompareTypeSortByLastFirstRow2);
-      end;
-      if efFile3 in ExportFiles then
-        AddTask(SaveVertGroupByCompareTypeSortByMaxRowSpacing);
-      if efFile4 in ExportFiles then
-        AddTask(SaveVertGroupByCompareTypeSortByCompareTypeCount);
-      if efFile5 in ExportFiles then
-        AddTask(SaveVertGroupByCompareTypeSortByMaxValueCount);
-      if efFile6 in ExportFiles then
-        AddTask(SaveVertCompareType);
-    end;
-    cmSlant:
-    begin
-      if efFile in ExportFiles then
-        AddTask(SaveSlantGroupByFirstRow);
-      if efFile2 in ExportFiles then
-      begin
-        AddTask(SaveSlantGroupByCompareTypeSortByRowcount);
-        AddTask(SaveSlantGroupByCompareTypeSortByLastFirstRow);
-        AddTask(SaveSlantGroupByCompareTypeSortByOneRowSpacingCount);
-      end;
-      if efFile3 in ExportFiles then
-        AddTask(SaveSlantGroupByCompareTypeSortByMaxRowSpacing);
-      if efFile4 in ExportFiles then
-        AddTask(SaveSlantGroupByCompareTypeSortByCompareTypeCount);
-      if efFile5 in ExportFiles then
-        AddTask(SaveSlantGroupByCompareTypeSortByMaxValueCount);
-      if efFile6 in ExportFiles then
-        AddTask(SaveSlantCompareType);
-    end;
-    cmVertSlant:
-    begin
-      if efFile in ExportFiles then
-        AddTask(SaveVertSlantGroupByFirstRow);
-      if efFile2 in ExportFiles then
-      begin
-        AddTask(SaveVertSlantGroupByCompareTypeSortByRowcount);
-        AddTask(SaveVertSlantGroupByCompareTypeSortByLastFirstRow);
-        AddTask(SaveVertSlantGroupByCompareTypeSortByLastFirstRow2);
-      end;
-      if efFile3 in ExportFiles then
-        AddTask(SaveVertSlantGroupByCompareTypeSortByMaxRowSpacing);
-      if efFile4 in ExportFiles then
-        AddTask(SaveVertSlantGroupByCompareTypeSortByCompareTypeCount);
-      if efFile5 in ExportFiles then
-        AddTask(SaveVertSlantGroupByCompareTypeSortByMaxValueCount);
-      if efFile6 in ExportFiles then
-        AddTask(SaveVertSlantCompareType);
-    end;
-  end; }
-  if efFile in ExportFiles then AddTask(SaveGroupByFirstRow);
-  if efFile2 in ExportFiles then
+  if efFile in fExportFiles then SaveGroupByFirstRow;
+  if efFile2 in fExportFiles then
   begin
-    AddTask(SaveGroupByCompareTypeSortByRowcount);
-    AddTask(SaveGroupByCompareTypeSortByLastFirstRow);
+    SaveGroupByCompareTypeSortByRowcount;
+    SaveGroupByCompareTypeSortByLastFirstRow;
     case fCompareMode of
-      cmVert: AddTask(SaveVertGroupByCompareTypeSortByLastFirstRow2);
-      else AddTask(SaveGroupByCompareTypeSortByOneRowSpacingCount);
+      cmVert: SaveVertGroupByCompareTypeSortByLastFirstRow2;
+      else SaveGroupByCompareTypeSortByOneRowSpacingCount;
     end;
+    SaveGroupByCompareTypeSortByRowcount2;
+    if fReCalc then SaveReEnabledGroup;
   end;
-  if efFile3 in ExportFiles then
-    AddTask(SaveGroupByCompareTypeSortByMaxRowSpacing);
-  if efFile4 in ExportFiles then
-    AddTask(SaveGroupByCompareTypeSortByGroupValueCount);
-  if efFile5 in ExportFiles then
+  if efFile3 in fExportFiles then
+    SaveGroupByCompareTypeSortByMaxRowSpacing;
+  if efFile4 in fExportFiles then
+    SaveGroupByCompareTypeSortByGroupValueCount;
+  if efFile5 in fExportFiles then
   begin
     case fCompareMode of
-      cmVertSlant: AddTask(SaveVertSlantGroupByCompareTypeSortByMaxValueCount);
-      else AddTask(SaveGroupByCompareTypeSortByMaxValueCount);
+      cmVertSlant: SaveVertSlantCompareDataSortByValueCount;
+      else SaveGroupByCompareTypeSortByMaxValueCount;
     end;
   end;
-  if efFile6 in ExportFiles then
+  if efFile6 in fExportFiles then
   begin
     case fCompareMode of
-      cmSlant: AddTask(SaveSlantCompareType);
-      cmVert: AddTask(SaveVertCompareType);
-      cmVertSlant: AddTask(SaveVertSlantCompareType);
+      cmSlant: SaveSlantCompareType;
+      cmVert: SaveVertCompareType;
+      cmVertSlant: SaveVertSlantCompareDataSortByValueCount2;
     end;
   end;
-  TTask.WaitForAll(Tasks);
-
-  SetLength(Tasks, 0);
-  if efFile2 in ExportFiles then AddTask(SaveGroupByCompareTypeSortByRowcount2);
-  TTask.WaitForAll(Tasks);
 end;
 
 end.

@@ -22,14 +22,11 @@ object frmMain: TfrmMain
     Height = 515
     ActivePage = TabSheet3
     Align = alClient
+    TabHeight = 40
     TabOrder = 0
-    ExplicitTop = 173
-    ExplicitHeight = 510
     object TabSheet3: TTabSheet
       Caption = #19968'.'#26597#35810#65306#12304#21508#34892#38388#12305#30452#12289#26012#36830#12304#23545#24212#21015#12305#32452#21512'     '
       ImageIndex = 2
-      ExplicitLeft = 8
-      ExplicitHeight = 470
       object Label10: TLabel
         Left = 12
         Top = 7
@@ -169,7 +166,7 @@ object frmMain: TfrmMain
         Left = 5
         Top = 419
         Width = 249
-        Height = 30
+        Height = 40
         Caption = '9.'#8220#24320#22987#26597#35810#8221#24182#8220#23548#20986#25968#25454#8221
         TabOrder = 6
         OnClick = btnCompareClick
@@ -263,7 +260,7 @@ object frmMain: TfrmMain
         Left = 721
         Top = 215
         Width = 420
-        Height = 30
+        Height = 40
         Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '
         TabOrder = 16
         OnClick = btnExportSettingsClick
@@ -272,7 +269,10 @@ object frmMain: TfrmMain
     object TabSheet2: TTabSheet
       Caption = '  '#20108'.'#26597#35810#65306#12304#21508#34892#38388#12305#30452#36830#12304#23545#24212#21015#12305#32452#21512'      '
       ImageIndex = 1
-      ExplicitHeight = 471
+      ExplicitLeft = 0
+      ExplicitTop = 35
+      ExplicitWidth = 0
+      ExplicitHeight = 476
       object Label11: TLabel
         Left = 9
         Top = 119
@@ -314,7 +314,7 @@ object frmMain: TfrmMain
         Left = 5
         Top = 358
         Width = 249
-        Height = 30
+        Height = 40
         Caption = '8.'#8220#24320#22987#26597#35810#8221#24182#8220#23548#20986#25968#25454#8221
         TabOrder = 0
         OnClick = btnCompareClick
@@ -450,7 +450,7 @@ object frmMain: TfrmMain
         Left = 721
         Top = 154
         Width = 420
-        Height = 30
+        Height = 40
         Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '
         TabOrder = 13
         OnClick = btnExportSettingsClick
@@ -458,7 +458,10 @@ object frmMain: TfrmMain
     end
     object TabSheet1: TTabSheet
       Caption = '  '#19977'.'#26597#35810#65306#12304#21508#34892#38388#12305#26012#36830#12304#23545#24212#21015#12305#32452#21512'     '
-      ExplicitHeight = 471
+      ExplicitLeft = 0
+      ExplicitTop = 35
+      ExplicitWidth = 0
+      ExplicitHeight = 476
       object Label5: TLabel
         Left = 12
         Top = 47
@@ -469,7 +472,7 @@ object frmMain: TfrmMain
       end
       object Label6: TLabel
         Left = 15
-        Top = 151
+        Top = 162
         Width = 684
         Height = 24
         Caption = #12304#25490#21015#12305' '#65288'2'#65289'---'#65288'6'#65289'.'#8220'N'#8221#20010#20197#19978#21508#20010#32452#21512#65288#30456#21516#20195#21495#12289#19981#21516#39318#34892#65289#65292#22914#19979#65306
@@ -484,9 +487,9 @@ object frmMain: TfrmMain
       end
       object btnSlantCompare: TButton
         Left = 15
-        Top = 290
+        Top = 301
         Width = 249
-        Height = 30
+        Height = 40
         Caption = '7.'#8220#24320#22987#26597#35810#8221#24182#8220#23548#20986#25968#25454#8221
         TabOrder = 0
         OnClick = btnCompareClick
@@ -507,7 +510,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile: TCheckBox
         Left = 15
-        Top = 116
+        Top = 127
         Width = 770
         Height = 25
         Caption = #65288'1'#65289'.'#12304#25490#21015#12305#8220'N'#8221#20010#20197#19978#12304' [ '#30456#21516#65288#31532#8220'N'#8221#34892#20026#39318#34892#65289'] '#12289#65288#19981#21516#20195#21495#65289#12305#30340#32452#21512' '#65307
@@ -515,7 +518,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile2: TCheckBox
         Left = 15
-        Top = 183
+        Top = 194
         Width = 330
         Height = 25
         Caption = #65288'2'#65289'.[ '#19981#21516#39318#34892#25968#65306#26368#22810#8594#23569' ]'
@@ -523,7 +526,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile3: TCheckBox
         Left = 368
-        Top = 183
+        Top = 194
         Width = 380
         Height = 25
         Caption = #65288'3'#65289'.[ '#37051#34892#36317#65306#26368#22823#8595#8594#23567#8595']'
@@ -531,7 +534,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile4: TCheckBox
         Left = 15
-        Top = 215
+        Top = 226
         Width = 330
         Height = 25
         Caption = #65288'4'#65289'.[ '#32452#21512#25968#65306#26368#22810#8594#23569#20010' ]'
@@ -539,7 +542,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile5: TCheckBox
         Left = 368
-        Top = 215
+        Top = 226
         Width = 380
         Height = 25
         Caption = #65288'5'#65289'.[ '#26080#12304#23545#24212#21015#12305#25968#65306#26368#22810#8594#23569#21015' ]'
@@ -547,7 +550,7 @@ object frmMain: TfrmMain
       end
       object chkExportFile6: TCheckBox
         Left = 15
-        Top = 248
+        Top = 259
         Width = 770
         Height = 25
         Caption = #65288'6'#65289'.'#12304#20445#23384#12305#8220'N'#8221#20010#20197#19978#21508#20010#32452#21512#65288#30456#21516#20195#21495#12289#19981#21516#39318#34892#65289#30340#65288#20195#21495#65306'NZ. NY '#65289
@@ -555,7 +558,7 @@ object frmMain: TfrmMain
       end
       object chkSelectAll: TCheckBox
         Left = 15
-        Top = 85
+        Top = 90
         Width = 560
         Height = 25
         Caption = '6.'#20840#36873'[ '#27880#65306#23548#20986#65288'1'#65289'.'#12304#25490#21015#12305'-'#65288'6'#65289'.'#12304#20445#23384#12305' ]'#65292#22914#19979#65306
@@ -564,9 +567,9 @@ object frmMain: TfrmMain
       end
       object btnExportCompareRow: TButton
         Left = 270
-        Top = 290
+        Top = 301
         Width = 75
-        Height = 30
+        Height = 40
         Caption = #23548#20986#34892
         TabOrder = 9
         Visible = False
@@ -590,7 +593,7 @@ object frmMain: TfrmMain
         Left = 581
         Top = 82
         Width = 420
-        Height = 30
+        Height = 40
         Caption = #12304' '#37197#22871' '#12305#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '
         TabOrder = 11
         OnClick = btnExportSettingsClick
@@ -684,10 +687,10 @@ object frmMain: TfrmMain
     end
     object chkCompareCrossRange: TCheckBox
       Left = 16
-      Top = 152
-      Width = 137
+      Top = 161
+      Width = 530
       Height = 25
-      Caption = #27604#36739#36328#21306#22495
+      Caption = #26597#35810#65306#26012#36830#34892#65288' '#27599#34892#30340#21015#25968#23383#65292#36328#21306#22495' '#65289'( '#31532' 2 '#27169#24335' ) '
       TabOrder = 3
     end
   end
