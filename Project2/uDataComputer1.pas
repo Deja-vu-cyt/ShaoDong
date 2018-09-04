@@ -478,10 +478,10 @@ begin
   fDatabase.CreateSQLIndex(TSQLCompareData, 'GroupValueCount', False);
   fDatabase.CreateSQLIndex(TSQLCompareGroup, 'Value2', False);
   fDatabase.CreateSQLIndex(TSQLCompareGroup, 'ValueCount', False);
-  //fDatabase.CreateSQLIndex(TSQLCompareGroup, 'MaxRowSpacing', False);
-  //fDatabase.CreateSQLIndex(TSQLCompareGroup, ['MaxTotalValueCount', 'MaxValueCount'], False);
-  //fDatabase.CreateSQLIndex(TSQLCompareGroup, 'LastFirstRow', False);
-  //fDatabase.CreateSQLIndex(TSQLCompareGroup, 'OneRowSpacingCount', False);
+  fDatabase.CreateSQLIndex(TSQLCompareGroup, 'MaxRowSpacing', False);
+  fDatabase.CreateSQLIndex(TSQLCompareGroup, ['MaxTotalValueCount', 'MaxValueCount'], False);
+  fDatabase.CreateSQLIndex(TSQLCompareGroup, 'LastFirstRow', False);
+  fDatabase.CreateSQLIndex(TSQLCompareGroup, 'OneRowSpacingCount', False);
 
   fKeyValue := TSQLKeyValue.Create;
   fMaxValue := 0;
@@ -829,7 +829,7 @@ begin
                       CompareData.AssignValue(Row2);
                       CompareData.CalcValueCount(fFirstRangeValue);
                       CompareData.CalcCompareValueCount(fFirstRangeValue);
-                      //CalcRowSpacing(CompareData);
+                      CalcRowSpacing(CompareData);
                       fDatabase.Add(CompareData, True);
                     end;
                   end;
@@ -855,7 +855,7 @@ begin
                       end;
                       CompareData.CalcValueCount(fFirstRangeValue);
                       CompareData.CalcCompareValueCount(fFirstRangeValue);
-                      //CalcRowSpacing(CompareData);
+                      CalcRowSpacing(CompareData);
                       fDatabase.Add(CompareData, True);
                     end;
                     //左斜连
@@ -872,7 +872,7 @@ begin
                       end;
                       CompareData.CalcValueCount(fFirstRangeValue);
                       CompareData.CalcCompareValueCount(fFirstRangeValue);
-                      //CalcRowSpacing(CompareData);
+                      CalcRowSpacing(CompareData);
                       fDatabase.Add(CompareData, True);
                     end;
                   end;
@@ -921,7 +921,7 @@ begin
                 end;
                 CompareData.CalcValueCount(fFirstRangeValue);
                 CompareData.CalcCompareValueCount(fFirstRangeValue);
-                //CalcRowSpacing(CompareData);
+                CalcRowSpacing(CompareData);
                 fDatabase.Add(CompareData, True);
               end);
             end;
@@ -958,13 +958,12 @@ begin
               case fCompareMode of
                 cmVert, cmVertSlant: CalcFirstRowGroup(FirstRow);
               end;
-              {case fCompareMode of
+              case fCompareMode of
                 cmSlant, cmVertSlant:
                 begin
                   FirstRow.RowCount := StrToInt(fDatabase.OneFieldValue(TSQLCompareData, 'Count(*)', 'FirstRow = ?', [FirstRow.Value]));
                 end;
-              end;}
-              FirstRow.RowCount := StrToInt(fDatabase.OneFieldValue(TSQLCompareData, 'Count(*)', 'FirstRow = ?', [FirstRow.Value]));
+              end;
 
               fDatabase.Add(FirstRow, True);
             end;
@@ -983,9 +982,9 @@ begin
                 Group.FillPrepare(fDatabase, 'Value = ?', [CompareData.GroupValue]);
                 if Group.FillOne then
                 begin
-                  //Group.RowCount := Group.RowCount + 1;
-                  //Group.LastFirstRow := Row.Number;
-                  {CompareData2.FillPrepare(fDatabase, 'GroupValue = ? AND FirstRow < ? ORDER BY FirstRow DESC LIMIT 1', [Group.Value, Row.Number]);
+                  Group.RowCount := Group.RowCount + 1;
+                  Group.LastFirstRow := Row.Number;
+                  CompareData2.FillPrepare(fDatabase, 'GroupValue = ? AND FirstRow < ? ORDER BY FirstRow DESC LIMIT 1', [Group.Value, Row.Number]);
                   if CompareData2.FillOne then
                   begin
                     if CompareData.RowSpacing > Group.MaxRowSpacing then
@@ -999,24 +998,19 @@ begin
                       Group.MaxTotalValueCount := CompareData.TotalValueCount;
                       Group.MaxValueCount := CompareData.ValueCount;
                     end;
-                  end;}
-                  //fDatabase.Update(Group);
+                  end;
+                  fDatabase.Update(Group);
                 end
                 else
                 begin
                   Group.Value := CompareData.GroupValue;
                   Group.BuildValue2;
                   Group.ValueCount := CompareData.GroupValueCount;
-                  {Group.RowCount := 1;
+                  Group.RowCount := 1;
                   Group.MaxRowSpacing := CompareData.RowSpacing;
                   Group.MaxTotalValueCount := CompareData.TotalValueCount;
                   Group.MaxValueCount := CompareData.ValueCount;
-                  Group.LastFirstRow := CompareData.FirstRow; }
-                  Group.RowCount := 0;
-                  Group.MaxRowSpacing := 0;
-                  Group.MaxTotalValueCount := 0;
-                  Group.MaxValueCount := 0;
-                  Group.LastFirstRow := 0;
+                  Group.LastFirstRow := CompareData.FirstRow;
                   Group.OneRowSpacingCount := 0;
                   fDatabase.Add(Group, True);
                 end;
@@ -1031,108 +1025,63 @@ begin
             end;
             Inc(PageIndex);
           until CompareData.FillTable.RowCount = 0;
-        end;
-        cpUpdateGroupDataRowSpacing:
-        begin
-          if Row.Number = fRowCount then
-          begin
-            PageIndex := 0;
-            repeat
-              fDatabase.TransactionBegin(TSQLCompareGroup);
-              try
-                Group.FillPrepare(fDatabase, 'LIMIT ? OFFSET ?', 
-                  [EachPageRowCount, PageIndex * EachPageRowCount]);
-                while Group.FillOne do
-                begin 
-                  CompareData.FillPrepare(fDatabase, 'GroupValue = ? AND FirstRow > ? ORDER BY FirstRow DESC',
-                    [Group.Value, Group.LastFirstRow]);
-                  while CompareData.FillOne do
-                  begin
-                    if CompareData.FillCurrentRow = 2 then
-                      Group.LastFirstRow := CompareData.FirstRow;
-                    if CompareData.FillCurrentRow <= CompareData.FillTable.RowCount then
-                      CompareData.FillRow(CompareData.FillCurrentRow, CompareData2)
-                    else
+          //更新连续1临行距个数
+          case fCompareMode of
+            cmSlant, cmVertSlant:
+            begin
+              if fRowCount = Row.Number then
+              begin
+                PageIndex := 0;
+                repeat
+                  fDatabase.Execute('UPDATE CompareGroup SET OneRowSpacingCount = 0 WHERE OneRowSpacingCount > 0');
+                  fDatabase.TransactionBegin(TSQLCompareGroup);
+                  try
+                    Group.FillPrepare(fDatabase, 'LastFirstRow = ? LIMIT ? OFFSET ?',
+                      [fRowCount, EachPageRowCount, PageIndex * EachPageRowCount]);
+                    while Group.FillOne do
                     begin
-                      if Group.LastFirstRow = 0 then
+                      Group.OneRowSpacingCount := 1;
+
+                      CompareData.FillPrepare(fDatabase, 'GroupValue = ? AND RowSpacing = 1 ORDER BY FirstRow DESC', [Group.Value]);
+                      while CompareData.FillOne do
                       begin
-                        case fCompareMode of
-                          cmVert: CompareData2.FirstRow := fVertCompareSpacing - 1;
-                          cmSlant: CompareData2.FirstRow := fSlantCompareSpacing - 1;
-                          cmVertSlant: CompareData2.FirstRow := fVertSlantCompareSpacing - 1;
-                        end;
-                      end
-                      else CompareData2.FirstRow := Group.LastFirstRow;
+                        if CompareData.FillCurrentRow < fRowCount - CompareData.FirstRow + 2 then Break;
+                        Group.OneRowSpacingCount := Group.OneRowSpacingCount + 1;
+                      end;
+                      fDatabase.Update(Group);
                     end;
-                    CompareData.RowSpacing := CompareData.FirstRow - CompareData2.FirstRow;
-                    fDatabase.Update(CompareData);
-
-                    if CompareData.RowSpacing > Group.MaxRowSpacing then
-                      Group.MaxRowSpacing := CompareData.RowSpacing;
-                      
-                    if (CompareData.TotalValueCount > Group.MaxTotalValueCount)
-                      or ((CompareData.TotalValueCount = Group.MaxTotalValueCount)
-                      and (CompareData.ValueCount > Group.MaxValueCount))
-                    then
+                    fDatabase.Commit(1, True);
+                  except
+                    on e: Exception do
                     begin
-                      Group.MaxTotalValueCount := CompareData.TotalValueCount;
-                      Group.MaxValueCount := CompareData.ValueCount;
+                      fDatabase.RollBack;
+                      raise Exception.Create(e.Message);
                     end;
                   end;
-                  //更新最大临行距
-                  CompareData.RowSpacing := fRowCount + 1 - Group.LastFirstRow;
-                  if CompareData.RowSpacing > Group.MaxRowSpacing then
-                    Group.MaxRowSpacing := CompareData.RowSpacing;
-
-                  Group.RowCount := Group.RowCount + CompareData.FillTable.RowCount;
-
-                  fDatabase.Update(Group);
-                end;
-                fDatabase.Commit(1, True);
-              except
-                on e: Exception do
-                begin
-                  fDatabase.RollBack;
-                  raise Exception.Create(e.Message);
-                end;
+                  Inc(PageIndex);
+                until Group.FillTable.RowCount = 0;
               end;
-              Inc(PageIndex);
-            until Group.FillTable.RowCount = 0;
+            end;
           end;
-        end;
-        cpUpdateGroupOneRowSpacingCount:
-        begin
-          if (fRowCount = Row.Number) and (fCompareMode in [cmSlant, cmVertSlant]) then
+          //更新最大临行距
+          if fRowCount = Row.Number then
           begin
-            fDatabase.Execute('UPDATE CompareGroup SET OneRowSpacingCount = 0 WHERE OneRowSpacingCount > 0');
-            PageIndex := 0;
-            repeat
-              Group.FillPrepare(fDatabase, 'LastFirstRow = ? LIMIT ? OFFSET ?',
-                [fRowCount, EachPageRowCount, PageIndex * EachPageRowCount]);
-              fDatabase.TransactionBegin(TSQLCompareGroup);
-              try
-                while Group.FillOne do
-                begin
-                  Group.OneRowSpacingCount := 1;
-
-                  CompareData.FillPrepare(fDatabase, 'GroupValue = ? AND RowSpacing = 1 ORDER BY FirstRow DESC', [Group.Value]);
-                  while CompareData.FillOne do
-                  begin
-                    if CompareData.FillCurrentRow < fRowCount - CompareData.FirstRow + 2 then Break;
-                    Group.OneRowSpacingCount := Group.OneRowSpacingCount + 1;
-                  end;
-                  fDatabase.Update(Group);
-                end;
-                fDatabase.Commit(1, True);
-              except
-                on e: Exception do
-                begin
-                  fDatabase.RollBack;
-                  raise Exception.Create(e.Message);
-                end;
+            fDatabase.TransactionBegin(TSQLCompareGroup);
+            try
+              Group.FillPrepare(fDatabase, 'MaxRowSpacing < ? - LastFirstRow', [fRowCount + 1]);
+              while Group.FillOne do
+              begin
+                Group.MaxRowSpacing := fRowCount + 1 - Group.LastFirstRow;
+                fDatabase.Update(Group);
               end;
-              Inc(PageIndex);
-            until Group.FillTable.RowCount = 0;
+              fDatabase.Commit(1, True);
+            except
+              on e: Exception do
+              begin
+                fDatabase.RollBack;
+                raise Exception.Create(e.Message);
+              end;
+            end;
           end;
         end;
       end;
@@ -2885,7 +2834,7 @@ var
   CompareSpacing, RowNo, RowNo2, MaxRowCount, RowCountNumber, RowCountNumber2: Cardinal;
   PageIndex, SerialNo: Integer;
 begin
-  TxtFileName := '（2）. 简化并统计：[（TXT）文本：（2-1）【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】].txt';
+  TxtFileName := '（2）. 简化并统计：[（TXT）文本：（2-1）【排列】【“%d”个以上[相同组合、不同首行]的组合[不同首行数：最多→少]】]：.txt';
   TxtFileName := Format(TxtFileName, [fExportGroupValueCount]);
   FileName := fExportDirectory + TxtFileName;
 
@@ -2907,7 +2856,7 @@ begin
     fr2.RebuildFileNameEvent := RebuildFileName;
   end;
   try
-    s := TPath.GetFileNameWithoutExtension(FileName) + '：';
+    s := TPath.GetFileNameWithoutExtension(FileName);
     fr.WriteLn('');
     fr.WriteLn('');
     fr.WriteLn(s);

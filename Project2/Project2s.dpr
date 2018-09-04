@@ -1,8 +1,7 @@
-program Project2;
+program Project2s;
 
 uses
   Vcl.Forms,
-  ufrmMain in 'ufrmMain.pas' {frmMain},
   uInternetTime in '..\uInternetTime.pas',
   uTimer in '..\uTimer.pas',
   uCommon in '..\uCommon.pas',
@@ -11,7 +10,8 @@ uses
   ufrmExportVertFileSettings in 'ufrmExportVertFileSettings.pas' {frmExportVertFileSettings},
   ufrmExportSettings in 'ufrmExportSettings.pas' {frmExportSettings},
   ufrmExportSlantFileSettings in 'ufrmExportSlantFileSettings.pas' {frmExportSlantFileSettings},
-  ufrmExportVertSlantFileSettings in 'ufrmExportVertSlantFileSettings.pas' {frmExportVertSlantFileSettings};
+  ufrmExportVertSlantFileSettings in 'ufrmExportVertSlantFileSettings.pas' {frmExportVertSlantFileSettings},
+  ufrmMain2 in 'ufrmMain2.pas' {frmMain};
 
 {$R *.res}
 

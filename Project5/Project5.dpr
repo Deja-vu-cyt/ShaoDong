@@ -8,8 +8,9 @@ uses
   ufrmInput in 'ufrmInput.pas' {frmInput},
   uTimer in '..\uTimer.pas',
   ufrmSameColumnsSet in 'ufrmSameColumnsSet.pas' {frmSameColumnsSet},
-  ufrmDeleteSameColumnSet in 'ufrmDeleteSameColumnSet.pas' {frmDeleteSameColumnSet},
-  ufrmIntervalValueSet in '..\ufrmIntervalValueSet.pas' {frmIntervalValueSet};
+  ufrmExportFileSettings in 'ufrmExportFileSettings.pas' {frmExportFileSettings},
+  ufrmIntervalValueSet in '..\ufrmIntervalValueSet.pas' {frmIntervalValueSet},
+  ufrmQueryConfig3 in 'ufrmQueryConfig3.pas' {frmQueryConfig3};
 
 {$R *.res}
 
@@ -18,5 +19,6 @@ begin
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TfrmIntervalValueSet, frmIntervalValueSet);
+  Application.CreateForm(TfrmQueryConfig3, frmQueryConfig3);
   Application.Run;
 end.

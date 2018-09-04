@@ -44,7 +44,6 @@ object frmIntervalValueSet: TfrmIntervalValueSet
     NumbersOnly = True
     ParentFont = False
     TabOrder = 0
-    Text = '256'
   end
   object edtIntervalValue2: TEdit
     Left = 111
@@ -59,7 +58,6 @@ object frmIntervalValueSet: TfrmIntervalValueSet
     NumbersOnly = True
     ParentFont = False
     TabOrder = 1
-    Text = '0'
   end
   object btnOK: TButton
     Left = 56

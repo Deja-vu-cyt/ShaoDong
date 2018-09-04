@@ -55,8 +55,6 @@ begin
   end;
   if v + v2 > 256 then raise Exception.Create('总列数不能超过256');
 
-  if True then
-
   SetLength(fIntervalValues, 1);
   fIntervalValues[0] := v;
   if v2 > 0 then

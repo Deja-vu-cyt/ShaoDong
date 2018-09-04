@@ -11,11 +11,8 @@ type
   TfrmSameColumnsSet = class(TForm)
     btnOk: TButton;
     Panel1: TPanel;
-    lblMaxPageNo: TLabel;
-    edtPageNo: TEdit;
-    edtEachPageRowCount: TEdit;
     Label1: TLabel;
-    Label2: TLabel;
+    edtEachPageRowCount: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure btnOkClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -25,20 +22,15 @@ type
     fIntervalValues: TWordDynArray;
     fValues: TWordDynArray;
     fValueChanged: Boolean;
-    fRowCount: Cardinal;
     fEachPageRowCount: Word;
-    fPageNo: Cardinal;
     procedure CheckBoxClick(Sender: TObject);
     procedure CheckBoxCtrlClick(Sender: TObject);
     procedure SetIntervalValues(Value: TWordDynArray);
-    procedure SetRowCount(Value: Cardinal);
   public
     property IntervalValues: TWordDynArray read fIntervalValues write SetIntervalValues;
     property Values: TWordDynArray read fValues;
     property ValueChanged: Boolean read fValueChanged;
-    property RowCount: Cardinal read fRowCount write SetRowCount;
     property EachPageRowCount: Word read fEachPageRowCount;
-    property PageNo: Cardinal read fPageNo;
   end;
 
 var
@@ -60,6 +52,7 @@ procedure SameColumnsSet(aIntervalValues: TWordDynArray);
 begin
   if not Assigned(frmSameColumnsSet) then
     frmSameColumnsSet := TfrmSameColumnsSet.Create(Application);
+  frmSameColumnsSet.IntervalValues := aIntervalValues;
   frmSameColumnsSet.ShowModal;
 end;
 
@@ -81,7 +74,7 @@ begin
     for j := 1 to ValueArr[i] do
     begin
       Inc(v);
-      if v2 > IntervalValue + fIntervalValues[IntervalIndex] then
+      if v > IntervalValue + fIntervalValues[IntervalIndex] then
       begin
         IntervalValue := IntervalValue + fIntervalValues[IntervalIndex];
         Inc(IntervalIndex)
@@ -117,14 +110,8 @@ begin
       OnClick := CheckBoxCtrlClick;
     end;
   end;
-end;
 
-procedure TfrmSameColumnsSet.SetRowCount(Value: Cardinal);
-begin
-  if not ((Value > 0) and (fRowCount <> Value)) then Exit;
-  fRowCount := Value;
-
-  lblMaxPageNo.Caption := Format('/%d页，总行数：%d', [Ceil(fRowCount / fEachPageRowCount), fRowCount]);
+  FormResize(Self);
 end;
 
 procedure TfrmSameColumnsSet.FormCreate(Sender: TObject);
@@ -199,16 +186,11 @@ begin
         end;
       end;
     end;
-
-    edtPageNo.Text := '1';
   end;
 
   if not (TryStrToInt(edtEachPageRowCount.Text, i) and (i > 0)) then
     raise Exception.Create('请输入有效每页行数');
   fEachPageRowCount := i;
-  if not (TryStrToInt(edtPageNo.Text, i) and (i > 0)) then
-    raise Exception.Create('请输入有效页号');
-  fPageNo := i;
 
   ModalResult := mrOk;
 end;

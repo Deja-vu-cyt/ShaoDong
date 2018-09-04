@@ -27,12 +27,9 @@ type
     btnCompareClearColumn: TButton;
     btnBuildClearColumn: TButton;
     btnQueryData3: TButton;
-    pnlQueryData3: TPanel;
     btnInputResultData: TButton;
     Panel3: TPanel;
     dbgrdResultData: TDBGridEh;
-    Panel5: TPanel;
-    pnlQueryData2: TPanel;
     fdmtCompareResult: TFDMemTable;
     dsCompareResult: TDataSource;
     dsDataTable: TDataSource;
@@ -42,8 +39,11 @@ type
     Label1: TLabel;
     Button1: TButton;
     Button3: TButton;
-    btnDeleteSameColumnData: TButton;
     btnExportToFile: TButton;
+    pnlQueryData2: TPanel;
+    Splitter1: TSplitter;
+    Panel5: TPanel;
+    pnlQueryData3: TPanel;
     procedure btnSortClearColumnClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -56,9 +56,6 @@ type
     procedure btnIntervalValueSetClick(Sender: TObject);
     procedure btnInputResultDataClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
-    procedure btnDeleteSameColumnDataClick(Sender: TObject);
-    procedure btnSortDataClick(Sender: TObject);
-    procedure bntSetEachFileRowCountClick(Sender: TObject);
     procedure btnExportToFileClick(Sender: TObject);
   private
     fDataComputer: TDataComputer;
@@ -78,7 +75,7 @@ implementation
 
 uses
   ufrmInput, ufrmQueryConfig3, uTimer, ufrmIntervalValueSet, ufrmSameColumnsSet,
-  ufrmDeleteSameColumnSet;
+  ufrmExportFileSettings;
 
 {$R *.dfm}
 
@@ -149,8 +146,8 @@ begin
       FieldName := 'FileNo';
       Alignment := TAlignment.taCenter;
       Title.Alignment := TAlignment.taCenter;
-      Title.Caption := '④.所在文本行号';
-      Width := 140;
+      Title.Caption := '④.所在文本行（或）尾号';
+      Width := 200;
     end;
     with dbgrdDataTable.Columns.Add do
     begin
@@ -185,45 +182,15 @@ begin
 end;
 
 procedure TfrmMain.btnExportToFileClick(Sender: TObject);
-var
-  FileDirectory: string;
-  EachFileRowCount: Integer;
 begin
-  if not SelectDirectory('导出数据文件夹', '', FileDirectory) then Exit;
-  EachFileRowCount := 1000;
-  if not Input('', '输入平均多少行/文本', EachFileRowCount) then Exit;
-  if EachFileRowCount < 1 then raise Exception.Create('请输入有效数值');
-  fDataComputer.ExportToFile(FileDirectory, EachFileRowCount);
-  ShowMessage('导出结果数据完成');
-end;
+  if not ExportFileSet then Exit;
 
-procedure TfrmMain.bntSetEachFileRowCountClick(Sender: TObject);
-var
-  EachFileRowCount: Integer;
-begin
-  {EachFileRowCount := 1000;
-  if not Input('', '输入平均多少行/文本', EachFileRowCount) then Exit;
-  if EachFileRowCount < 1 then raise Exception.Create('请输入有效数值');
-  fDataComputer.SetEachFileRowCount(EachFileRowCount);
-  ShowMessage('设置行数完成');}
-end;
-
-procedure TfrmMain.btnSortDataClick(Sender: TObject);
-begin
-  {fDataComputer.SortData;
-  ShowMessage('排序完成');}
-end;
-
-procedure TfrmMain.btnDeleteSameColumnDataClick(Sender: TObject);
-begin
-  OpenDialog.Options := OpenDialog.Options - [ofAllowMultiSelect];
-  if not OpenDialog.Execute then Exit;
-  DeleteSameColumnSet;
-  fDataComputer.DeleteSameColumnData(
-    OpenDialog.FileName,
-    frmDeleteSameColumnSet.SameColumnValues
+  fDataComputer.ExportToFile(
+    frmExportFileSettings.ExportFileDirectory,
+    frmExportFileSettings.EachFileRowCount,
+    frmExportFileSettings.rbSubFileDirectory.Checked
   );
-  ShowMessage('删除完全相同列的行完成');
+  ShowMessage('导出结果数据完成');
 end;
 
 procedure TfrmMain.dbgrdDataTableAdvDrawDataCell(Sender: TCustomDBGridEh;
@@ -268,21 +235,21 @@ begin
   OpenDialog.Options := OpenDialog.Options - [ofAllowMultiSelect];
   if not OpenDialog.Execute then Exit;
 
-  MaxColNo := 0;
-  if not Input('', '设置总列数', MaxColNo) then Exit;
-  RangeColNo := MaxColNo;
-  if not Input('', '输入第一段列数范围', RangeColNo) then Exit;
-  if RangeColNo > MaxColNo then raise Exception.Create('请输入有效数值');
-  fDataComputer.BuildClearColumn(OpenDialog.FileName, [RangeColNo, MaxColNo - RangeColNo]);
+  IntervalValueSet;
+  if frmIntervalValueSet.ModalResult <> mrOK then Exit;
+
+  fDataComputer.BuildClearColumn(OpenDialog.FileName, frmIntervalValueSet.IntervalValues);
 
   ShowMessage('生成清列行完成');
 end;
 
 procedure TfrmMain.btnCompareClearColumnClick(Sender: TObject);
+var
+  FileDirectory: string;
 begin
-  OpenDialog.Options := OpenDialog.Options + [ofAllowMultiSelect];
-  if not OpenDialog.Execute then Exit;
-  fDataComputer.CompareClearColumn(OpenDialog.Files);
+  if not SelectDirectory('导入数据文件夹', '', FileDirectory) then Exit;
+  fDataComputer.CompareClearColumn(FileDirectory);
+  ShowMessage('比较清列行完成');
 end;
 
 procedure TfrmMain.btnInputResultDataClick(Sender: TObject);
@@ -291,7 +258,7 @@ var
 begin
   if not SelectDirectory('导入数据文件夹', '', FileDirectory) then Exit;
   fDataComputer.InputResultData(FileDirectory);
-  ShowMessage('导入结果数据完成');
+  ShowMessage('导入 ( 查询“数据”) 完成');
 end;
 
 procedure TfrmMain.btnQuerySameColumnsClick(Sender: TObject);
@@ -299,14 +266,12 @@ var
   SameValuesChanged: Boolean;
   SameValues: TWordDynArray;
   EachPageRowCount: Word;
-  PageNo: Cardinal;
 begin
-  SameColumnsSet([]);
+  SameColumnsSet(fDataComputer.IntervalValues);
   if frmSameColumnsSet.ModalResult <> mrOK then Exit;
   SameValuesChanged := frmSameColumnsSet.ValueChanged;
   SameValues := frmSameColumnsSet.Values;
   EachPageRowCount := frmSameColumnsSet.EachPageRowCount;
-  PageNo := frmSameColumnsSet.PageNo;
 
   OnStateChange(False);
   TTask.Create(procedure
@@ -339,12 +304,8 @@ begin
         begin
           fDataComputer.CalcConformColumnCount(SameValues);
           ConformRowCount := fDataComputer.GetConformRowCount;
-          TThread.Synchronize(nil, procedure
-          begin
-            frmSameColumnsSet.RowCount := ConformRowCount;
-          end);
         end;
-        fDataComputer.QueryData2(fdmtDataTable, PageNo, EachPageRowCount);
+        fDataComputer.QueryData2(fdmtDataTable, EachPageRowCount);
 
         StopTime;
         ShowMessage('查询完毕');
@@ -370,10 +331,14 @@ begin
   if not Assigned(frmQueryConfig3) then frmQueryConfig3 := TfrmQueryConfig3.Create(Self);
   frmQueryConfig3.ShowModal;
   if frmQueryConfig3.ModalResult <> mrOK then Exit;
-  IdenticalColCount := StrToInt(frmQueryConfig3.edtIdenticalColCount.Text);
-  CompareRowCount := StrToInt(frmQueryConfig3.edtCompareRowCount.Text);
 
-  fDataComputer.QueryData3(fdmtCompareResult, OpenDialog.FileName, IdenticalColCount, CompareRowCount);
+  fDataComputer.QueryData3(
+    fdmtCompareResult,
+    OpenDialog.FileName,
+    frmQueryConfig3.IntervalValues,
+    frmQueryConfig3.IdenticalColCount,
+    frmQueryConfig3.CompareRowCount
+  );
 end;
 
 procedure TfrmMain.btnRearrangeClearColumnClick(Sender: TObject);

@@ -30,9 +30,9 @@ object frmMain: TfrmMain
       object Label10: TLabel
         Left = 12
         Top = 7
-        Width = 813
+        Width = 77
         Height = 24
-        Caption = '4.'#35774#32622#65306#26597#35810#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#36830' ['#65288#31532'N-1'#34892#65289#65288#31532'1-N'#30452#36830#34892#65289']'#12305#21508#12304' N'#12305#34892#20043#38388#65306
+        Caption = '4.'#35774#32622#65306
       end
       object Label12: TLabel
         Left = 12
@@ -44,9 +44,9 @@ object frmMain: TfrmMain
       object Label14: TLabel
         Left = 12
         Top = 76
-        Width = 813
+        Width = 77
         Height = 24
-        Caption = '5.'#35774#32622#65306#26597#35810#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#26012#36830' ['#65288#31532'N-1'#34892#65289#65288#31532'1-N'#26012#36830#34892#65289']'#12305#21508#12304' N'#12305#34892#20043#38388#65306
+        Caption = '5.'#35774#32622#65306
       end
       object Label15: TLabel
         Left = 12
@@ -58,16 +58,16 @@ object frmMain: TfrmMain
       object Label16: TLabel
         Left = 12
         Top = 180
-        Width = 905
+        Width = 77
         Height = 24
-        Caption = '7.'#35774#32622#8220#23548#20986#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#12289#26012#36830' ['#65288#31532'N-1'#34892#65289#65288#31532'1-N'#30452#12289#26012#36830#34892#65289']'#12305#21015#8220' N'#8221#20010#20197#19978#32452#21512#8221#65306
+        Caption = '7.'#35774#32622#65306
       end
       object Label18: TLabel
         Left = 12
         Top = 145
-        Width = 907
+        Width = 77
         Height = 24
-        Caption = '6.'#35774#32622#8220#26597#35810#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#12289#26012#36830' ['#65288#31532'N-1'#34892#65289#65288#31532'1-N'#30452#12289#26012#36830#34892#65289']'#12305#21015#8220'  1-N   '#8221#27425#32452#21512#8221#65306
+        Caption = '6.'#35774#32622#65306
       end
       object edtVVertSameValueCount2: TEdit
         Left = 267
@@ -98,7 +98,7 @@ object frmMain: TfrmMain
         TabOrder = 1
       end
       object edtVVertCompareSpacing: TEdit
-        Left = 839
+        Left = 95
         Top = 7
         Width = 100
         Height = 29
@@ -140,7 +140,7 @@ object frmMain: TfrmMain
         TabOrder = 4
       end
       object edtSlantCompareSpacing: TEdit
-        Left = 839
+        Left = 95
         Top = 76
         Width = 100
         Height = 29
@@ -163,7 +163,7 @@ object frmMain: TfrmMain
         OnClick = btnCompareClick
       end
       object edtExportGroupValueCount: TEdit
-        Left = 920
+        Left = 95
         Top = 180
         Width = 100
         Height = 29
@@ -177,7 +177,7 @@ object frmMain: TfrmMain
         TabOrder = 7
       end
       object edtCompareGroupValueCount: TEdit
-        Left = 920
+        Left = 95
         Top = 145
         Width = 100
         Height = 29
@@ -215,16 +215,16 @@ object frmMain: TfrmMain
       object Label11: TLabel
         Left = 9
         Top = 119
-        Width = 837
+        Width = 83
         Height = 24
-        Caption = '6. '#35774#32622#8220#23548#20986#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#36830' ['#65288#31532'N-1'#34892#65289#65288#31532' 1-N '#30452#36830#34892#65289']'#12305#21015#8220'N'#8221#20010#20197#19978#32452#21512#8221#65306
+        Caption = '6. '#35774#32622#65306
       end
       object Label7: TLabel
         Left = 12
         Top = 15
-        Width = 813
+        Width = 77
         Height = 24
-        Caption = '4.'#35774#32622#65306#26597#35810#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#36830' ['#65288#31532'N-1'#34892#65289#65288#31532'1-N'#30452#36830#34892#65289']'#12305#21508#12304' N'#12305#34892#20043#38388#65306
+        Caption = '4.'#35774#32622#65306
       end
       object Label9: TLabel
         Left = 12
@@ -236,9 +236,9 @@ object frmMain: TfrmMain
       object Label8: TLabel
         Left = 9
         Top = 84
-        Width = 839
+        Width = 83
         Height = 24
-        Caption = '5. '#35774#32622#8220#26597#35810#12304#65288#31532'N-N'#34892#20026#39318#34892#65289#30452#36830' ['#65288#31532'N-1'#34892#65289#65288#31532' 1-N '#30452#36830#34892#65289']'#12305#21015#8220'  1-N  '#8221#27425#32452#21512#8221#65306
+        Caption = '5. '#35774#32622#65306
       end
       object btnVertCompare: TButton
         Left = 12
@@ -250,7 +250,7 @@ object frmMain: TfrmMain
         OnClick = btnCompareClick
       end
       object edtVertExportTypeCount: TEdit
-        Left = 849
+        Left = 95
         Top = 119
         Width = 100
         Height = 29
@@ -292,7 +292,7 @@ object frmMain: TfrmMain
         TabOrder = 3
       end
       object edtVertCompareSpacing: TEdit
-        Left = 839
+        Left = 95
         Top = 15
         Width = 100
         Height = 29
@@ -306,7 +306,7 @@ object frmMain: TfrmMain
         TabOrder = 4
       end
       object edtVertCompareTypeCount: TEdit
-        Left = 849
+        Left = 95
         Top = 84
         Width = 100
         Height = 29
@@ -343,16 +343,16 @@ object frmMain: TfrmMain
       object Label5: TLabel
         Left = 12
         Top = 47
-        Width = 688
+        Width = 83
         Height = 24
-        Caption = '5. '#35774#32622#8220#23548#20986#12304#65288#31532' N-N '#34892#20026#39318#34892#65289#26012#36830#65288#31532' N-1 '#34892#65289#12305#21015#8220' N '#8221#20010#20197#19978#32452#21512#8221#65306
+        Caption = '5. '#35774#32622#65306
       end
       object Label2: TLabel
         Left = 12
         Top = 12
-        Width = 690
+        Width = 83
         Height = 24
-        Caption = '4. '#35774#32622#8220#26597#35810#12304#65288#31532' N-N '#34892#20026#39318#34892#65289#26012#36830#65288#31532' N-1 '#34892#65289#12305#21015#8220'   1-N   '#8221#27425#32452#21512#8221#65306
+        Caption = '4. '#35774#32622#65306
       end
       object btnSlantCompare: TButton
         Left = 12
@@ -364,7 +364,7 @@ object frmMain: TfrmMain
         OnClick = btnCompareClick
       end
       object edtExportTypeCount: TEdit
-        Left = 706
+        Left = 95
         Top = 47
         Width = 100
         Height = 29
@@ -388,7 +388,7 @@ object frmMain: TfrmMain
         OnClick = btnExportCompareRowClick
       end
       object edtCompareSpacing: TEdit
-        Left = 706
+        Left = 95
         Top = 12
         Width = 100
         Height = 29
@@ -434,9 +434,9 @@ object frmMain: TfrmMain
     object Label1: TLabel
       Left = 16
       Top = 52
-      Width = 269
+      Width = 77
       Height = 24
-      Caption = '1.'#35835#21462#8220#34987#26597#35810#65288'TXT'#65289#25991#26412#8221#65306
+      Caption = '1.'#35835#21462#65306
     end
     object lblUseTime: TLabel
       Left = 13
@@ -448,21 +448,21 @@ object frmMain: TfrmMain
     object Label3: TLabel
       Left = 16
       Top = 87
-      Width = 293
+      Width = 77
       Height = 24
-      Caption = '2.'#35774#32622#8220#26597#35810#65288#24635#21644#21306#22495#65289#8221#21015#25968#65306
+      Caption = '2.'#35774#32622#65306
     end
     object Label4: TLabel
       Left = 16
       Top = 122
-      Width = 293
+      Width = 77
       Height = 24
-      Caption = '3.'#35774#32622#8220#26597#35810#65288#31532#19968#21306#22495#65289#8221#21015#25968#65306
+      Caption = '3.'#35774#32622#65306
     end
     object edtFileName: TEdit
-      Left = 291
+      Left = 99
       Top = 52
-      Width = 1014
+      Width = 1214
       Height = 29
       Anchors = [akLeft, akTop, akRight]
       Font.Charset = DEFAULT_CHARSET
@@ -476,7 +476,7 @@ object frmMain: TfrmMain
       OnClick = edtFileNameClick
     end
     object edtMaxValue: TEdit
-      Left = 308
+      Left = 99
       Top = 87
       Width = 100
       Height = 29
@@ -490,7 +490,7 @@ object frmMain: TfrmMain
       TabOrder = 1
     end
     object edtFirstRangeValue: TEdit
-      Left = 308
+      Left = 99
       Top = 122
       Width = 100
       Height = 29

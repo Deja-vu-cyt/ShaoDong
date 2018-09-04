@@ -1,8 +1,8 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  ClientHeight = 675
-  ClientWidth = 1520
+  ClientHeight = 804
+  ClientWidth = 1173
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,11 +15,21 @@ object frmMain: TfrmMain
   OnResize = FormResize
   PixelsPerInch = 96
   TextHeight = 24
+  object Splitter1: TSplitter
+    Left = 0
+    Top = 549
+    Width = 1173
+    Height = 5
+    Cursor = crVSplit
+    Align = alBottom
+    ExplicitTop = 512
+    ExplicitWidth = 1520
+  end
   object dbgrdDataTable: TDBGridEh
     Left = 0
-    Top = 605
-    Width = 1520
-    Height = 70
+    Top = 274
+    Width = 1173
+    Height = 275
     Align = alClient
     DataSource = dsDataTable
     DynProps = <>
@@ -50,29 +60,23 @@ object frmMain: TfrmMain
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 1520
-    Height = 305
+    Width = 1173
+    Height = 274
     Align = alTop
     TabOrder = 1
     object Label1: TLabel
-      Left = 520
-      Top = 170
+      Left = 648
+      Top = 143
       Width = 496
       Height = 24
       Caption = '[ '#20174#19978#33267#19979#65288' '#25353#65306#22823' '#8594' '#23567' '#65289#65288#26631#27880#65289#24207#34892#21495#65306'N - 1 = ]'
     end
     object btnQuerySameColumns: TButton
-      Left = 679
-      Top = 125
-      Width = 202
-      Height = 30
+      Left = 502
+      Top = 90
+      Width = 242
+      Height = 40
       Caption = #65288'3'#65289'.'#26597#35810#8220#30456#21516#21015#25968#23383#8221
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
       TabOrder = 0
       OnClick = btnQuerySameColumnsClick
     end
@@ -93,199 +97,126 @@ object frmMain: TfrmMain
       TabOrder = 2
     end
     object btnRearrangeClearColumn: TButton
-      Left = 264
-      Top = 170
-      Width = 250
-      Height = 30
-      Caption = '[2]. '#36716#21270#8220#28165#21015#34892#8221#9313'-'#9315#65288#37197#22871#65289
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
+      Left = 311
+      Top = 136
+      Width = 325
+      Height = 40
+      Caption = #65288#37197#22871#65289'[2]. '#36716#21270#8220#28165#21015#34892#8221#9313'-'#9315
       TabOrder = 3
       OnClick = btnRearrangeClearColumnClick
     end
     object btnSortClearColumn: TButton
       Left = 18
-      Top = 170
-      Width = 240
-      Height = 30
-      Caption = '[1]. '#20498#24207#37325#26032#25490#34892' '#9312#65288#37197#22871#65289
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
+      Top = 136
+      Width = 287
+      Height = 40
+      Caption = #65288#37197#22871#65289'[1]. '#20498#24207#37325#26032#25490#34892' '#9312
       TabOrder = 4
       OnClick = btnSortClearColumnClick
     end
     object btnCompareClearColumn: TButton
       Left = 18
-      Top = 206
-      Width = 240
-      Height = 30
-      Caption = '[3]. '#21516#34892#27604#21015#25968#23383' '#9316#65288#37197#22871#65289
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
+      Top = 182
+      Width = 287
+      Height = 40
+      Caption = #65288#37197#22871#65289'[3]. '#21516#34892#27604#21015#25968#23383' '#9316
       TabOrder = 5
       OnClick = btnCompareClearColumnClick
     end
     object btnBuildClearColumn: TButton
-      Left = 587
-      Top = 206
-      Width = 240
-      Height = 30
-      Caption = '[5]. '#29983#25104#8220#28165#21015#25991#26412#8221' '#65288#37197#22871#65289
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
+      Left = 863
+      Top = 182
+      Width = 290
+      Height = 40
+      Caption = #65288#37197#22871#65289'[5]. '#29983#25104#8220#28165#21015#25991#26412#8221' '
       TabOrder = 6
       OnClick = btnBuildClearColumnClick
     end
     object btnQueryData3: TButton
-      Left = 264
-      Top = 206
-      Width = 317
-      Height = 30
-      Caption = '[4]. '#30456#21516#21015#34892#27425#25968#25490#21015#65288'N-N'#65289#65288#37197#22871#65289
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
+      Left = 311
+      Top = 182
+      Width = 546
+      Height = 40
+      Caption = #65288#37197#22871#65289'[4].'#65288#25490#21015#65289#30456#21516#21015#65288#34892#27425#25968#65306'N '#26368#22810#8594#26368#23569#65289
       TabOrder = 7
       OnClick = btnQueryData3Click
     end
-    object pnlQueryData3: TPanel
-      Left = 18
-      Top = 256
-      Width = 430
-      Height = 30
-      Alignment = taLeftJustify
-      Caption = '[4]. '#30456#21516#21015#34892#27425#25968#25490#21015#65288'N-N'#65289#65288#37197#22871#65289' '#26174#31034#26639
-      TabOrder = 8
-    end
     object btnInputResultData: TButton
-      Left = 159
-      Top = 125
-      Width = 514
-      Height = 30
-      Caption = #65288'2'#65289'.'#35835#21462' '#8220'[ '#21547#26377' '#26597#35810#25968#25454' '#30340' 1- N '#20010#65288'TXT'#65289#25991#26412' ] '#30340#25991#20214#22841#8221
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 9
+      Left = 255
+      Top = 90
+      Width = 241
+      Height = 40
+      Caption = #65288'2'#65289'.'#35835#21462#65306#8220#26597#35810#25968#25454#8221
+      TabOrder = 8
       OnClick = btnInputResultDataClick
     end
     object btnIntervalValueSet: TButton
       Left = 18
-      Top = 125
-      Width = 135
-      Height = 30
-      Caption = #65288'1'#65289'.'#35774#32622#8220#21015#25968#8221
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 10
+      Top = 90
+      Width = 231
+      Height = 40
+      Caption = #65288'1'#65289'.'#35774#32622#8220#21015#25968#8221#33539#22260
+      TabOrder = 9
       OnClick = btnIntervalValueSetClick
     end
     object chkReverseOrder: TCheckBox
-      Left = 1022
-      Top = 174
+      Left = 1150
+      Top = 151
       Width = 20
       Height = 17
-      TabOrder = 11
+      Checked = True
+      State = cbChecked
+      TabOrder = 10
     end
     object Button1: TButton
       Left = 18
       Top = 44
-      Width = 135
-      Height = 30
-      Caption = '1.'#35774#32622#8220#21015#25968#8221
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 12
+      Width = 183
+      Height = 40
+      Caption = '1.'#35774#32622#8220#21015#25968#8221#33539#22260
+      TabOrder = 11
       OnClick = btnIntervalValueSetClick
     end
     object Button3: TButton
-      Left = 159
+      Left = 207
       Top = 44
-      Width = 484
-      Height = 30
-      Caption = '2.'#35835#21462#8220'[ '#21547#26377' '#26597#35810#25968#25454' '#30340' 1- N '#20010#65288'TXT'#65289#25991#26412' ] '#30340#25991#20214#22841#8221
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 13
+      Width = 226
+      Height = 40
+      Caption = '2.'#35835#21462#65306#8220#26597#35810#25968#25454#8221
+      TabOrder = 12
       OnClick = btnInputResultDataClick
     end
-    object btnDeleteSameColumnData: TButton
-      Left = 18
-      Top = 80
-      Width = 202
-      Height = 30
-      Caption = '3.'#21024#38500#23436#20840#30456#21516#21015#30340#34892' '
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 14
-      OnClick = btnDeleteSameColumnDataClick
-    end
     object btnExportToFile: TButton
-      Left = 226
-      Top = 80
-      Width = 135
-      Height = 30
-      Caption = '4.'#23548#20986#8220#25968#25454#8221
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 15
+      Left = 439
+      Top = 44
+      Width = 155
+      Height = 40
+      Caption = '3.'#23548#20986#8220#25968#25454#8221
+      TabOrder = 13
       OnClick = btnExportToFileClick
+    end
+    object pnlQueryData2: TPanel
+      Left = 20
+      Top = 228
+      Width = 293
+      Height = 40
+      Alignment = taLeftJustify
+      Caption = #65288'3'#65289'.'#26597#35810#8220#30456#21516#21015#25968#23383#8221#26174#31034#26639
+      TabOrder = 14
     end
   end
   object Panel3: TPanel
     Left = 0
-    Top = 305
-    Width = 1520
+    Top = 554
+    Width = 1173
     Height = 250
-    Align = alTop
+    Align = alBottom
     TabOrder = 2
     object dbgrdResultData: TDBGridEh
       Left = 1
-      Top = 1
-      Width = 1518
-      Height = 248
+      Top = 57
+      Width = 1171
+      Height = 192
       Align = alClient
       DataSource = dsCompareResult
       DynProps = <>
@@ -316,68 +247,68 @@ object frmMain: TfrmMain
           EditButtons = <>
           FieldName = 'ConformCount'
           Footers = <>
-          Title.Caption = #9312'.'#30456#21516#21015#34892#27425#25968#25490#21015#65288#26368#22810'-'#26368#23569#65289
-          Width = 150
+          Title.Caption = #9312'.'#65288#25490#21015#65289#30456#21516#21015#65288#34892#27425#25968#65306'N '#26368#22810#8594#26368#23569#65289'( '#24635#21306#22495' )'
+          Width = 335
         end
         item
           DynProps = <>
           EditButtons = <>
           FieldName = 'OccurrenceCount'
           Footers = <>
-          Title.Caption = #9313'.'#30456#21516#21015#34892#27425#25968#65288#24635#20849#20960#20010#65289
-          Width = 120
+          Title.Caption = #9313'.'#30456#21516#21015#65288#34892#27425#25968#65306#24635#20849#20960#20010#65289'( '#24635#21306#22495' )'
+          Width = 235
         end
         item
           DynProps = <>
           EditButtons = <>
           FieldName = 'ConformCount2'
           Footers = <>
-          Title.Caption = #9312'.'#30456#21516#21015#34892#27425#25968#25490#21015#65288#31532'1'#21306#22495#65289#65288#26368#22810'-'#26368#23569#65289
-          Width = 239
+          Title.Caption = #9312'.'#65288#25490#21015#65289#30456#21516#21015#65288#34892#27425#25968#65306'N '#26368#22810#8594#26368#23569#65289#65288#31532'1'#21306#22495#65289
+          Width = 344
         end
         item
           DynProps = <>
           EditButtons = <>
           FieldName = 'OccurrenceCount2'
           Footers = <>
-          Title.Caption = #9313'.'#30456#21516#21015#34892#27425#25968#65288#31532'1'#21306#22495#65289#65288#24635#20849#20960#20010#65289
-          Width = 219
+          Title.Caption = #9313'.'#30456#21516#21015#65288#34892#27425#25968#65306#24635#20849#20960#20010#65289#65288#31532'1'#21306#22495#65289
+          Width = 242
         end
         item
           DynProps = <>
           EditButtons = <>
           FieldName = 'ConformCount3'
           Footers = <>
-          Title.Caption = #9312'.'#30456#21516#21015#34892#27425#25968#25490#21015#65288#31532'2'#21306#22495#65289#65288#26368#22810'-'#26368#23569#65289
-          Width = 246
+          Title.Caption = #9312'.'#65288#25490#21015#65289#30456#21516#21015#65288#34892#27425#25968#65306'N '#26368#22810#8594#26368#23569#65289#65288#31532'2'#21306#22495#65289
+          Width = 330
         end
         item
           DynProps = <>
           EditButtons = <>
           FieldName = 'OccurrenceCount3'
           Footers = <>
-          Title.Caption = #9313'.'#30456#21516#21015#34892#27425#25968#65288#31532'2'#21306#22495#65289#65288#24635#20849#20960#20010#65289
-          Width = 211
+          Title.Caption = #9313'.'#30456#21516#21015#65288#34892#27425#25968#65306#24635#20849#20960#20010#65289#65288#31532'2'#21306#22495#65289
+          Width = 243
         end>
       object RowDetailData: TRowDetailPanelControlEh
       end
     end
-  end
-  object Panel5: TPanel
-    Left = 0
-    Top = 555
-    Width = 1520
-    Height = 50
-    Align = alTop
-    TabOrder = 3
-    object pnlQueryData2: TPanel
-      Left = 12
-      Top = 10
-      Width = 285
-      Height = 30
-      Alignment = taLeftJustify
-      Caption = #65288'3'#65289'.'#26597#35810#8220#30456#21516#21015#25968#23383#8221#26174#31034#26639
-      TabOrder = 0
+    object Panel5: TPanel
+      Left = 1
+      Top = 1
+      Width = 1171
+      Height = 56
+      Align = alTop
+      TabOrder = 1
+      object pnlQueryData3: TPanel
+        Left = 18
+        Top = 9
+        Width = 575
+        Height = 40
+        Alignment = taLeftJustify
+        Caption = #65288#37197#22871#65289'[4].'#65288#25490#21015#65289#30456#21516#21015#65288#34892#27425#25968#65306'N '#26368#22810#8594#26368#23569#65289' '#26174#31034#26639
+        TabOrder = 0
+      end
     end
   end
   object OpenDialog: TOpenDialog

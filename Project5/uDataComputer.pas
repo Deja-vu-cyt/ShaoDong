@@ -17,8 +17,14 @@ uses
   uCommon;
 
 type
-  TSQLClearColumnRow = class(TSQLRow);
-  TSQLClearColumnRow2 = class(TSQLRow);
+  TSQLClearColumnRow = class(TSQLData)
+  private
+    fFileNo: Word;
+    fNumber: Cardinal;
+  published
+    property FileNo: Word read fFileNo write fFileNo;
+    property Number: Cardinal read fNumber write fNumber;
+  end;
 
   TSQLResultData = class(TSQLData)
   private
@@ -41,36 +47,36 @@ type
     fDatabase: TSQLRestServerDB;
     fIntervalValues: TWordDynArray;
 
-    procedure LoadData(FileName: string; Row: TSQLRow);
+    procedure LoadData(FileNo: Word; FileName: string; Row: TSQLClearColumnRow;
+      IntervalValues: TWordDynArray = []);
   public
     constructor Create;
     destructor Destroy;
 
     procedure SortClearColumn(Files: TStrings);
     procedure RearrangeClearColumn(Files: TStrings; ReverseOrder: Boolean);
-    procedure CompareClearColumn(Files: TStrings);
+    procedure CompareClearColumn(FileDirectory: string);
     procedure QueryData3(DataSet: TDataSet; FileName: string;
-      IdenticalColCount, CompareRowCount: Cardinal);
+      IntervalValues: TWordDynArray; IdenticalColCount, CompareRowCount: Cardinal);
     procedure BuildClearColumn(FileName: string; aIntervalValues: TWordDynArray);
 
     procedure SetIntervalValues(aIntervalValues: TWordDynArray);
     procedure CheckIntervalValues;
     procedure InputResultData(FileDirectory: string);
-    //procedure DeleteInvalidData(InvalidValueCounts: TWordDynArray);
     procedure DeleteSameColumnData(FileName: string; SameColumnCounts: TWordDynArray);
-    procedure SortData;
-    procedure SetEachFileRowCount(EachFileRowCount: Cardinal);
-    procedure ExportToFile(FileDirectory: string; EachFileRowCount: Cardinal);
+    procedure ExportToFile(FileDirectory: string; EachFileRowCount: Cardinal;
+      SplitSubFileDirectory: Boolean);
     procedure CalcConformColumnCount(Cols: TWordDynArray);
     function GetConformRowCount: Cardinal;
-    procedure QueryData2(DataSet: TDataSet; PageNo, EachPageRowCount: Cardinal);
+    procedure QueryData2(DataSet: TDataSet; EachPageRowCount: Cardinal);
 
     property IntervalValues: TWordDynArray read fIntervalValues;
   end;
 
 implementation
 
-procedure TDataComputer.LoadData(FileName: string; Row: TSQLRow);
+procedure TDataComputer.LoadData(FileNo: Word; FileName: string;
+  Row: TSQLClearColumnRow; IntervalValues: TWordDynArray);
 var
   l: TStringList;
   i, RowIndex, Digit: Integer;
@@ -86,9 +92,10 @@ begin
       begin
         if not TryStrToInt(l.Names[i].Trim, Digit) then Continue;
         s := l.ValueFromIndex[i];
+        Row.FileNo := FileNo;
         Row.Number := Digit;
         Row.ClearValue;
-        Row.AssignValue(s);
+        Row.AssignValue(s, IntervalValues);
         if fDatabase.Add(Row, True) = 0 then
           raise Exception.Create('Add row failed');
       end;
@@ -108,7 +115,7 @@ end;
 constructor TDataComputer.Create;
 begin
   inherited Create;
-  fModel := TSQLModel.Create([TSQLResultData, TSQLClearColumnRow, TSQLClearColumnRow2]);
+  fModel := TSQLModel.Create([TSQLResultData, TSQLClearColumnRow]);
   fDatabase := TSQLRestServerDB.Create(fModel);
   fDatabase.CreateMissingTables;
   fDatabase.CreateSQLIndex(TSQLResultData, 'FolderNo', False);
@@ -135,7 +142,10 @@ begin
     begin
       l.LoadFromFile(FileName);
       for i := l.Count - 1 downto 0 do
-        if l[i].Trim.IsEmpty then l.Delete(i);
+      begin
+        if l[i].Trim.IsEmpty then l.Delete(i)
+        else l[i] := Format('%s=%s', [l.Names[i].Trim, l.ValueFromIndex[i].Trim]);
+      end;
 
       for i := 0 to l.Count div 2 - 1 do
       begin
@@ -197,75 +207,104 @@ begin
   end;
 end;
 
-procedure TDataComputer.CompareClearColumn(Files: TStrings);
+procedure TDataComputer.CompareClearColumn(FileDirectory: string);
 var
   l: TStringList;
   Row: TSQLClearColumnRow;
-  Row2: TSQLClearColumnRow2;
+  Rows: array of TSQLClearColumnRow;
   Table: TSQLTableJSON;
-  s, FileName: string;
-  i, MaxRowNumber, MinArrayLength, IntervalIndex, ValueIndex: Integer;
-  v: TWordDynArray;
+  s, sValue, sValue2, FileName: string;
+  FileNo: Word;
+  i, MaxRowNumber, IntervalIndex, ValueIndex, RowIndex, IntervalCount: Integer;
+  AllConform: Boolean;
 begin
-  if Files.Count <> 2 then Exit;
-  FileName := TPath.GetDirectoryName(Files[0]);
-  if not FileName.Substring(FileName.Length - 1).Equals('\') then
-    FileName := FileName + '\';
-  FileName := FileName + '比较结果.txt';
+  if not FileDirectory.Substring(FileName.Length - 1).Equals('\') then
+    FileDirectory := FileDirectory + '\';
 
   TSQLClearColumnRow.AutoFree(Row);
-  TSQLClearColumnRow2.AutoFree(Row2);
   l := TStringList.Create;
   try
-    LoadData(Files[0], Row);
-    LoadData(Files[1], Row2);
+    FileNo := 0;
+    for FileName in TDirectory.GetFiles(FileDirectory, '*.txt') do
+    begin
+      if TPath.GetFileName(FileName).Equals('比较结果.txt') then Continue;
+
+      FileNo := FileNo + 1;
+      LoadData(FileNo, FileName, Row);
+    end;
+    FileName := FileDirectory + '比较结果.txt';
 
     Table := fDatabase.ExecuteList([TSQLClearColumnRow], 'SELECT Max(Number) FROM ClearColumnRow');
     MaxRowNumber := Table.GetAsInt64(1, 0);
     if Assigned(Table) then FreeAndNil(Table);
-    Table := fDatabase.ExecuteList([TSQLClearColumnRow2], 'SELECT Max(Number) FROM ClearColumnRow2');
-    if Table.GetAsInt64(1, 0) > MaxRowNumber then MaxRowNumber := Table.GetAsInt64(1, 0);
-    if Assigned(Table) then FreeAndNil(Table);
 
     for i := 1 to MaxRowNumber do
     begin
-      Row.FillPrepare(fDatabase, 'Number = ?', [i]);
-      Row.FillOne;
-      Row2.FillPrepare(fDatabase, 'Number = ?', [i]);
-      Row2.FillOne;
-      if (Row.FillTable.RowCount = 1) and (Row2.FillTable.RowCount = 1) then
-      begin
-        for IntervalIndex := Low(Row.IntervalValues) to High(Row.IntervalValues) do
-        begin
-          if IntervalIndex > High(Row2.IntervalValues) then Break;
+      Row.FillPrepare(fDatabase, 'Number = ? ORDER BY FileNo', [i]);
+      if Row.FillTable.RowCount = 0 then Continue;
 
-          while (Row.IntervalValueCounts[IntervalIndex] > 0) and (Row2.IntervalValueCounts[IntervalIndex] > 0) do
-          begin
-            if Row.Value(IntervalIndex, 0) = Row2.Value(IntervalIndex, 0) then
-            begin
-              Row.DeleteValueByIndex(IntervalIndex, ValueIndex);
-              Row2.DeleteValueByIndex(IntervalIndex, ValueIndex);
-            end
-            else Break;
-          end;
+      for RowIndex := Low(Rows) to High(Rows) do Rows[RowIndex] := nil;
+      SetLength(Rows, Row.FillTable.RowCount - 1);
+      for RowIndex := Low(Rows) to High(Rows) do TSQLClearColumnRow.AutoFree(Rows[RowIndex]);
+
+      Row.FillOne;
+      IntervalCount := Length(Row.IntervalValues);
+      for RowIndex := Low(Rows) to High(Rows) do
+      begin
+        Row.FillRow(RowIndex + 2, Rows[RowIndex]);
+        if Length(Rows[RowIndex].IntervalValues) > IntervalCount then
+          IntervalCount := Length(Rows[RowIndex].IntervalValues);
+      end;
+
+      for IntervalIndex := Low(Row.IntervalValues) to High(Row.IntervalValues) do
+      begin
+        for RowIndex := Low(Rows) to High(Rows) do
+        begin
+          AllConform := IntervalIndex <= High(Rows[RowIndex].IntervalValues);
+          if not AllConform then Break;
         end;
-        s := Format('%d=%s', [i, Row.ToString]);
-        l.Add(s);
-        s := Format('%d=%s', [i, Row2.ToString]);
-        l.Add(s);
-      end
-      else if Row.FillTable.RowCount = 1 then
+        if not AllConform then Break;
+
+        repeat
+          AllConform := Row.IntervalValueCounts[0] > 0;
+          if AllConform then
+            for RowIndex := Low(Rows) to High(Rows) do
+            begin
+              AllConform := Rows[RowIndex].IntervalValueCounts[0] > 0;
+              if not AllConform then Break;
+            end;
+          if not AllConform then Break;
+
+          for RowIndex := Low(Rows) to High(Rows) do
+          begin
+            AllConform := Row.Value(IntervalIndex, 0) = Rows[RowIndex].Value(IntervalIndex, 0);
+            if not AllConform then Break;
+          end;
+          if AllConform then
+          begin
+            Row.DeleteValueByIndex(IntervalIndex, 0);
+            for RowIndex := Low(Rows) to High(Rows) do
+              Rows[RowIndex].DeleteValueByIndex(IntervalIndex, 0);
+          end;
+        until not AllConform;
+      end;
+
+      AllConform := True;
+      sValue := Row.ToString;
+      for RowIndex := Low(Rows) to High(Rows) do
       begin
-        s := Format('%d=%s', [i, Row.ToString]);
-        l.Add(s);
-        s := Format('%d=', [i]);
-        l.Add(s);
-      end
-      else if Row2.FillTable.RowCount = 1 then
+        sValue2 := Rows[RowIndex].ToString;
+        AllConform := sValue = sValue2;
+        if not AllConform then Break;
+      end;
+      if AllConform then Continue;
+
+      s := Format('%d=%s', [i, sValue]);
+      l.Add(s);
+      for RowIndex := Low(Rows) to High(Rows) do
       begin
-        s := Format('%d=', [i]);
-        l.Add(s);
-        s := Format('%d=%s', [i, Row2.ToString]);
+        sValue := Rows[RowIndex].ToString;
+        s := Format('%d=%s', [i, sValue]);
         l.Add(s);
       end;
     end;
@@ -273,14 +312,13 @@ begin
     l.SaveToFile(FileName);
   finally
     fDatabase.Delete(TSQLClearColumnRow, '');
-    fDatabase.Delete(TSQLClearColumnRow2, '');
     if Assigned(Table) then Table.Free;
     l.Free;
   end;
 end;
 
 procedure TDataComputer.QueryData3(DataSet: TDataSet; FileName: string;
-  IdenticalColCount, CompareRowCount: Cardinal);
+  IntervalValues: TWordDynArray; IdenticalColCount, CompareRowCount: Cardinal);
 var
   Row, Row2: TSQLClearColumnRow;
   i, ConformCount, ConformCount2, ConformCount3: Integer;
@@ -288,9 +326,9 @@ var
 
   procedure Compare(IdenticalColCount: Integer; var ConformCount, ConformCount2, ConformCount3: Integer);
   var
-    i, j, k, ColNo, FindCount, FindCount2: Integer;
-    r, sr, sr2: TIntegerDynArray;
+    i, FindCount, FindCount2, RowNo: Integer;
     v: Word;
+    r, r2: TWordDynArray;
   begin
     ConformCount := 0;
     ConformCount2 := 0;
@@ -300,9 +338,15 @@ var
       Row.FillRow(Row.FillCurrentRow - 1 + i, Row2);
       FindCount := 0;
       for v in Row.Values(0) do if Row2.ValueExist(v, 0) then Inc(FindCount);
+      r := Row.Values(0);
+      r2 := Row2.Values(0);
+
       FindCount2 := 0;
       if (Length(Row.IntervalValues) > 1) and (Length(Row2.IntervalValues) > 1) then
-        for v in Row.Values(1) do if Row2.ValueExist(v, 1) then Inc(FindCount);
+        for v in Row.Values(1) do if Row2.ValueExist(v, 1) then Inc(FindCount2);
+
+      r := Row.Values(1);
+      r2 := Row2.Values(1);
 
       if ((IdenticalColCount = 0) and (FindCount = 0))
         or ((IdenticalColCount > 0) and (FindCount >= IdenticalColCount))
@@ -319,7 +363,7 @@ var
 begin
   TSQLClearColumnRow.AutoFree(Row);
   TSQLClearColumnRow.AutoFree(Row2);
-  LoadData(FileName, Row);
+  LoadData(1, FileName, Row, IntervalValues);
   DataSet.DisableControls;
   try
     DataSet.First;
@@ -328,6 +372,8 @@ begin
     Row.FillPrepare(fDatabase, 'ORDER BY Number', []);
     while Row.FillOne do
     begin
+      if Row.FillCurrentRow - 1 + CompareRowCount > Row.FillTable.RowCount then Break;
+
       Compare(IdenticalColCount, ConformCount, ConformCount2, ConformCount3);
       if ConformCount > 0 then
       begin
@@ -347,7 +393,7 @@ begin
         end;
       end;
 
-      if ConformCount2 > 0 then
+      if (ConformCount2 > 0) and (Length(IntervalValues) > 1) then
       begin
         if DataSet.Locate('ConformCount2', ConformCount2, []) then
         begin
@@ -365,7 +411,7 @@ begin
         end;
       end;
 
-      if ConformCount3 > 0 then
+      if (ConformCount3 > 0) and (Length(IntervalValues) > 1) then
       begin
         if DataSet.Locate('ConformCount3', ConformCount3, []) then
         begin
@@ -462,6 +508,7 @@ var
   l: TStringList;
   i, FolderNo, FileNo, RowNo: Integer;
   s, SubFileDirectory, FileName: string;
+  SubFileDirectories: TStringDynArray;
 begin
   CheckIntervalValues;
 
@@ -470,17 +517,29 @@ begin
   l := TStringList.Create;
   try
     //获取子目录
-    for SubFileDirectory in TDirectory.GetDirectories(FileDirectory) do
+    SubFileDirectories := TDirectory.GetDirectories(FileDirectory);
+    if Length(SubFileDirectories) = 0 then
+    begin
+      SetLength(SubFileDirectories, 1);
+      SubFileDirectories[0] := FileDirectory;
+    end;
+
+    for SubFileDirectory in SubFileDirectories do
     begin
       s := ExtractFileName(SubFileDirectory);
       if not TryStrToInt(s.Substring(0, s.IndexOf('.')), FolderNo) then Continue;
       //获取子目录文件
-      for FileName in TDirectory.GetFiles(SubFileDirectory, '*', TSearchOption.soAllDirectories) do
+      for FileName in TDirectory.GetFiles(SubFileDirectory, '*.txt', TSearchOption.soAllDirectories) do
       begin
-        if not (LowerCase(ExtractFileExt(FileName)) = '.txt') then Continue;
-
-        s := ExtractFileName(FileName);
-        if not TryStrToInt(s.Substring(0, s.IndexOf('.')), FileNo) then Continue;
+        s := TPath.GetFileNameWithoutExtension(FileName);
+        FileNo := 0;
+        if not TryStrToInt(s.Substring(0, s.IndexOf('.')), FileNo)
+          and s.Contains('- ')
+        then
+        begin
+          s := s.Substring(s.IndexOf('- ') + 2);
+          TryStrToInt(s, FileNo);
+        end;
 
         l.LoadFromFile(FileName);
         for i := l.Count - 1 downto 0 do
@@ -513,23 +572,6 @@ begin
     l.Free;
   end;
 end;
-
-{procedure TDataComputer.DeleteInvalidData(InvalidValueCounts: TWordDynArray);
-var
-  s, FieldName: string;
-  i: Integer;
-begin
-  for i := Low(InvalidValueCounts) to High(InvalidValueCounts) do
-  begin
-    case i of
-      1: FieldName = 'ValueCount2';
-      else FieldName = 'ValueCount';
-    end;
-    s := 'DELETE FROM ResultData WHERE %s < %d';
-    s := Format(s, [FieldName, InvalidValueCounts[i]]);
-    fDatabase.Execute(s);
-  end;
-end;}
 
 procedure TDataComputer.DeleteSameColumnData(FileName: string; SameColumnCounts: TWordDynArray);
 var
@@ -586,63 +628,15 @@ begin
   end;
 end;
 
-procedure TDataComputer.SortData;
-begin
-
-end;
-
-procedure TDataComputer.SetEachFileRowCount(EachFileRowCount: Cardinal);
-var
-  ResultData: TSQLResultData;
-  Table: TSQLTableJSON;
-  s, Sub: string;
-  FileIndex: Integer;
-begin
-  TSQLResultData.AutoFree(ResultData);
-
-  s := 'SELECT ValueCount, ValueCount2' + #$D#$A
-    + 'GROUP BY ValueCount, ValueCount2' + #$D#$A
-    + 'ORDER BY ValueCount + ValueCount2, ValueCount, ValueCount2';
-  Table := fDatabase.ExecuteList([TSQLResultData], s);
-  try
-    fDatabase.TransactionBegin(TSQLResultData);
-    try
-      while Table.Step do
-      begin
-        FileIndex := 0;
-        repeat
-          ResultData.FillPrepare(fDatabase, 'ValueCount = ? AND ValueCount2 = ? LIMIT ? OFFSET ?',
-            [Table.FieldAsInteger(0), Table.FieldAsInteger(1), EachFileRowCount, EachFileRowCount * FileIndex]);
-          while ResultData.FillOne do
-          begin
-            ResultData.FolderNo := Table.StepRow;
-            ResultData.FileNo := FileIndex + 1;
-            ResultData.RowNo := ResultData.FillCurrentRow - 1;
-            if not fDatabase.Update(ResultData) then
-              raise Exception.Create('Update FileNo Failed');
-          end;
-          Inc(FileIndex);
-        until ResultData.FillTable.RowCount = 0;
-      end;
-
-      fDatabase.Commit(1, True);
-    except
-      fDatabase.RollBack;
-      raise;
-    end;
-  finally
-    Table.Free;
-  end;
-end;
-
-procedure TDataComputer.ExportToFile(FileDirectory: string; EachFileRowCount: Cardinal);
+procedure TDataComputer.ExportToFile(FileDirectory: string; EachFileRowCount: Cardinal;
+  SplitSubFileDirectory: Boolean);
 var
   l: TStringList;
   ResultData: TSQLResultData;
   Table: TSQLTableJSON;
   s, SubFileDirectory, FileName, sValue: string;
   v, ValueCount, ValueCount2: Word;
-  RowCount: Cardinal;
+  RowCount, FileNo: Cardinal;
   i, FileIndex, iValueCount: Integer;
 begin
   CheckIntervalValues;
@@ -659,36 +653,41 @@ begin
   Table := fDatabase.ExecuteList([TSQLResultData], s);
   l := TStringList.Create;
   try
+    FileNo := 0;
     while Table.Step do
     begin
       ValueCount := Table.FieldAsInteger('ValueCount');
       ValueCount2 := Table.FieldAsInteger('ValueCount2');
       RowCount := Table.FieldAsInteger('RowCount');
-      //生成子目录
-      if Length(fIntervalValues) = 1 then
+      if SplitSubFileDirectory then
       begin
-        ResultData.FillPrepare(fDatabase, 'ValueCount = ? AND ValueCount2 = ? LIMIT 1', [ValueCount, ValueCount2]);
-        ResultData.FillOne;
-        v := ResultData.Values[Low(ResultData.Values)];
-        sValue := v.ToString;
-        if v < 10 then sValue := '0' + sValue;
-        sValue := sValue + '-';
-        v := ResultData.Values[High(ResultData.Values)];
-        if v < 10 then sValue := sValue + '0' + v.ToString
-        else sValue := sValue + v.ToString;
+        //生成子目录
+        if Length(fIntervalValues) = 1 then
+        begin
+          ResultData.FillPrepare(fDatabase, 'ValueCount = ? AND ValueCount2 = ? LIMIT 1', [ValueCount, ValueCount2]);
+          ResultData.FillOne;
+          v := ResultData.Values[Low(ResultData.Values)];
+          sValue := v.ToString;
+          if v < 10 then sValue := '0' + sValue;
+          sValue := sValue + '-';
+          v := ResultData.Values[High(ResultData.Values)];
+          if v < 10 then sValue := sValue + '0' + v.ToString
+          else sValue := sValue + v.ToString;
 
-        SubFileDirectory := FileDirectory + Format('%d.首行（首尾）列数字%s、%d列、%d行\', [
-          Table.StepRow, sValue, ValueCount, RowCount
-        ]);
+          SubFileDirectory := FileDirectory + Format('%d.首行（首尾）列数字%s、%d列、%d行\', [
+            Table.StepRow, sValue, ValueCount, RowCount
+          ]);
+        end
+        else
+        begin
+          SubFileDirectory := FileDirectory + Format('%d.列数（1-%d）%d列+（1-%d）%d列= %d列、%d行\', [
+            Table.StepRow, fIntervalValues[0], ValueCount, fIntervalValues[1],
+            ValueCount2, ValueCount + ValueCount2, RowCount
+          ]);
+        end;
+        if not TDirectory.Exists(SubFileDirectory) then TDirectory.CreateDirectory(SubFileDirectory);
       end
-      else
-      begin
-        SubFileDirectory := FileDirectory + Format('%d.列数（1-%d）%d列+（1-%d）%d列= %d列、%d行\', [
-          Table.StepRow, fIntervalValues[0], ValueCount, fIntervalValues[1],
-          ValueCount2, ValueCount + ValueCount2, RowCount
-        ]);
-      end;
-      if not TDirectory.Exists(SubFileDirectory) then TDirectory.CreateDirectory(SubFileDirectory);
+      else SubFileDirectory := FileDirectory;
       //生成文件
       FileIndex := 0;
       repeat
@@ -748,7 +747,9 @@ begin
               sValue := sValue + '）';
             end;
 
-            FileName := SubFileDirectory + Format('%d.%s、%d行.txt', [FileIndex + 1, sValue, ResultData.FillTable.RowCount]);
+            if SplitSubFileDirectory then FileNo := FileIndex + 1
+            else FileNo := FileNo + 1;
+            FileName := SubFileDirectory + Format('%d.%s、%d行.txt', [FileNo, sValue, ResultData.FillTable.RowCount]);
           end;
           s := Format('%d=%s', [ResultData.FillCurrentRow - 1, ResultData.ToString]);
           l.Add(s);
@@ -812,7 +813,7 @@ begin
   end;
 end;
 
-procedure TDataComputer.QueryData2(DataSet: TDataSet; PageNo, EachPageRowCount: Cardinal);
+procedure TDataComputer.QueryData2(DataSet: TDataSet; EachPageRowCount: Cardinal);
 var
   ResultData: TSQLResultData;
   s, FieldName, FieldName2, sField, sWhere: string;
@@ -823,8 +824,8 @@ begin
 
   s := 'ConformColCount > 0 OR ConformColCount2 > 0' + #$D#$A
     + 'ORDER BY ConformColCount DESC, ConformColCount2 DESC, FolderNo, FileNo, RowNo' + #$D#$A
-    + 'LIMIT ? OFFSET ?';
-  ResultData.FillPrepare(fDatabase, s, [EachPageRowCount, (PageNo - 1) * EachPageRowCount]);
+    + 'LIMIT ?';
+  ResultData.FillPrepare(fDatabase, s, [EachPageRowCount]);
 
   TThread.Synchronize(nil, procedure
   begin

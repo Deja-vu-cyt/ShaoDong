@@ -4,6 +4,7 @@ interface
 
 uses
   mORMot,
+  SynCommons,
   System.Classes,
   System.SysUtils,
   System.Types,
@@ -49,6 +50,15 @@ type
     property TotalValueCount: Word read fTotalValueCount;
     property ValueCount: Word read fValueCount;
     property ValueCount2: Byte read fValueCount2;
+  end;
+
+  TSQLKeyValue = class(TSQLRecord)
+  private
+    fKey: RawUTF8;
+    fValue: Variant;
+  published
+    property Key: RawUTF8 read fKey write fKey;
+    property Value: Variant read fValue write fValue;
   end;
 
   TSQLData = class(TSQLRecord)
@@ -160,7 +170,7 @@ var
   Digit, IntervalIndex: Integer;
   IntervaValue: Word;
   CalcIntervalValues: Boolean;
-  i: Integer;
+  i, DigitLength: Integer;
 begin
   ClearValue;
   fIntervalValues := aIntervalValues;
@@ -183,29 +193,15 @@ begin
     sDigit := '';
     for c in s do
     begin
-      if c = '-' then
-      begin
-        Inc(IntervalIndex);
-        if CalcIntervalValues then
-        begin
-          SetLength(fIntervalValues, IntervalIndex + 1);
-          fIntervalValues[IntervalIndex] := 0;
-          IntervaValue := IntervaValue + fIntervalValues[IntervalIndex - 1];
-
-          SetLength(fIntervalValueCounts, IntervalIndex + 1);
-          fIntervalValueCounts[IntervalIndex] := 0;
-        end
-        else
-        begin
-          if IntervalIndex > High(fIntervalValues) then Exit;
-          IntervaValue := IntervaValue + fIntervalValues[IntervalIndex - 1];
-        end;
-      end
-      else if c in ['0'..'9'] then sDigit := sDigit + c
+      if c in ['0'..'9'] then sDigit := sDigit + c
       else Break;
     end;
     if sDigit.IsEmpty then s := s.Substring(1)
-    else s := s.Substring(sDigit.Length);
+    else
+    begin
+      s := s.Substring(sDigit.Length);
+      if c = '-' then s := s.Substring(1);
+    end;
 
     if TryStrToInt(sDigit, Digit) then
     begin
@@ -217,6 +213,7 @@ begin
       begin
         if Digit > fIntervalValues[IntervalIndex] then Continue;
       end;
+
       Digit := IntervaValue + Digit;
       case (Digit - 1) div 64 of
         0: fField1.AddValue((Digit - 1) mod 64 + 1);
@@ -226,6 +223,25 @@ begin
       end;
 
       fIntervalValueCounts[IntervalIndex] := fIntervalValueCounts[IntervalIndex] + 1;
+    end;
+
+    if c = '-' then
+    begin
+      Inc(IntervalIndex);
+      if CalcIntervalValues then
+      begin
+        SetLength(fIntervalValues, IntervalIndex + 1);
+        fIntervalValues[IntervalIndex] := 0;
+        IntervaValue := IntervaValue + fIntervalValues[IntervalIndex - 1];
+
+        SetLength(fIntervalValueCounts, IntervalIndex + 1);
+        fIntervalValueCounts[IntervalIndex] := 0;
+      end
+      else
+      begin
+        if IntervalIndex > High(fIntervalValues) then Exit;
+        IntervaValue := IntervaValue + fIntervalValues[IntervalIndex - 1];
+      end;
     end;
   until s.IsEmpty;
 
@@ -426,7 +442,7 @@ begin
   IntervalValue := 0;
   for v in Values do
   begin
-    while v > fIntervalValues[IntervalIndex] do
+    while v > IntervalValue + fIntervalValues[IntervalIndex] do
     begin
       Inc(IntervalIndex);
       IntervalValue := IntervalValue + fIntervalValues[IntervalIndex - 1];
@@ -437,7 +453,7 @@ begin
     if not (Result.IsEmpty or Result.Substring(Result.Length - 1).Equals('-')) then Result := Result + '¡¢';
     Result := Result + s;
   end;
-  for i := IntervalIndex + 1 to High(fIntervalValues) do s := s + '-';
+  for i := IntervalIndex + 1 to High(fIntervalValues) do Result := Result + '-';
 end;
 
 function TSQLData.Values: TWordDynArray;
@@ -476,12 +492,15 @@ end;
 function TSQLData.Values(IntervalIndex: Integer): TWordDynArray;
 var
   i, ValueIndex: Integer;
+  IntervalValue: Word;
 begin
   SetLength(Result, IntervalValueCounts[IntervalIndex]);
   ValueIndex := GetValueIndexByIntervalIndex(IntervalIndex);
+  IntervalValue := GetIntervalValueByIndex(IntervalIndex);
   Values;
   for i := Low(Result) to High(Result) do
-    Result[i] := fValues[ValueIndex + i];
+    //Result[i] := fValues[ValueIndex + i];
+    Result[i] := fValues[ValueIndex + i] - IntervalValue;
 end;
 
 procedure BinarySearch(First, Last: Cardinal; Func: TFunc<Cardinal, Byte>);

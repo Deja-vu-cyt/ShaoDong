@@ -6,6 +6,9 @@
         <Projects Include="Project2\Project2.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Project2\Project2s.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="Project3\Project3.dproj">
             <Dependencies/>
         </Projects>
@@ -31,6 +34,15 @@
     </Target>
     <Target Name="Project2:Make">
         <MSBuild Projects="Project2\Project2.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Project2s">
+        <MSBuild Projects="Project2\Project2s.dproj"/>
+    </Target>
+    <Target Name="Project2s:Clean">
+        <MSBuild Projects="Project2\Project2s.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project2s:Make">
+        <MSBuild Projects="Project2\Project2s.dproj" Targets="Make"/>
     </Target>
     <Target Name="Project3">
         <MSBuild Projects="Project3\Project3.dproj"/>
@@ -60,13 +72,13 @@
         <MSBuild Projects="Project5\Project5.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="Project2;Project3;Project4;Project5"/>
+        <CallTarget Targets="Project2;Project2s;Project3;Project4;Project5"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Project2:Clean;Project3:Clean;Project4:Clean;Project5:Clean"/>
+        <CallTarget Targets="Project2:Clean;Project2s:Clean;Project3:Clean;Project4:Clean;Project5:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Project2:Make;Project3:Make;Project4:Make;Project5:Make"/>
+        <CallTarget Targets="Project2:Make;Project2s:Make;Project3:Make;Project4:Make;Project5:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
