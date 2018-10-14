@@ -1,4 +1,4 @@
-unit ufrmMain2;
+unit ufrmMain3;
 
 interface
 
@@ -21,6 +21,7 @@ type
     Label5: TLabel;
     btnSlantCompare: TButton;
     edtExportTypeCount: TEdit;
+    btnExportCompareRow: TButton;
     OpenDialog: TOpenDialog;
     Label11: TLabel;
     btnVertCompare: TButton;
@@ -44,6 +45,7 @@ type
     edtVertCompareTypeCount: TEdit;
     TabSheet3: TTabSheet;
     Label10: TLabel;
+    Label12: TLabel;
     edtVVertSameValueCount2: TEdit;
     edtVVertSameValueCount: TEdit;
     edtVVertCompareSpacing: TEdit;
@@ -64,11 +66,14 @@ type
     btnExportVertSlantFileSettings: TButton;
     btnExportVertFileSettings: TButton;
     btnExportSlantFileSettings: TButton;
-    Label12: TLabel;
+    Label6: TLabel;
+    Label13: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure edtFileNameClick(Sender: TObject);
     procedure btnCompareClick(Sender: TObject);
+    procedure btnExportCompareRowClick(Sender: TObject);
+    procedure Panel1DblClick(Sender: TObject);
     procedure btnExportSettingsClick(Sender: TObject);
     procedure btnExportVertSlantFileSettingsClick(Sender: TObject);
     procedure btnExportVertFileSettingsClick(Sender: TObject);
@@ -90,8 +95,8 @@ var
 implementation
 
 uses
-  uTimer, ufrmExportSettings2, ufrmExportVertSlantFileSettings2,
-  ufrmExportVertFileSettings2, ufrmExportSlantFileSettings2;
+  uTimer, ufrmExportSettings, ufrmExportVertSlantFileSettings,
+  ufrmExportVertFileSettings, ufrmExportSlantFileSettings;
 
 {$R *.dfm}
 
@@ -106,6 +111,11 @@ begin
   btnExportVertSlantFileSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVertSlant]);
   btnExportVertFileSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVert]);
   btnExportSlantFileSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmSlant]);
+end;
+
+procedure TfrmMain.Panel1DblClick(Sender: TObject);
+begin
+  btnExportCompareRow.Visible := not btnExportCompareRow.Visible;
 end;
 
 procedure TfrmMain.InitCompare(var CompareCrossRange: Boolean;
@@ -186,6 +196,11 @@ begin
   end;
 end;
 
+procedure TfrmMain.btnExportCompareRowClick(Sender: TObject);
+begin
+  fDataComputer.ExportCompareRow;
+end;
+
 procedure TfrmMain.btnExportSettingsClick(Sender: TObject);
 begin
   if Sender = btnVertExportSettings then frmExportSettings.Flag := 1
@@ -220,6 +235,7 @@ begin
   PageControl1.ActivePageIndex := 0;
 
   fDataComputer := TDataComputer.Create;
+  fDataComputer.DataMode := 1;
   fDataComputer.InitCompareEvent := InitCompare;
 
   chkCompareCrossRange.Checked := fDataComputer.CompareCrossRange;
@@ -418,23 +434,24 @@ begin
           1:
           begin
             if (fDataComputer.RecalcMode <> 1)
-            or (frmExportSettings.KeepMaxRowSpacing <> fDataComputer.KeepMaxRowSpacing)
-            or (frmExportSettings.GroupRowCount <> fDataComputer.GroupRowCount)
-            or (frmExportSettings.GroupCount <> fDataComputer.GroupCount)
-            or (frmExportSettings.ReEnabledGroupCount <> fDataComputer.ReEnabledGroupCount)
-            or (frmExportSettings.HideSameGroup <> fDataComputer.HideSameGroup)
-          then
-            fDataComputer.RecalcData(
-              frmExportSettings.KeepMaxRowSpacing,
-              frmExportSettings.GroupRowCount,
-              frmExportSettings.GroupCount,
-              frmExportSettings.ReEnabledGroupCount,
-              frmExportSettings.HideSameGroup
-            );
+              or (frmExportSettings.KeepMaxRowSpacing <> fDataComputer.KeepMaxRowSpacing)
+              or (frmExportSettings.GroupRowCount <> fDataComputer.GroupRowCount)
+              or (frmExportSettings.GroupCount <> fDataComputer.GroupCount)
+              or (frmExportSettings.ReEnabledGroupCount <> fDataComputer.ReEnabledGroupCount)
+              or (frmExportSettings.HideSameGroup <> fDataComputer.HideSameGroup)
+            then
+              fDataComputer.RecalcData(
+                frmExportSettings.KeepMaxRowSpacing,
+                frmExportSettings.GroupRowCount,
+                frmExportSettings.GroupCount,
+                frmExportSettings.ReEnabledGroupCount,
+                frmExportSettings.HideSameGroup
+              );
           end;
+          2: if fDataComputer.RecalcMode <> 2 then fDataComputer.RecalcData;
           else fDataComputer.RestoreRecalcMode;
         end;
-        if ExportFiles <> [] then fDataComputer.ExportCompareData(ExportFiles, True);
+        if ExportFiles <> [] then fDataComputer.ExportCompareData(ExportFiles);
         StopTime;
         ShowMessage('²éÑ¯Íê±Ï');
       except

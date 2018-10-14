@@ -32,8 +32,8 @@ type
     edtFileName: TEdit;
     Label3: TLabel;
     Label4: TLabel;
-    edtMaxValue: TEdit;
-    edtFirstRangeValue: TEdit;
+    edtIntervalValue: TEdit;
+    edtIntervalValue2: TEdit;
     Label7: TLabel;
     edtVertSameValueCount2: TEdit;
     Label9: TLabel;
@@ -78,7 +78,6 @@ type
     procedure btnExportSlantFileSettingsClick(Sender: TObject);
   private
     procedure OnStateChange(Working: Boolean);
-    procedure Init(var MaxValue: Word; var FirstRangeValue: Word);
     procedure InitCompare(var CompareCrossRange: Boolean;
       var VertCompareSpacing: Cardinal; var VertSameValueCount: Byte;
       var VertSameValueCount2: Byte; var SlantCompareSpacing: Cardinal;
@@ -115,19 +114,6 @@ end;
 procedure TfrmMain.Panel1DblClick(Sender: TObject);
 begin
   btnExportCompareRow.Visible := not btnExportCompareRow.Visible;
-end;
-
-procedure TfrmMain.Init(var MaxValue: Word; var FirstRangeValue: Word);
-var
-  v: Integer;
-begin
-  if not TryStrToInt(edtMaxValue.Text, v) then
-    raise Exception.Create('请输入有效总列数');
-  MaxValue := v;
-  if not TryStrToInt(edtFirstRangeValue.Text, v) then
-    raise Exception.Create('请输入有效范围列数');
-  FirstRangeValue := v;
-
 end;
 
 procedure TfrmMain.InitCompare(var CompareCrossRange: Boolean;
@@ -247,16 +233,16 @@ begin
   PageControl1.ActivePageIndex := 0;
 
   fDataComputer := TDataComputer.Create;
-  fDataComputer.InitEvent := Init;
   fDataComputer.InitCompareEvent := InitCompare;
 
   chkCompareCrossRange.Checked := fDataComputer.CompareCrossRange;
-  if fDataComputer.MaxValue > 0 then
+  if Length(fDataComputer.IntervalValues) > 0 then
   begin
-    edtMaxValue.ReadOnly := True;
-    edtMaxValue.Text := fDataComputer.MaxValue.ToString;
-    edtFirstRangeValue.ReadOnly := True;
-    edtFirstRangeValue.Text := fDataComputer.FirstRangeValue.ToString;
+    edtIntervalValue.ReadOnly := True;
+    edtIntervalValue.Text := fDataComputer.IntervalValues[0].ToString;
+    edtIntervalValue2.ReadOnly := True;
+    if Length(fDataComputer.IntervalValues) > 1 then
+      edtIntervalValue2.Text := fDataComputer.IntervalValues[1].ToString;
   end;
   case fDataComputer.CompareMode of
     cmVert:
@@ -312,6 +298,8 @@ end;
 procedure TfrmMain.btnCompareClick(Sender: TObject);
 var
   ExportFiles: TDataComputer.TExportFiles;
+  v, v2: Integer;
+  IntervalValues: TWordDynArray;
 begin
   if Sender = btnSlantCompare then
     fDataComputer.CompareMode := cmSlant
@@ -319,6 +307,31 @@ begin
     fDataComputer.CompareMode := cmVert
   else
     fDataComputer.CompareMode := cmVertSlant;
+
+  if Length(fDataComputer.IntervalValues) = 0 then
+  begin
+    if not (TryStrToInt(edtIntervalValue.Text, v) and (v >= 1) and (v <= 256)) then
+    begin
+      edtIntervalValue.SetFocus;
+      edtIntervalValue.SelectAll;
+      raise Exception.Create('请输入有效值');
+    end;
+    if not (TryStrToInt(edtIntervalValue2.Text, v2) and (v2 >= 0) and (v2 < 256)) then
+    begin
+      edtIntervalValue2.SetFocus;
+      edtIntervalValue2.SelectAll;
+      raise Exception.Create('请输入有效值');
+    end;
+    if v + v2 > 256 then raise Exception.Create('总列数不能超过256');
+
+    SetLength(IntervalValues, 1);
+    IntervalValues[0] := v;
+    if v2 > 0 then
+    begin
+      SetLength(IntervalValues, 2);
+      IntervalValues[1] := v2;
+    end;
+  end;
 
   ExportFiles := [];
   case fDataComputer.CompareMode of
@@ -412,7 +425,7 @@ begin
 
     try
       try
-        fDataComputer.LoadRow(edtFileName.Text);
+        fDataComputer.LoadRow(edtFileName.Text, IntervalValues);
         fDataComputer.Compare;
         case frmExportSettings.RecalcMode of
           1:
@@ -422,12 +435,14 @@ begin
               or (frmExportSettings.GroupRowCount <> fDataComputer.GroupRowCount)
               or (frmExportSettings.GroupCount <> fDataComputer.GroupCount)
               or (frmExportSettings.ReEnabledGroupCount <> fDataComputer.ReEnabledGroupCount)
+              or (frmExportSettings.HideSameGroup <> fDataComputer.HideSameGroup)
             then
               fDataComputer.RecalcData(
                 frmExportSettings.KeepMaxRowSpacing,
                 frmExportSettings.GroupRowCount,
                 frmExportSettings.GroupCount,
-                frmExportSettings.ReEnabledGroupCount
+                frmExportSettings.ReEnabledGroupCount,
+                frmExportSettings.HideSameGroup
               );
           end;
           2: if fDataComputer.RecalcMode <> 2 then fDataComputer.RecalcData;

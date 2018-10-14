@@ -6,16 +6,17 @@ object frmSameColumnsSet: TfrmSameColumnsSet
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -19
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   OnResize = FormResize
   OnShow = FormShow
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 23
   object Panel1: TPanel
     Left = 0
     Top = 400
@@ -66,5 +67,13 @@ object frmSameColumnsSet: TfrmSameColumnsSet
       TabOrder = 1
       OnKeyPress = edtKeyPress
     end
+  end
+  object pnlContainer: TPanel
+    Left = 168
+    Top = 56
+    Width = 129
+    Height = 73
+    BevelOuter = bvNone
+    TabOrder = 1
   end
 end

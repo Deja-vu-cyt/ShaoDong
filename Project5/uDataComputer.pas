@@ -46,6 +46,7 @@ type
     fModel: TSQLModel;
     fDatabase: TSQLRestServerDB;
     fIntervalValues: TWordDynArray;
+    fDataMode: Byte;
 
     procedure LoadData(FileNo: Word; FileName: string; Row: TSQLClearColumnRow;
       IntervalValues: TWordDynArray = []);
@@ -53,8 +54,13 @@ type
     constructor Create;
     destructor Destroy;
 
+    procedure FormatData(l: TStrings; FirstIntervalCol, FirstIntervalCol2,
+      SecondIntervalCol, SecondIntervalCol2: Word);
     procedure SortClearColumn(Files: TStrings);
-    procedure RearrangeClearColumn(Files: TStrings; ReverseOrder: Boolean);
+    procedure RearrangeClearColumn(FileDirectory: string; ReverseOrder: Boolean); overload;
+    procedure RearrangeClearColumn(FileDirectory: string;
+      FirstIntervalCol, FirstIntervalCol2, SecondIntervalCol, SecondIntervalCol2: Word;
+      Placeholder: string; ReverseOrder: Boolean); overload;
     procedure CompareClearColumn(FileDirectory: string);
     procedure QueryData3(DataSet: TDataSet; FileName: string;
       IntervalValues: TWordDynArray; IdenticalColCount, CompareRowCount: Cardinal);
@@ -66,11 +72,14 @@ type
     procedure DeleteSameColumnData(FileName: string; SameColumnCounts: TWordDynArray);
     procedure ExportToFile(FileDirectory: string; EachFileRowCount: Cardinal;
       SplitSubFileDirectory: Boolean);
+    procedure ExportToFile2(FileDirectory: string; EachFileRowCount: Cardinal;
+      SplitSubFileDirectory: Boolean);
     procedure CalcConformColumnCount(Cols: TWordDynArray);
     function GetConformRowCount: Cardinal;
     procedure QueryData2(DataSet: TDataSet; EachPageRowCount: Cardinal);
 
     property IntervalValues: TWordDynArray read fIntervalValues;
+    property DataMode: Byte read fDataMode write fDataMode;
   end;
 
 implementation
@@ -95,7 +104,7 @@ begin
         Row.FileNo := FileNo;
         Row.Number := Digit;
         Row.ClearValue;
-        Row.AssignValue(s, IntervalValues);
+        Row.AssignValue(s, IntervalValues, fDataMode);
         if fDatabase.Add(Row, True) = 0 then
           raise Exception.Create('Add row failed');
       end;
@@ -121,6 +130,7 @@ begin
   fDatabase.CreateSQLIndex(TSQLResultData, 'FolderNo', False);
   fDatabase.CreateSQLIndex(TSQLResultData, 'FileNo', False);
   fIntervalValues := [];
+  fDataMode := 0;
 end;
 
 destructor TDataComputer.Destroy;
@@ -128,6 +138,64 @@ begin
   fDatabase.Free;
   fModel.Free;
   inherited Destroy;
+end;
+
+procedure TDataComputer.FormatData(l: TStrings; FirstIntervalCol, FirstIntervalCol2,
+  SecondIntervalCol, SecondIntervalCol2: Word);
+var
+  i, v, SubIntervalNo: Integer;
+  s, Digit, FirstInterval, SecondInterval: string;
+  c: Char;
+begin
+  for i := l.Count - 1 downto 0 do
+  begin
+    s := l[i];
+    if (s.Length >= FirstIntervalCol2) and (FirstIntervalCol2 > FirstIntervalCol) then
+      FirstInterval := s.Substring(FirstIntervalCol - 1, FirstIntervalCol2 - FirstIntervalCol);
+    if (s.Length >= SecondIntervalCol2) and (SecondIntervalCol2 > SecondIntervalCol) then
+      SecondInterval := s.Substring(SecondIntervalCol - 1, SecondIntervalCol2 - SecondIntervalCol);
+
+    l[i] := s.Substring(0, FirstIntervalCol - 1).Trim + '=';
+    SubIntervalNo := 0;
+    Digit := '';
+
+    repeat
+      Digit := '';
+      for c in FirstInterval do
+      begin
+        if c in ['0'..'9'] then Digit := Digit + c
+        else Break;
+      end;
+      if Digit.IsEmpty then FirstInterval := FirstInterval.Substring(1)
+      else FirstInterval := FirstInterval.Substring(Digit.Length);
+
+      if TryStrToInt(Digit, v) then
+      begin
+        Inc(SubIntervalNo);
+        l[i] := l[i] + Format('（1-%d：%s）', [SubIntervalNo, Digit]);
+      end;
+    until FirstInterval.IsEmpty;
+
+
+    {for c in FirstInterval do
+      case c of
+        '0'..'9':
+        begin
+          Digit := Digit + c;
+        end;
+        else
+        begin
+          if TryStrToInt(Digit, v) then
+          begin
+            Inc(SubIntervalNo);
+            l[i] := l[i] + Format('（1-%d：%s）', [SubIntervalNo, Digit]);
+          end;
+          Digit := '';
+        end;
+      end; }
+    if not SecondInterval.IsEmpty then
+      l[i] := l[i] + Format('-（2-1：%s）', [SecondInterval]);
+  end;
 end;
 
 procedure TDataComputer.SortClearColumn(Files: TStrings);
@@ -144,7 +212,8 @@ begin
       for i := l.Count - 1 downto 0 do
       begin
         if l[i].Trim.IsEmpty then l.Delete(i)
-        else l[i] := Format('%s=%s', [l.Names[i].Trim, l.ValueFromIndex[i].Trim]);
+        else if l[i].Contains('=') then
+          l[i] := Format('%s=%s', [l.Names[i].Trim, l.ValueFromIndex[i].Trim]);
       end;
 
       for i := 0 to l.Count div 2 - 1 do
@@ -161,7 +230,9 @@ begin
   end;
 end;
 
-procedure TDataComputer.RearrangeClearColumn(Files: TStrings; ReverseOrder: Boolean);
+procedure TDataComputer.RearrangeClearColumn(FileDirectory: string;
+  FirstIntervalCol, FirstIntervalCol2, SecondIntervalCol, SecondIntervalCol2: Word;
+  Placeholder: string; ReverseOrder: Boolean);
 var
   l: TStringList;
   FileName, s: string;
@@ -171,19 +242,21 @@ begin
   TSQLData.AutoFree(Data);
   l := TStringList.Create;
   try
-    for FileName in Files do
+    for FileName in TDirectory.GetFiles(FileDirectory) do
     begin
       l.LoadFromFile(FileName);
       for i := l.Count - 1 downto 0 do
         if l[i].Trim.IsEmpty then l.Delete(i);
 
+      if FirstIntervalCol > 0 then
+        FormatData(l, FirstIntervalCol, FirstIntervalCol2, SecondIntervalCol, SecondIntervalCol2);
+
       //值排序
       for i := 0 to l.Count - 1 do
       begin
         s := l.ValueFromIndex[i];
-        Data.AssignValue(s);
-        s := Data.ToString;
-
+        Data.AssignValue(s, Placeholder, [], DataMode);
+        s := Data.ToString(DataMode, Placeholder);
         l.ValueFromIndex[i] := s;
       end;
       //插入倒序行号
@@ -205,6 +278,11 @@ begin
   finally
     l.Free;
   end;
+end;
+
+procedure TDataComputer.RearrangeClearColumn(FileDirectory: string; ReverseOrder: Boolean);
+begin
+  RearrangeClearColumn(FileDirectory, 0, 0, 0, 0, '', ReverseOrder);
 end;
 
 procedure TDataComputer.CompareClearColumn(FileDirectory: string);
@@ -290,10 +368,10 @@ begin
       end;
 
       AllConform := True;
-      sValue := Row.ToString;
+      sValue := Row.ToString(DataMode);
       for RowIndex := Low(Rows) to High(Rows) do
       begin
-        sValue2 := Rows[RowIndex].ToString;
+        sValue2 := Rows[RowIndex].ToString(DataMode);
         AllConform := sValue = sValue2;
         if not AllConform then Break;
       end;
@@ -303,7 +381,7 @@ begin
       l.Add(s);
       for RowIndex := Low(Rows) to High(Rows) do
       begin
-        sValue := Rows[RowIndex].ToString;
+        sValue := Rows[RowIndex].ToString(DataMode);
         s := Format('%d=%s', [i, sValue]);
         l.Add(s);
       end;
@@ -469,7 +547,7 @@ begin
     for i := 0 to l.Count - 1 do
     begin
       s := l.ValueFromIndex[i];
-      Data.AssignValue(s, aIntervalValues);
+      Data.AssignValue(s, aIntervalValues, fDataMode);
 
       for v := 1 to IntervalValue do
         if Data.ValueExist(v) then Data.DeleteValue(v) else Data.AddValue(v);
@@ -550,8 +628,8 @@ begin
           for i := 0 to l.Count - 1 do
           begin
             if not TryStrToInt(l.Names[i].Trim, RowNo) then Continue;
-            s := l.ValueFromIndex[i].Trim;
-            ResultData.AssignValue(s, fIntervalValues);
+            s := l.ValueFromIndex[i];
+            ResultData.AssignValue(s, fIntervalValues, fDataMode);
             ResultData.FolderNo := FolderNo;
             ResultData.FileNo := FileNo;
             ResultData.RowNo := RowNo;
@@ -751,7 +829,7 @@ begin
             else FileNo := FileNo + 1;
             FileName := SubFileDirectory + Format('%d.%s、%d行.txt', [FileNo, sValue, ResultData.FillTable.RowCount]);
           end;
-          s := Format('%d=%s', [ResultData.FillCurrentRow - 1, ResultData.ToString]);
+          s := Format('%d=%s', [ResultData.FillCurrentRow - 1, ResultData.ToString(fDataMode)]);
           l.Add(s);
         end;
         if l.Count > 0 then l.SaveToFile(FileName);
@@ -761,6 +839,184 @@ begin
   finally
     l.Free;
     Table.Free;
+  end;
+end;
+
+procedure TDataComputer.ExportToFile2(FileDirectory: string; EachFileRowCount: Cardinal;
+  SplitSubFileDirectory: Boolean);
+const
+  TempFileDirectory = 'Temp\';
+var
+  l: TStringList;
+  ResultData, Data: TSQLResultData;
+  s, SubFileDirectory, FileName, sValue, sValue2, sValueCount: string;
+  v, MaxValueCount, MinValueCount: Word;
+  FolderRowCount, FileRowCount, FolderNo, FileNo, RowNo: Cardinal;
+  i, MaxIntervalIndex, MinSubIntervalIndex, MaxSubIntervalIndex, KeepCount: Integer;
+  Values: TWordDynArray;
+  SaveFolder: Boolean;
+begin
+  CheckIntervalValues;
+
+  if not FileDirectory.Substring(FileDirectory.Length - 1, 1).Equals('\') then
+    FileDirectory := FileDirectory + '\';
+
+  if TDirectory.Exists(FileDirectory + TempFileDirectory) then
+    for s in TDirectory.GetFiles(FileDirectory + TempFileDirectory) do TFile.Delete(s);
+
+  TSQLResultData.AutoFree(ResultData);
+  TSQLResultData.AutoFree(Data);
+  l := TStringList.Create;
+  try
+    FolderNo := 0;
+    FileNo := 0;
+    RowNo := 0;
+    FolderRowCount := 0;
+    FileRowCount := 0;
+    ResultData.FillPrepare(fDatabase, 'ORDER BY TotalValueCount, ValueCount, ValueCount2, FolderNo, FileNo, RowNo', []);
+    while ResultData.FillOne do
+    begin
+      FolderRowCount := FolderRowCount + 1;
+      FileRowCount := FileRowCount + 1;
+      if FileRowCount = 1 then
+      begin
+        l.Clear;
+        if SplitSubFileDirectory then
+        begin
+          SubFileDirectory := TempFileDirectory;
+          if not TDirectory.Exists(FileDirectory + SubFileDirectory) then
+            TDirectory.CreateDirectory(FileDirectory + SubFileDirectory);
+        end
+        else SubFileDirectory := '';
+        MaxValueCount := ResultData.TotalValueCount;
+        MinValueCount := ResultData.TotalValueCount;
+        MaxIntervalIndex := High(ResultData.IntervalValues);
+        //首行列数字
+        Data.AssignValue('', ResultData.IntervalValues);
+        sValue := '';
+        Values := ResultData.Values(0);
+        if Length(Values) > 0 then
+        begin
+          MinSubIntervalIndex := (Values[0] - 1) div 10;
+          MaxSubIntervalIndex := MinSubIntervalIndex;
+          if Length(Values) > 1 then
+            MaxSubIntervalIndex := (Values[High(Values)] - 1) div 10;
+          KeepCount := 0;
+          Data.ClearValue;
+          for i := Low(Values) to High(Values) do
+          begin
+            v := Values[i];
+            if (v - 1) div 10 > MinSubIntervalIndex then Break;
+            Data.AddValue(v);
+            Inc(KeepCount);
+            if KeepCount >= 5 then Break;
+          end;
+          sValue := Data.ToString(1);
+
+          if (MaxSubIntervalIndex > MinSubIntervalIndex) and (MaxIntervalIndex = 0) then
+          begin
+            KeepCount := 0;
+            Data.ClearValue;
+            for i := High(Values) downto Low(Values) do
+            begin
+              v := Values[i];
+              if (v - 1) div 10 < MaxSubIntervalIndex then Break;
+              Data.AddValue(v);
+              Inc(KeepCount);
+              if KeepCount >= 5 then Break;
+            end;
+            sValue := sValue + '...' + Data.ToString(1);
+          end;
+        end;
+        if MaxIntervalIndex > 0 then
+        begin
+          Values := ResultData.Values(MaxIntervalIndex);
+          KeepCount := 0;
+          Data.ClearValue;
+          for i := High(Values) downto Low(Values) do
+          begin
+            v := Values[i];
+            Data.AddValue(v, MaxIntervalIndex);
+            Inc(KeepCount);
+            if KeepCount >= 5 then Break;
+          end;
+          sValue := sValue + Data.ToString(1).SubString(1);
+        end;
+        //首行首尾列数字
+        if FileNo = 0 then
+        begin
+          sValue2 := '';
+          Values := ResultData.Values(0);
+          if Length(Values) > 0 then
+            sValue2 := (Values[0] - 1).ToString;
+          case MaxIntervalIndex of
+            0:
+            begin
+              if Length(Values) > 1 then
+                sValue2 := sValue2 + '-' + Values[High(Values)].ToString;
+            end;
+            else
+            begin
+              Values := ResultData.Values(MaxIntervalIndex);
+              if Length(Values) > 0 then
+                sValue2 := sValue2 + '-' + Values[High(Values)].ToString;
+            end;
+          end;
+        end;
+      end;
+      if ResultData.TotalValueCount > MaxValueCount then
+        MaxValueCount := ResultData.TotalValueCount;
+      if ResultData.TotalValueCount < MinValueCount then
+        MinValueCount := ResultData.TotalValueCount;
+
+      RowNo := RowNo + 1;
+      s := Format('%d=%s', [RowNo, ResultData.ToString(fDataMode)]);
+      l.Add(s);
+      //保存文件
+      SaveFolder := False;
+      if SplitSubFileDirectory then
+      begin
+        if ResultData.FillCurrentRow <= ResultData.FillTable.RowCount then
+          ResultData.FillRow(ResultData.FillCurrentRow, Data);
+        SaveFolder := (ResultData.TotalValueCount <> Data.TotalValueCount)
+         or (ResultData.FillCurrentRow > ResultData.FillTable.RowCount)
+      end;
+      if (FileRowCount = EachFileRowCount)
+        or SaveFolder
+        or (ResultData.FillCurrentRow > ResultData.FillTable.RowCount)
+      then
+      begin
+        FileNo := FileNo + 1;
+        sValueCount := MinValueCount.ToString;
+        if MaxValueCount > MinValueCount then
+          sValueCount := sValueCount + '-' + MaxValueCount.ToString;
+
+        FileName := FileDirectory + SubFileDirectory
+          + Format('%d.%s（%s）、%d行.txt', [FileNo, sValue, sValueCount, FileRowCount]);
+        l.SaveToFile(FileName);
+
+        FileRowCount := 0;
+        RowNo := 0;
+      end;
+      //修改子文件夹名
+      if SaveFolder then
+      begin
+        FolderNo := FolderNo + 1;
+
+        SubFileDirectory := Format('%d.首行（首尾）列数字%s、%d列、%d行',
+          [FolderNo, sValue2, ResultData.TotalValueCount, FolderRowCount]);
+        if TDirectory.Exists(FileDirectory + SubFileDirectory) then
+          for s in TDirectory.GetFiles(FileDirectory + SubFileDirectory) do TFile.Delete(s);
+        TDirectory.Copy(FileDirectory + TempFileDirectory, FileDirectory + SubFileDirectory);
+        for s in TDirectory.GetFiles(FileDirectory + TempFileDirectory) do TFile.Delete(s);
+        TDirectory.Delete(FileDirectory + TempFileDirectory);
+
+        FolderRowCount := 0;
+        FileNo := 0;
+      end;
+    end;
+  finally
+    l.Free;
   end;
 end;
 

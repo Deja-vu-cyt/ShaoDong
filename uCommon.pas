@@ -9,6 +9,7 @@ uses
   System.SysUtils,
   System.Types,
   System.IOUtils,
+  System.Variants,
   System.Generics.Collections;
 
 type
@@ -34,7 +35,7 @@ type
     function Compare(const Value: TInt64DynArray; Offset: Byte; MaxValue: Word): TInt64DynArray;
   end;
 
-  TData = class
+  {TData = class
   private
     fValue: TInt64DynArray;
     fTotalValueCount: Word;
@@ -50,12 +51,14 @@ type
     property TotalValueCount: Word read fTotalValueCount;
     property ValueCount: Word read fValueCount;
     property ValueCount2: Byte read fValueCount2;
-  end;
+  end;}
 
   TSQLKeyValue = class(TSQLRecord)
   private
     fKey: RawUTF8;
     fValue: Variant;
+  public
+    procedure SetArrayValue(aValue: TWordDynArray);
   published
     property Key: RawUTF8 read fKey write fKey;
     property Value: Variant read fValue write fValue;
@@ -78,10 +81,13 @@ type
   public
     constructor Create;
     procedure AssignValue(Source: TSQLData); overload;
-    procedure AssignValue(s: string; aIntervalValues: TWordDynArray = []); overload;
+    //procedure AssignValue(s: string; aIntervalValues: TWordDynArray = []); overload;
+    procedure AssignValue(s: string; aPlaceholder: string; aIntervalValues: TWordDynArray = []; aDataMode: Byte = 0); overload;
+    procedure AssignValue(s: string; aIntervalValues: TWordDynArray = []; aDataMode: Byte = 0); overload;
     //procedure AssignValue(s: string); overload;
     procedure AddValues(Source: TSQLData);
-    procedure AddValue(v: Word);
+    procedure AddValue(v: Word); overload;
+    procedure AddValue(v: Word; IntervalIndex: Integer); overload;
     procedure DeleteValue(v: Word); overload;
     procedure DeleteValue(v: Word; IntervalIndex: Integer); overload;
     procedure DeleteValueByIndex(IntervalIndex, ValueIndex: Integer);
@@ -91,10 +97,14 @@ type
     function ValueExist(v: Word; IntervalIndex: Integer): Boolean; overload;
     function HasValue: Boolean;
     function IntervalIndexOfValue(v: Word): Integer;
-    function ToString: string;
-    procedure CalcValueCount(FirstRangeValue: Byte);
+    class function ToString(aValues: TWordDynArray; aIntervalValues: TWordDynArray = [];
+      aDataMode: Byte = 0; aPlaceholder: string = ''): string; overload;
+    function ToString(aDataMode: Byte = 0; aPlaceholder: string = ''): string; overload;
+    procedure CalcValueCount(aIntervalValues: TWordDynArray); overload;
+    procedure CalcValueCount; overload;
     function Values: TWordDynArray; overload;
     function Values(IntervalIndex: Integer): TWordDynArray; overload;
+    function Values(s: string): TWordDynArray; overload;
   published
     property Field1: Int64 read fField1 write fField1;
     property Field2: Int64 read fField2 write fField2;
@@ -126,9 +136,17 @@ procedure ShellSort(var x: TWordDynArray);
 
 implementation
 
+procedure TSQLKeyValue.SetArrayValue(aValue: TWordDynArray);
+var
+  i: Integer;
+begin
+  TDocVariant.New(fValue);
+  for i := Low(aValue) to High(aValue) do fValue.Add(aValue[i]);
+end;
+
 constructor TSQLData.Create;
 begin
-  
+
 end;
 
 function TSQLData.GetIntervalValueByIndex(IntervalIndex: Integer): Word;
@@ -163,7 +181,7 @@ begin
   fIntervalValueCounts :=  Source.IntervalValueCounts;
 end;
 
-procedure TSQLData.AssignValue(s: string; aIntervalValues: TWordDynArray);
+{procedure TSQLData.AssignValue(s: string; aIntervalValues: TWordDynArray);
 var
   sDigit: string;
   c: Char;
@@ -245,10 +263,194 @@ begin
     end;
   until s.IsEmpty;
 
-  fValueCount := fIntervalValueCounts[0];
-  fValueCount2 := 0;
-  if Length(fIntervalValueCounts) > 1 then fValueCount2 := fIntervalValueCounts[1];
-  fTotalValueCount := fValueCount + fValueCount2;
+  CalcValueCount;
+end;}
+
+procedure TSQLData.AssignValue(s: string; aPlaceholder: string;
+  aIntervalValues: TWordDynArray; aDataMode: Byte);
+var
+  sValue, sDigit: string;
+  c, c2: Char;
+  i, i2, Digit, IntervalIndex: Integer;
+  v, IntervaValue: Word;
+  CalcIntervalValues: Boolean;
+begin
+  ClearValue;
+  fIntervalValues := aIntervalValues;
+  CalcIntervalValues := Length(fIntervalValues) = 0;
+
+  SetLength(fIntervalValueCounts, Length(aIntervalValues));
+  for i := Low(fIntervalValueCounts) to High(fIntervalValueCounts) do
+    fIntervalValueCounts[i] := 0;
+
+  if CalcIntervalValues then
+  begin
+    SetLength(fIntervalValues, 1);
+    fIntervalValues[0] := 0;
+    SetLength(fIntervalValueCounts, 1);
+    fIntervalValueCounts[0] := 0;
+  end;
+  IntervalIndex := Low(fIntervalValues);
+  IntervaValue := 0;
+
+  case aDataMode of
+    1:
+    begin
+      for c in s do
+      begin
+        case c of
+          '£¨':
+          begin
+            sValue := '';
+          end;
+          '£©':
+          begin
+            i := sValue.IndexOf('-');
+            if i > -1 then sValue := sValue.Substring(i + 1);
+            i := sValue.IndexOf('£º');
+            if i = -1 then Continue;
+            if not TryStrToInt(sValue.Substring(0, i), i2) then Continue;
+            sValue := sValue.SubString(i + 1);
+            if (IntervalIndex > 0) and not aPlaceholder.IsEmpty then
+            begin
+              for i := Low(aPlaceholder) to High(aPlaceholder) do
+                sValue := sValue.Replace(aPlaceholder[i], i.ToString);
+            end;
+            repeat
+              sDigit := '';
+              for c2 in sValue do
+              begin
+                if c2 in ['0'..'9'] then sDigit := sDigit + c2
+                else Break;
+              end;
+              if sDigit.IsEmpty then sValue := sValue.Substring(1)
+              else sValue := sValue.Substring(sDigit.Length);
+
+              if TryStrToInt(sDigit, Digit) then
+              begin
+                if IntervalIndex = 0 then v := (i2 - 1) * 10 + Digit + 1
+                else v := Digit;
+                //v := (i2 - 1) * 10 + Digit + 1;
+                if v > fIntervalValues[IntervalIndex] then
+                begin
+                  if CalcIntervalValues then fIntervalValues[IntervalIndex] := v
+                  else Continue;
+                end;
+
+                v := IntervaValue + v;
+                case (v - 1) div 64 of
+                  0: fField1.AddValue((v - 1) mod 64 + 1);
+                  1: fField2.AddValue((v - 1) mod 64 + 1);
+                  2: fField3.AddValue((v - 1) mod 64 + 1);
+                  3: fField4.AddValue((v - 1) mod 64 + 1);
+                end;
+
+                fIntervalValueCounts[IntervalIndex] := fIntervalValueCounts[IntervalIndex] + 1;
+              end;
+            until sValue.IsEmpty;
+
+            sValue := '';
+          end;
+          else
+          begin
+            if (c = '-') and sValue.Trim.IsEmpty then
+            begin
+              Inc(IntervalIndex);
+              if CalcIntervalValues then
+              begin
+                SetLength(fIntervalValues, IntervalIndex + 1);
+                fIntervalValues[IntervalIndex] := 0;
+                IntervaValue := IntervaValue + fIntervalValues[IntervalIndex - 1];
+
+                SetLength(fIntervalValueCounts, IntervalIndex + 1);
+                fIntervalValueCounts[IntervalIndex] := 0;
+              end
+              else
+              begin
+                if IntervalIndex > High(fIntervalValues) then Exit;
+                IntervaValue := IntervaValue + fIntervalValues[IntervalIndex - 1];
+              end;
+            end;
+            sValue := sValue + c;
+          end;
+        end;
+      end;
+    end
+    else
+    begin
+      if CalcIntervalValues then
+      begin
+        SetLength(fIntervalValues, 1);
+        fIntervalValues[0] := 0;
+        SetLength(fIntervalValueCounts, 1);
+        fIntervalValueCounts[0] := 0;
+      end;
+      IntervalIndex := Low(fIntervalValues);
+      IntervaValue := 0;
+      repeat
+        sDigit := '';
+        for c in s do
+        begin
+          if c in ['0'..'9'] then sDigit := sDigit + c
+          else Break;
+        end;
+        if sDigit.IsEmpty then s := s.Substring(1)
+        else
+        begin
+          s := s.Substring(sDigit.Length);
+          if c = '-' then s := s.Substring(1);
+        end;
+
+        if TryStrToInt(sDigit, Digit) then
+        begin
+          if CalcIntervalValues then
+          begin
+            if Digit > fIntervalValues[IntervalIndex] then fIntervalValues[IntervalIndex] := Digit;
+          end
+          else
+          begin
+            if Digit > fIntervalValues[IntervalIndex] then Continue;
+          end;
+
+          Digit := IntervaValue + Digit;
+          case (Digit - 1) div 64 of
+            0: fField1.AddValue((Digit - 1) mod 64 + 1);
+            1: fField2.AddValue((Digit - 1) mod 64 + 1);
+            2: fField3.AddValue((Digit - 1) mod 64 + 1);
+            3: fField4.AddValue((Digit - 1) mod 64 + 1);
+          end;
+
+          fIntervalValueCounts[IntervalIndex] := fIntervalValueCounts[IntervalIndex] + 1;
+        end;
+
+        if c = '-' then
+        begin
+          Inc(IntervalIndex);
+          if CalcIntervalValues then
+          begin
+            SetLength(fIntervalValues, IntervalIndex + 1);
+            fIntervalValues[IntervalIndex] := 0;
+            IntervaValue := IntervaValue + fIntervalValues[IntervalIndex - 1];
+
+            SetLength(fIntervalValueCounts, IntervalIndex + 1);
+            fIntervalValueCounts[IntervalIndex] := 0;
+          end
+          else
+          begin
+            if IntervalIndex > High(fIntervalValues) then Exit;
+            IntervaValue := IntervaValue + fIntervalValues[IntervalIndex - 1];
+          end;
+        end;
+      until s.IsEmpty;
+    end;
+  end;
+
+  CalcValueCount;
+end;
+
+procedure TSQLData.AssignValue(s: string; aIntervalValues: TWordDynArray; aDataMode: Byte);
+begin
+  AssignValue(s, '', aIntervalValues, aDataMode);
 end;
 
 {procedure TSQLData.AssignValue(s: string);
@@ -315,6 +517,16 @@ begin
     2: fField3.AddValue(v);
     3: fField4.AddValue(v);
   end;
+end;
+
+procedure TSQLData.AddValue(v: Word; IntervalIndex: Integer);
+var
+  i: Byte;
+begin
+  if IntervalIndex > High(fIntervalValues) then Exit;
+  v := v + GetIntervalValueByIndex(IntervalIndex);
+  AddValue(v);
+  fIntervalValueCounts[IntervalIndex] := fIntervalValueCounts[IntervalIndex] + 1;
 end;
 
 procedure TSQLData.DeleteValue(v: Word);
@@ -418,42 +630,117 @@ begin
   end;
 end;
 
-procedure TSQLData.CalcValueCount(FirstRangeValue: Byte);
+procedure TSQLData.CalcValueCount(aIntervalValues: TWordDynArray);
 var
+  i, IntervalIndex, IntervalValue: Integer;
   v: Word;
 begin
-  fValueCount := 0;
-  fTotalValueCount := 0;
-  for v in Values do
+  if Length(aIntervalValues) > 0 then
   begin
-    if v <= FirstRangeValue then fValueCount := fValueCount + 1;
-    fTotalValueCount := fTotalValueCount + 1;
+    fIntervalValues := aIntervalValues;
+    SetLength(fIntervalValueCounts, Length(fIntervalValues));
+    for i := Low(fIntervalValueCounts) to High(fIntervalValueCounts) do
+      fIntervalValueCounts[i] := 0;
+    IntervalIndex := 0;
+    IntervalValue := fIntervalValues[IntervalIndex];
+    for v in Values do
+    begin
+      if v > IntervalValue then
+      begin
+        Inc(IntervalIndex);
+        IntervalValue := IntervalValue + fIntervalValues[IntervalIndex];
+      end;
+      fIntervalValueCounts[IntervalIndex] := fIntervalValueCounts[IntervalIndex] + 1;
+    end;
   end;
+  fValueCount := fIntervalValueCounts[0];
+  fValueCount2 := 0;
+  if Length(fIntervalValueCounts) > 1 then fValueCount2 := fIntervalValueCounts[1];
+  fTotalValueCount := fValueCount + fValueCount2;
 end;
 
-function TSQLData.ToString: string;
+procedure TSQLData.CalcValueCount;
+begin
+  CalcValueCount(fIntervalValues);
+end;
+
+class function TSQLData.ToString(aValues: TWordDynArray; aIntervalValues: TWordDynArray;
+   aDataMode: Byte; aPlaceholder: string): string;
+const
+  SubIntervalValue: Byte = 10;
 var
-  v, IntervalValue: Word;
+  v, v2, IntervalValue, SubIntervalNo, LastSubIntervalNo: Word;
   s: string;
   i, IntervalIndex: Integer;
+  Unclosed: Boolean;
 begin
   Result := '';
-  IntervalIndex := Low(fIntervalValues);
+  IntervalIndex := Low(aIntervalValues);
   IntervalValue := 0;
-  for v in Values do
+  LastSubIntervalNo := 0;
+  Unclosed := False;
+  for v in aValues do
   begin
-    while v > IntervalValue + fIntervalValues[IntervalIndex] do
+    while v > IntervalValue + aIntervalValues[IntervalIndex] do
     begin
+      LastSubIntervalNo := 0;
       Inc(IntervalIndex);
-      IntervalValue := IntervalValue + fIntervalValues[IntervalIndex - 1];
+      IntervalValue := IntervalValue + aIntervalValues[IntervalIndex - 1];
+      if Unclosed then
+      begin
+        if Unclosed then Result := Result + '£©';
+        Unclosed := False;
+      end;
       Result := Result + '-';
     end;
-    s := (v - IntervalValue).ToString;
-    if s.Length < 2 then s := '0' + s;
-    if not (Result.IsEmpty or Result.Substring(Result.Length - 1).Equals('-')) then Result := Result + '¡¢';
-    Result := Result + s;
+    v2 := v - IntervalValue;
+    case aDataMode of
+      1:
+      begin
+        SubIntervalNo := 1;
+        if IntervalIndex = 0 then
+        begin
+          SubIntervalNo := (v2 - 1) div SubIntervalValue + 1;
+          v2 := v2 mod SubIntervalValue;
+          if v2 = 0 then v2 := SubIntervalValue;
+          v2 := v2 - 1;
+        end;
+        s := v2.ToString;
+        if not aPlaceholder.IsEmpty and (IntervalIndex > 0) and (v2 <= High(aPlaceholder)) then
+          s := aPlaceholder[v2] + s;
+
+        if SubIntervalNo > LastSubIntervalNo then
+        begin
+          if Unclosed then
+          begin
+            Result := Result + '£©';
+            Unclosed := False;
+          end;
+
+          Result := Result + Format('£¨%d-%d£º', [IntervalIndex + 1, SubIntervalNo]);
+
+          LastSubIntervalNo := SubIntervalNo;
+          Unclosed := True;
+        end;
+        if not Result.Substring(Result.Length -1).Equals('£º') then Result := Result + '¡¢';
+        Result := Result + s;
+      end;
+      else
+      begin
+        s := v2.ToString;
+        if s.Length < 2 then s := '0' + s;
+        if not (Result.IsEmpty or Result.Substring(Result.Length - 1).Equals('-')) then Result := Result + '¡¢';
+        Result := Result + s;
+      end;
+    end;
   end;
-  for i := IntervalIndex + 1 to High(fIntervalValues) do Result := Result + '-';
+  if Unclosed then Result := Result + '£©';
+  for i := IntervalIndex + 1 to High(aIntervalValues) do Result := Result + '-';
+end;
+
+function TSQLData.ToString(aDataMode: Byte; aPlaceholder: string): string;
+begin
+  Result := ToString(Values, fIntervalValues, aDataMode, aPlaceholder);
 end;
 
 function TSQLData.Values: TWordDynArray;
@@ -462,29 +749,25 @@ var
   v: Int64;
   t: TWordDynArray;
 begin
-  //if fValueRowNumber <> FillCurrentRow then
+  SetLength(fValues, 0);
+  for i := 1 to 4 do
   begin
-    SetLength(fValues, 0);
-    for i := 1 to 4 do
-    begin
-      v := fField1;
-      case i of
-        2: v := fField2;
-        3: v := fField3;
-        4: v := fField4;
-      end;
-      if v = 0 then Continue;
-
-      t := v.ToArray;
-      if Length(t) > 0 then
-      begin
-        i2 := Length(fValues);
-        SetLength(fValues, i2 + Length(t));
-        for i3 := Low(t) to High(t) do
-          fValues[i2 + i3] := t[i3] + (i - 1) * 64;
-      end;
+    v := fField1;
+    case i of
+      2: v := fField2;
+      3: v := fField3;
+      4: v := fField4;
     end;
-    //fValueRowNumber := FillCurrentRow;
+    if v = 0 then Continue;
+
+    t := v.ToArray;
+    if Length(t) > 0 then
+    begin
+      i2 := Length(fValues);
+      SetLength(fValues, i2 + Length(t));
+      for i3 := Low(t) to High(t) do
+        fValues[i2 + i3] := t[i3] + (i - 1) * 64;
+    end;
   end;
   Result := fValues;
 end;
@@ -499,8 +782,12 @@ begin
   IntervalValue := GetIntervalValueByIndex(IntervalIndex);
   Values;
   for i := Low(Result) to High(Result) do
-    //Result[i] := fValues[ValueIndex + i];
     Result[i] := fValues[ValueIndex + i] - IntervalValue;
+end;
+
+function TSQLData.Values(s: string): TWordDynArray;
+begin
+
 end;
 
 procedure BinarySearch(First, Last: Cardinal; Func: TFunc<Cardinal, Byte>);
@@ -648,7 +935,7 @@ begin
   end;
 end;
 
-constructor TData.Create(Value: TInt64DynArray; FirstValueRange: Byte);
+{constructor TData.Create(Value: TInt64DynArray; FirstValueRange: Byte);
 var
   i, ValueIndex, v: Integer;
 begin
@@ -713,7 +1000,7 @@ begin
     if Self.ValueCount < v.ValueCount then Result := 2
     else Result := 0;
   end;
-end;
+end;}
 
 function SeparateDigit(var s: string): string;
 var

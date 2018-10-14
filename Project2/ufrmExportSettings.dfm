@@ -2,8 +2,8 @@ object frmExportSettings: TfrmExportSettings
   Left = 0
   Top = 0
   Caption = 'frmExportSettings'
-  ClientHeight = 655
-  ClientWidth = 1244
+  ClientHeight = 685
+  ClientWidth = 1239
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -16,15 +16,15 @@ object frmExportSettings: TfrmExportSettings
   PixelsPerInch = 96
   TextHeight = 24
   object Label2: TLabel
-    Left = 16
-    Top = 37
+    Left = 9
+    Top = 38
     Width = 918
     Height = 24
     Caption = '1. '#20445#25345' ['#65288'1'#65289'.'#12304#25490#21015#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#39318#34892#12289#19981#21516#32452#21512']'#30340#32452#21512#12305']'#65288#26368#22823#37051#34892#36317#8595#65289#65306#65288#23567#12289#31561#20110' '#8804#65289
   end
   object Label1: TLabel
-    Left = 16
-    Top = 107
+    Left = 9
+    Top = 108
     Width = 1072
     Height = 24
     Caption = 
@@ -32,22 +32,22 @@ object frmExportSettings: TfrmExportSettings
       #20110' '#8805#65289
   end
   object Label3: TLabel
-    Left = 16
-    Top = 137
+    Left = 9
+    Top = 138
     Width = 842
     Height = 24
     Caption = #27880' '#65306'1'#12289'[ 2 '#25110' 3 ].'#20877#22788#29702'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '#65292#24517#39035#28385#36275#20197#19979#65288'1'#65289'.--- '#65288'3'#65289'.'#20010#26465#20214' '#65306
   end
   object Label4: TLabel
-    Left = 16
-    Top = 180
+    Left = 9
+    Top = 181
     Width = 669
     Height = 24
     Caption = #65288'1'#65289'.'#24050#31526#21512'2.'#25110' 3. '#28165#38500#35774#32622#26465#20214#30340'['#65288' '#20195#21495#65306'N'#12289'N '#65289'] '#21450#20854#23545#24212#30340#20869#23481' '#65307
   end
   object Label5: TLabel
-    Left = 16
-    Top = 210
+    Left = 9
+    Top = 211
     Width = 1092
     Height = 24
     Caption = 
@@ -55,22 +55,22 @@ object frmExportSettings: TfrmExportSettings
       #65307
   end
   object Label6: TLabel
-    Left = 16
-    Top = 72
+    Left = 9
+    Top = 73
     Width = 964
     Height = 24
     Caption = '2. '#20445#30041' ['#65288'2-1'#65289'.'#12304#25490#21015#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#32452#21512#12289#19981#21516#39318#34892']'#30340#32452#21512'['#19981#21516#39318#34892#25968#65306#26368#22810#8594#23569']'#12305'] '#24207#34892#21495#65306'1 '#8594
   end
   object Label7: TLabel
-    Left = 16
-    Top = 240
+    Left = 9
+    Top = 241
     Width = 885
     Height = 24
     Caption = #65288'3'#65289'.1. '#20445#25345' ['#65288'1'#65289'.'#12304#25490#21015#12305#12304' ...'#30340#32452#21512#12305']'#65288#26368#22823#37051#34892#36317#8595#65289#65306#65288#23567#12289#31561#20110' '#8804#65289#12304' N '#12305#30340#21069#25552#19979' '#65306
   end
   object Label10: TLabel
-    Left = 16
-    Top = 271
+    Left = 9
+    Top = 272
     Width = 1116
     Height = 24
     Caption = 
@@ -78,8 +78,8 @@ object frmExportSettings: TfrmExportSettings
       #65288' '#20195#21495#65306'N'#12289'N '#65289'] '#65292#25110
   end
   object Label15: TLabel
-    Left = 16
-    Top = 309
+    Left = 9
+    Top = 310
     Width = 1209
     Height = 24
     Caption = 
@@ -87,92 +87,82 @@ object frmExportSettings: TfrmExportSettings
       ' '#65289#12304' '#22635#20889#65306'N '#12305#65292#30340#24773#20917#19979' ...'
   end
   object Label16: TLabel
-    Left = 16
-    Top = 339
+    Left = 9
+    Top = 340
     Width = 239
     Height = 24
     Caption = '     '#9314'. '#20445#30041#65288#26368#21069#65289#65306'1.'#8594' '
   end
   object Label12: TLabel
-    Left = 16
-    Top = 369
+    Left = 9
+    Top = 370
     Width = 819
     Height = 24
     Caption = '     [ '#27880#65306#9314'. '#20445#30041#65288#26368#21069#65289#65306'1.'#8594' '#12304' '#22635#20889#65306'N '#12305#20010#65306#33509#19981#22635' '#65292#34920#31034#21482#20445#30041#65288#26368#21069#65289#65306'1 '#20010' ... ]'
   end
   object Label13: TLabel
-    Left = 16
-    Top = 399
+    Left = 9
+    Top = 400
     Width = 572
     Height = 24
     Caption = '     '#9315'. '#20877#25353#21407#35774#32622' '#65292#37325#26032#25972#29702#25490#24207'[ '#23548#20986#30340#20840#37096#65288'TXT'#65289#25991#26412' ] '#12290
   end
   object Label14: TLabel
-    Left = 367
-    Top = 339
+    Left = 360
+    Top = 340
     Width = 784
     Height = 24
     Caption = #20010#65306#24207#34892#21495' '#65288#25110#65289'[  '#19981#21516#65288#30452#12289#26012#36830#65289#39318#34892#25968'  ] '#30340' ['#65288' '#20195#21495#65306'N'#12289'N '#65289'] '#21450#20854#23545#24212#20869#23481' '#65307
   end
   object Label19: TLabel
-    Left = 34
-    Top = 496
-    Width = 1006
+    Left = 26
+    Top = 502
+    Width = 888
     Height = 24
     Caption = #65288'2'#65289'.'#65288#27599#34892#65289' N.[ '#30452#12289#26012#36830#65288#31532' N '#34892#20026#39318#34892#65289']'#65307'[ '#37051#34892#36317' '#8595'N '#65307#26368#22810#65288#31532' N '#27425#32452#21512#65289#65306#20849' N '#32452' ] '#65306
   end
   object Label20: TLabel
-    Left = 34
-    Top = 526
-    Width = 1006
+    Left = 26
+    Top = 532
+    Width = 954
     Height = 24
     Caption = #65288'3'#65289'.'#65288#20840#37096#65289#12304' N '#12305'. '#31532' N '#27425#32452#21512' [ '#20195#21495#65306'N.'#65288'N'#12289'N ...'#65289'] '#21450#20854#23545#24212#20869#23481' '#65307#65288#25552#21462#19968#20010#65289#31526#21512#20197#19979#26465#20214' '#65306
   end
   object Label21: TLabel
-    Left = 34
-    Top = 556
-    Width = 948
+    Left = 26
+    Top = 562
+    Width = 954
     Height = 24
-    Caption = #9312'. '#22312' ['#65288'TXT'#65289#25991#26412#65306#65288'2-1'#65289'.'#12304#25490#21015#12305'...- N ] '#20013' '#65306'[ '#19981#21516#65288#30452#12289#26012#36830#65289#39318#34892#25968#65306'N ]'#65288#27604#36739#21518#65289#26159#26368#22810#30340' '#65307
-  end
-  object Label22: TLabel
-    Left = 34
-    Top = 586
-    Width = 785
-    Height = 24
-    Caption = #9313'. '#25552#21462#30340#12304' '#20840#37096' [ '#20195#21495#65306'N.'#65288' N.N ...'#65289#21450#20854#23545#24212#20869#23481' ] '#12305#33509#26377#30456#21516' '#65292#21482#20445#30041#20854#20013#19968#20010' '#12290
+    Caption = 
+      #9312'. '#22312' ['#65288'TXT'#65289#25991#26412#65306#65288'2-1'#65289'.'#12304#25490#21015#12305'...- N ] '#20013' '#65306'[ '#19981#21516#65288#30452#12289#26012#36830#65289#39318#34892#25968#65306'N ]'#65288#27604#36739#21518#65289#26159#26368#22810#30340'  ' +
+      #12290
   end
   object Label8: TLabel
     Left = 8
-    Top = 7
+    Top = 8
     Width = 83
     Height = 24
     Caption = #35774#32622' 1 '#65306
   end
   object Label9: TLabel
     Left = 8
-    Top = 440
-    Width = 83
+    Top = 446
+    Width = 443
     Height = 24
-    Caption = #35774#32622' 2 '#65306
+    Caption = #35774#32622' 2 '#65306#65288' '#27880#65306#35774#32622'1'#12289#35774#32622'2 '#65292#21487#20197#21516#26102#20351#29992' '#65289
+  end
+  object btnOK: TButton
+    Left = 481
+    Top = 631
+    Width = 100
+    Height = 40
+    Caption = #30830#23450
+    TabOrder = 0
+    OnClick = btnOKClick
   end
   object edtKeepMaxRowSpacing: TEdit
-    Left = 940
-    Top = 37
-    Width = 100
-    Height = 29
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -17
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    NumbersOnly = True
-    ParentFont = False
-    TabOrder = 0
-  end
-  object edtMinGroupCount: TEdit
-    Left = 986
-    Top = 72
+    Left = 933
+    Top = 38
     Width = 100
     Height = 29
     Font.Charset = DEFAULT_CHARSET
@@ -184,18 +174,23 @@ object frmExportSettings: TfrmExportSettings
     ParentFont = False
     TabOrder = 1
   end
-  object btnOK: TButton
-    Left = 1074
-    Top = 596
+  object edtMinGroupCount: TEdit
+    Left = 979
+    Top = 73
     Width = 100
-    Height = 40
-    Caption = #30830#23450
+    Height = 29
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -17
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    NumbersOnly = True
+    ParentFont = False
     TabOrder = 2
-    OnClick = btnOKClick
   end
   object edtGroupRowCount: TEdit
-    Left = 1094
-    Top = 107
+    Left = 1087
+    Top = 108
     Width = 100
     Height = 29
     Font.Charset = DEFAULT_CHARSET
@@ -208,8 +203,8 @@ object frmExportSettings: TfrmExportSettings
     TabOrder = 3
   end
   object edtReEnabledGroupCount: TEdit
-    Left = 261
-    Top = 339
+    Left = 254
+    Top = 340
     Width = 100
     Height = 29
     Font.Charset = DEFAULT_CHARSET
@@ -221,20 +216,14 @@ object frmExportSettings: TfrmExportSettings
     ParentFont = False
     TabOrder = 4
   end
-  object chkRecalcMode2: TCheckBox
-    Left = 16
-    Top = 470
+  object chkHideSameGroup: TCheckBox
+    Left = 8
+    Top = 476
     Width = 773
     Height = 20
     Caption = #65288'1'#65289'. '#22312' ['#65288'TXT'#65289#25991#26412' '#65306#65288'1'#65289'.'#12304#25490#21015#12305#12304'...'#12305#65288' '#26368#22823#37051#34892#36317#8595#65289'] '#20013' '#65306
+    Checked = True
+    State = cbChecked
     TabOrder = 5
-  end
-  object CheckBox1: TCheckBox
-    Left = 16
-    Top = 616
-    Width = 1041
-    Height = 20
-    Caption = #65288' '#35774#32622' 1 '#65289#19982#65288' '#35774#32622' 2 '#65289#22788#29702#22909#30340#25968#25454' '#65292#21512#24182#65288#20877#65289#23548#20986' '#12290#10#65288' '#27880' '#65306#33509#26377#23436#20840#30456#21516#30340#20195#21495' '#65292#21482#20445#30041#20854#20013#19968#32452' '#65289
-    TabOrder = 6
   end
 end

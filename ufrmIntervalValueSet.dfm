@@ -4,7 +4,7 @@ object frmIntervalValueSet: TfrmIntervalValueSet
   BorderIcons = [biSystemMenu]
   Caption = #35774#32622#21015#25968
   ClientHeight = 142
-  ClientWidth = 184
+  ClientWidth = 225
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -34,7 +34,7 @@ object frmIntervalValueSet: TfrmIntervalValueSet
   object edtIntervalValue: TEdit
     Left = 111
     Top = 8
-    Width = 50
+    Width = 100
     Height = 29
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -48,7 +48,7 @@ object frmIntervalValueSet: TfrmIntervalValueSet
   object edtIntervalValue2: TEdit
     Left = 111
     Top = 43
-    Width = 50
+    Width = 100
     Height = 29
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -60,8 +60,8 @@ object frmIntervalValueSet: TfrmIntervalValueSet
     TabOrder = 1
   end
   object btnOK: TButton
-    Left = 56
-    Top = 86
+    Left = 84
+    Top = 82
     Width = 60
     Height = 40
     Caption = #30830#23450

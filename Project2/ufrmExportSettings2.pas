@@ -1,4 +1,4 @@
-unit ufrmExportSettings;
+unit ufrmExportSettings2;
 
 interface
 
@@ -11,7 +11,6 @@ type
     btnOK: TButton;
     Label2: TLabel;
     Label1: TLabel;
-    Label3: TLabel;
     Label4: TLabel;
     Label5: TLabel;
     Label6: TLabel;
@@ -19,16 +18,11 @@ type
     Label10: TLabel;
     Label15: TLabel;
     Label16: TLabel;
-    Label12: TLabel;
     Label13: TLabel;
-    Label14: TLabel;
     edtKeepMaxRowSpacing: TEdit;
     edtMinGroupCount: TEdit;
     edtGroupRowCount: TEdit;
     edtReEnabledGroupCount: TEdit;
-    Label19: TLabel;
-    Label20: TLabel;
-    Label21: TLabel;
     chkHideSameGroup: TCheckBox;
     Label8: TLabel;
     Label9: TLabel;
@@ -134,6 +128,7 @@ begin
   if sReEnabledGroupCount.IsEmpty then fReEnabledGroupCount := 1
   else fReEnabledGroupCount := sReEnabledGroupCount.ToInteger;
   fHideSameGroup := chkHideSameGroup.Checked;
+
   fDataComputer.SetKeyValue('KeepMaxRowSpacing', fKeepMaxRowSpacing);
   fDataComputer.SetKeyValue('GroupCount', fGroupCount);
   fDataComputer.SetKeyValue('GroupRowCount', fGroupRowCount);

@@ -148,6 +148,8 @@ object frmExportVertSlantFileSettings: TfrmExportVertSlantFileSettings
     Width = 908
     Height = 25
     Caption = #65288'2-4'#65289'.'#12304#25490#21015#12305#12304#8220'N'#8221#20010#20197#19978'['#30456#21516#32452#21512#12289#19981#21516#39318#34892']'#30340#32452#21512' ['#39318#34892#37051#34892#36317#65306#26368#22823#8595#8594#23567#8595']'#12305#65288'4'#65289'- N'
+    Checked = True
+    State = cbChecked
     TabOrder = 14
   end
   object chkFile15: TCheckBox

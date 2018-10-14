@@ -1,9 +1,9 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{7597B961-B8C1-4E74-9628-240DDF60F2F6}</ProjectGuid>
+        <ProjectGuid>{67B565BC-88C8-4691-B34F-A6F05E1A2DAC}</ProjectGuid>
         <ProjectVersion>18.2</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
-        <MainSource>Project2s.dpr</MainSource>
+        <MainSource>Project2bs.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
@@ -50,7 +50,7 @@
         <VerInfo_Locale>2052</VerInfo_Locale>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
         <UWP_DelphiLogo44>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_44.png</UWP_DelphiLogo44>
-        <SanitizedProjectName>Project2s</SanitizedProjectName>
+        <SanitizedProjectName>Project2bs</SanitizedProjectName>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <UWP_DelphiLogo150>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_150.png</UWP_DelphiLogo150>
         <DCC_DcuOutput>.\..\Dcu\Project2\$(Platform)\$(Config)</DCC_DcuOutput>
@@ -108,7 +108,7 @@
         <DCCReference Include="..\uCommon.pas"/>
         <DCCReference Include="uDataComputer.pas"/>
         <DCCReference Include="..\uFileWriter.pas"/>
-        <DCCReference Include="ufrmMain2.pas">
+        <DCCReference Include="ufrmMain4.pas">
             <Form>frmMain</Form>
             <FormType>dfm</FormType>
         </DCCReference>
@@ -146,7 +146,7 @@
         <BorlandProject>
             <Delphi.Personality>
                 <Source>
-                    <Source Name="MainSource">Project2s.dpr</Source>
+                    <Source Name="MainSource">Project2bs.dpr</Source>
                 </Source>
                 <Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dcloffice2k240.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
@@ -154,15 +154,15 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="3">
-                <DeployFile LocalName="Win32\Debug\Project2s.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\Bin\Project2bs.exe" Configuration="Release" Class="ProjectOutput">
                     <Platform Name="Win32">
-                        <RemoteName>Project2s.exe</RemoteName>
+                        <RemoteName>Project2bs.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\Bin\Project2s.exe" Configuration="Release" Class="ProjectOutput">
+                <DeployFile LocalName="Win32\Debug\Project2bs.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
-                        <RemoteName>Project2s.exe</RemoteName>
+                        <RemoteName>Project2bs.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

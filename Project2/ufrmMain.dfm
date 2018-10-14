@@ -450,14 +450,14 @@ object frmMain: TfrmMain
       Top = 87
       Width = 293
       Height = 24
-      Caption = '2.'#35774#32622#8220#26597#35810#65288#24635#21644#21306#22495#65289#8221#21015#25968#65306
+      Caption = '2.'#35774#32622#8220#26597#35810#65288#31532#19968#21306#22495#65289#8221#21015#25968#65306
     end
     object Label4: TLabel
       Left = 16
       Top = 122
       Width = 293
       Height = 24
-      Caption = '3.'#35774#32622#8220#26597#35810#65288#31532#19968#21306#22495#65289#8221#21015#25968#65306
+      Caption = '3.'#35774#32622#8220#26597#35810#65288#31532#20108#21306#22495#65289#8221#21015#25968#65306
     end
     object edtFileName: TEdit
       Left = 291
@@ -475,7 +475,7 @@ object frmMain: TfrmMain
       TabOrder = 0
       OnClick = edtFileNameClick
     end
-    object edtMaxValue: TEdit
+    object edtIntervalValue: TEdit
       Left = 308
       Top = 87
       Width = 100
@@ -489,7 +489,7 @@ object frmMain: TfrmMain
       ParentFont = False
       TabOrder = 1
     end
-    object edtFirstRangeValue: TEdit
+    object edtIntervalValue2: TEdit
       Left = 308
       Top = 122
       Width = 100

@@ -1,4 +1,4 @@
-unit ufrmMain;
+unit ufrmMain2;
 
 interface
 
@@ -74,8 +74,8 @@ var
 implementation
 
 uses
-  ufrmInput, ufrmQueryConfig3, uTimer, ufrmIntervalValueSet, ufrmSameColumnsSet,
-  ufrmExportFileSettings;
+  ufrmInput, uTimer, ufrmIntervalValueSet2, ufrmIntervalValueSet3, ufrmSameColumnsSet,
+  ufrmExportFileSettings, ufrmRearrangeFileSettings;
 
 {$R *.dfm}
 
@@ -85,9 +85,11 @@ begin
 end;
 
 procedure TfrmMain.BuildDataTableGridColumn;
+const
+  SubIntervalValue: Byte = 10;
 var
   i: Integer;
-  IntervalValue, ColNo: Word;
+  IntervalValue, v, v2, SubIntervalNo: Word;
 begin
   dbgrdDataTable.BeginLayout;
   dbgrdDataTable.OnAdvDrawDataCell := nil;
@@ -161,16 +163,24 @@ begin
     for i := Low(fDataComputer.IntervalValues) to High(fDataComputer.IntervalValues) do
     begin
       if i > 0 then IntervalValue := IntervalValue + fDataComputer.IntervalValues[i - 1];
-      for ColNo := 1 to fDataComputer.IntervalValues[i] do
+      for v := 1 to fDataComputer.IntervalValues[i] do
       begin
         with dbgrdDataTable.Columns.Add do
         begin
-          Tag := IntervalValue + ColNo;
+          Tag := IntervalValue + v;
           FieldName := 'Field' + ((Tag - 1) div 64 + 1).ToString;
           Alignment := TAlignment.taCenter;
           Title.Alignment := TAlignment.taCenter;
-          Title.Caption := ColNo.ToString;
-          if ColNo < 10 then Title.Caption := '0' + Title.Caption;
+          v2 := v;
+          SubIntervalNo := 1;
+          if i = 0 then
+          begin
+            SubIntervalNo := (v2 - 1) div SubIntervalValue + 1;
+            v2 := v mod SubIntervalValue;
+            if v2 = 0 then v2 := SubIntervalValue;
+          end;
+          v2 := v2 - 1;
+          Title.Caption := Format('%d-%d|%d', [i + 1, SubIntervalNo, v2]);
           Width := 45;
         end;
       end;
@@ -185,7 +195,7 @@ procedure TfrmMain.btnExportToFileClick(Sender: TObject);
 begin
   if not ExportFileSet then Exit;
 
-  fDataComputer.ExportToFile(
+  fDataComputer.ExportToFile2(
     frmExportFileSettings.ExportFileDirectory,
     frmExportFileSettings.EachFileRowCount,
     frmExportFileSettings.rbSubFileDirectory.Checked
@@ -200,16 +210,19 @@ var
   i, ColNo: Integer;
   i64, v: Int64;
   IntervalValue: Word;
+  s: string;
 begin
   i64 := 1;
   Params.Background := clWhite;
-  if TryStrToInt(Column.Title.Caption, ColNo) and Assigned(Column.Field) then
+  s := Column.Title.Caption;
+  s := s.Substring(s.IndexOf('|') + 1);
+  if TryStrToInt(s, ColNo) and Assigned(Column.Field) then
   begin
     v := Column.Field.AsLargeInt;
     Params.Text := '';
     if v = i64 shl (64 - Column.Tag) or v then
     begin
-      Params.Text := Column.Title.Caption;
+      Params.Text := s;
 
       if Assigned(frmSameColumnsSet) then
       begin
@@ -236,9 +249,9 @@ begin
   if not OpenDialog.Execute then Exit;
 
   IntervalValueSet;
-  if frmIntervalValueSet.ModalResult <> mrOK then Exit;
+  if frmIntervalValueSet2.ModalResult <> mrOK then Exit;
 
-  fDataComputer.BuildClearColumn(OpenDialog.FileName, frmIntervalValueSet.IntervalValues);
+  fDataComputer.BuildClearColumn(OpenDialog.FileName, frmIntervalValueSet2.IntervalValues);
 
   ShowMessage('生成清列行完成');
 end;
@@ -267,7 +280,7 @@ var
   SameValues: TWordDynArray;
   EachPageRowCount: Word;
 begin
-  SameColumnsSet(fDataComputer.IntervalValues);
+  SameColumnsSet(fDataComputer.IntervalValues, 1);
   if frmSameColumnsSet.ModalResult <> mrOK then Exit;
   SameValuesChanged := frmSameColumnsSet.ValueChanged;
   SameValues := frmSameColumnsSet.Values;
@@ -328,25 +341,33 @@ var
 begin
   OpenDialog.Options := OpenDialog.Options - [ofAllowMultiSelect];
   if not OpenDialog.Execute then Exit;
-  if not Assigned(frmQueryConfig3) then frmQueryConfig3 := TfrmQueryConfig3.Create(Self);
-  frmQueryConfig3.ShowModal;
-  if frmQueryConfig3.ModalResult <> mrOK then Exit;
+  if not Assigned(frmIntervalValueSet3) then
+    frmIntervalValueSet3 := TfrmIntervalValueSet3.Create(Self);
+  frmIntervalValueSet3.ShowModal;
+  if frmIntervalValueSet3.ModalResult <> mrOK then Exit;
 
   fDataComputer.QueryData3(
     fdmtCompareResult,
     OpenDialog.FileName,
-    frmQueryConfig3.IntervalValues,
-    frmQueryConfig3.IdenticalColCount,
-    frmQueryConfig3.CompareRowCount
+    frmIntervalValueSet3.IntervalValues,
+    frmIntervalValueSet3.IdenticalColCount,
+    frmIntervalValueSet3.CompareRowCount
   );
 end;
 
 procedure TfrmMain.btnRearrangeClearColumnClick(Sender: TObject);
-var
-  FileDirectory: string;
 begin
-  if not SelectDirectory('选择文件夹', '', FileDirectory) then Exit;
-  fDataComputer.RearrangeClearColumn(FileDirectory, chkReverseOrder.Checked);
+  if not RearrangeFileSet then Exit;
+
+  fDataComputer.RearrangeClearColumn(
+    frmRearrangeFileSettings.FileDirectory,
+    frmRearrangeFileSettings.FirstIntervalCol,
+    frmRearrangeFileSettings.FirstIntervalCol2,
+    frmRearrangeFileSettings.SecondIntervalCol,
+    frmRearrangeFileSettings.SecondIntervalCol2,
+    frmRearrangeFileSettings.Placeholder,
+    chkReverseOrder.Checked
+  );
 end;
 
 procedure TfrmMain.btnSortClearColumnClick(Sender: TObject);
@@ -360,8 +381,8 @@ end;
 procedure TfrmMain.btnIntervalValueSetClick(Sender: TObject);
 begin
   IntervalValueSet;
-  if frmIntervalValueSet.ModalResult <> mrOK then Exit;
-  fDataComputer.SetIntervalValues(frmIntervalValueSet.IntervalValues);
+  if frmIntervalValueSet2.ModalResult <> mrOK then Exit;
+  fDataComputer.SetIntervalValues(frmIntervalValueSet2.IntervalValues);
   BuildDataTableGridColumn;
 end;
 
@@ -378,6 +399,7 @@ end;
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   fDataComputer := TDataComputer.Create;
+  fDataComputer.DataMode := 1;
 
   fdmtCompareResult.CreateDataSet;
   fdmtCompareResult.AddIndex('ConformCount', 'ConformCount;ConformCount2;ConformCount3', '', [soDescending, soDescending, soDescending]);

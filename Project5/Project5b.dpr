@@ -1,8 +1,8 @@
-program Project5;
+program Project5b;
 
 uses
   Vcl.Forms,
-  ufrmMain in 'ufrmMain.pas' {frmMain},
+  ufrmMain2 in 'ufrmMain2.pas' {frmMain},
   uDataComputer in 'uDataComputer.pas',
   uCommon in '..\uCommon.pas',
   ufrmInput in 'ufrmInput.pas' {frmInput},
@@ -10,7 +10,9 @@ uses
   ufrmSameColumnsSet in 'ufrmSameColumnsSet.pas' {frmSameColumnsSet},
   ufrmRearrangeFileSettings in 'ufrmRearrangeFileSettings.pas' {frmRearrangeFileSettings},
   ufrmIntervalValueSet in '..\ufrmIntervalValueSet.pas' {frmIntervalValueSet},
-  ufrmQueryConfig3 in 'ufrmQueryConfig3.pas' {frmQueryConfig3};
+  ufrmIntervalValueSet2 in 'ufrmIntervalValueSet2.pas' {frmIntervalValueSet2},
+  ufrmIntervalValueSet3 in 'ufrmIntervalValueSet3.pas' {frmIntervalValueSet3},
+  ufrmExportFileSettings in 'ufrmExportFileSettings.pas' {frmExportFileSettings};
 
 {$R *.res}
 
@@ -18,7 +20,6 @@ begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TfrmMain, frmMain);
-  Application.CreateForm(TfrmIntervalValueSet, frmIntervalValueSet);
-  Application.CreateForm(TfrmQueryConfig3, frmQueryConfig3);
+  Application.CreateForm(TfrmIntervalValueSet3, frmIntervalValueSet3);
   Application.Run;
 end.

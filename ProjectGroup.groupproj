@@ -9,6 +9,12 @@
         <Projects Include="Project2\Project2s.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Project2\Project2b.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Project2\Project2bs.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="Project3\Project3.dproj">
             <Dependencies/>
         </Projects>
@@ -16,6 +22,9 @@
             <Dependencies/>
         </Projects>
         <Projects Include="Project5\Project5.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Project5\Project5b.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -44,6 +53,24 @@
     <Target Name="Project2s:Make">
         <MSBuild Projects="Project2\Project2s.dproj" Targets="Make"/>
     </Target>
+    <Target Name="Project2b">
+        <MSBuild Projects="Project2\Project2b.dproj"/>
+    </Target>
+    <Target Name="Project2b:Clean">
+        <MSBuild Projects="Project2\Project2b.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project2b:Make">
+        <MSBuild Projects="Project2\Project2b.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Project2bs">
+        <MSBuild Projects="Project2\Project2bs.dproj"/>
+    </Target>
+    <Target Name="Project2bs:Clean">
+        <MSBuild Projects="Project2\Project2bs.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project2bs:Make">
+        <MSBuild Projects="Project2\Project2bs.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Project3">
         <MSBuild Projects="Project3\Project3.dproj"/>
     </Target>
@@ -71,14 +98,23 @@
     <Target Name="Project5:Make">
         <MSBuild Projects="Project5\Project5.dproj" Targets="Make"/>
     </Target>
+    <Target Name="Project5b">
+        <MSBuild Projects="Project5\Project5b.dproj"/>
+    </Target>
+    <Target Name="Project5b:Clean">
+        <MSBuild Projects="Project5\Project5b.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project5b:Make">
+        <MSBuild Projects="Project5\Project5b.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="Project2;Project2s;Project3;Project4;Project5"/>
+        <CallTarget Targets="Project2;Project2s;Project2b;Project2bs;Project3;Project4;Project5;Project5b"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Project2:Clean;Project2s:Clean;Project3:Clean;Project4:Clean;Project5:Clean"/>
+        <CallTarget Targets="Project2:Clean;Project2s:Clean;Project2b:Clean;Project2bs:Clean;Project3:Clean;Project4:Clean;Project5:Clean;Project5b:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Project2:Make;Project2s:Make;Project3:Make;Project4:Make;Project5:Make"/>
+        <CallTarget Targets="Project2:Make;Project2s:Make;Project2b:Make;Project2bs:Make;Project3:Make;Project4:Make;Project5:Make;Project5b:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

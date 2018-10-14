@@ -1,4 +1,4 @@
-program Project2s;
+program Project2bs;
 
 uses
   Vcl.Forms,
@@ -7,7 +7,7 @@ uses
   uCommon in '..\uCommon.pas',
   uDataComputer in 'uDataComputer.pas',
   uFileWriter in '..\uFileWriter.pas',
-  ufrmMain2 in 'ufrmMain2.pas' {frmMain},
+  ufrmMain4 in 'ufrmMain4.pas' {frmMain},
   ufrmExportSettings2 in 'ufrmExportSettings2.pas' {frmExportSettings},
   ufrmExportSlantFileSettings2 in 'ufrmExportSlantFileSettings2.pas' {frmExportSlantFileSettings},
   ufrmExportVertFileSettings2 in 'ufrmExportVertFileSettings2.pas' {frmExportVertFileSettings},

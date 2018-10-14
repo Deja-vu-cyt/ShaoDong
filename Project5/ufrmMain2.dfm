@@ -130,6 +130,7 @@ object frmMain: TfrmMain
       Height = 40
       Caption = #65288#37197#22871#65289'[5]. '#29983#25104#8220#28165#21015#25991#26412#8221' '
       TabOrder = 6
+      Visible = False
       OnClick = btnBuildClearColumnClick
     end
     object btnQueryData3: TButton
@@ -319,8 +320,8 @@ object frmMain: TfrmMain
   end
   object OpenDialog: TOpenDialog
     Options = [ofHideReadOnly, ofAllowMultiSelect, ofEnableSizing]
-    Left = 1240
-    Top = 65
+    Left = 1035
+    Top = 59
   end
   object fdmtCompareResult: TFDMemTable
     OnNewRecord = fdmtCompareResultNewRecord

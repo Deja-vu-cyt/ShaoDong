@@ -1,4 +1,4 @@
-unit ufrmMain2;
+unit ufrmMain4;
 
 interface
 
@@ -220,6 +220,7 @@ begin
   PageControl1.ActivePageIndex := 0;
 
   fDataComputer := TDataComputer.Create;
+  fDataComputer.DataMode := 1;
   fDataComputer.InitCompareEvent := InitCompare;
 
   chkCompareCrossRange.Checked := fDataComputer.CompareCrossRange;
