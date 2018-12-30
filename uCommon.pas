@@ -5,6 +5,7 @@ interface
 uses
   mORMot,
   SynCommons,
+  SynSQLite3,
   System.Classes,
   System.SysUtils,
   System.Types,
@@ -35,6 +36,11 @@ type
     function Compare(const Value: TInt64DynArray; Offset: Byte; MaxValue: Word): TInt64DynArray;
   end;
 
+  TWordDynArrayHelper = record helper for TWordDynArray
+  public
+    function ToString: string;
+  end;
+
   {TData = class
   private
     fValue: TInt64DynArray;
@@ -55,9 +61,18 @@ type
 
   TSQLKeyValue = class(TSQLRecord)
   private
+    fRest: TSQLRest;
+    procedure CheckRest;
+  protected
     fKey: RawUTF8;
     fValue: Variant;
   public
+    procedure SetRest(aRest: TSQLRest);
+    procedure GetKeyValue(Key: string; var v: Variant); overload;
+    procedure GetKeyValue(Key: string; var v: TWordDynArray); overload;
+    procedure SetKeyValue(Key: string; v: Variant); overload;
+    procedure SetKeyValue(Key: string; v: TWordDynArray); overload;
+
     procedure SetArrayValue(aValue: TWordDynArray);
   published
     property Key: RawUTF8 read fKey write fKey;
@@ -124,17 +139,92 @@ type
     property Number: Cardinal read fNumber write fNumber stored AS_UNIQUE;
   end;
 
+  TSortAlgorithm = class
+  public
+    class procedure ShellSort(var x: TWordDynArray; Compare: TFunc<Word, Word, Boolean>);
+  end;
+
+var
+  fDirectory: string;
+
+procedure InternalSQLFunctionValueExist(Context: TSQLite3FunctionContext;
+  Argc: Integer; var Argv: TSQLite3ValueArray); cdecl;
+
 
 procedure BinarySearch(First, Last: Cardinal; Func: TFunc<Cardinal, Byte>);
-procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>);
+procedure Foreach(TotalCount, EachTimeCount: Cardinal; Func: TFunc<Boolean>; Proc: TProc<TWordDynArray>);
+procedure Foreach2(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>);
 function DigitToString(Digit: Cardinal): string;
 
 function SeparateDigit(var s: string): string;
 procedure StrToArray(s: string; var Arr: TWordDynArray; Offset: Integer = 0); overload;
 procedure StrToArray(s: string; var Arr, Arr2: TWordDynArray); overload;
-procedure ShellSort(var x: TWordDynArray);
+procedure ShellSort(var x: TWordDynArray); overload;
+//procedure ShellSort(var x: TWordDynArray; Compare: TFunc<Boolean, Word, Word>);
 
 implementation
+
+procedure TSQLKeyValue.CheckRest;
+begin
+  if not Assigned(fRest) then
+    raise Exception.Create('Invalid rest');
+end;
+
+procedure TSQLKeyValue.SetRest(aRest: TSQLRest);
+begin
+  fRest := aRest;
+end;
+
+procedure TSQLKeyValue.GetKeyValue(Key: string; var v: Variant);
+begin
+  CheckRest;
+
+  v := Unassigned;
+  FillPrepare(fRest, 'Key = ?', [Key]);
+  if FillOne then v := fValue;
+end;
+
+procedure TSQLKeyValue.GetKeyValue(Key: string; var v: TWordDynArray);
+var
+  v2: Variant;
+  i: Integer;
+begin
+  GetKeyValue(Key, v2);
+  if VarIsEmpty(v2) then SetLength(v, 0)
+  else
+  begin
+    SetLength(v, Integer(v2._Count));
+    for i := 0 to v2._Count - 1 do v[i] := v2.Value(i);
+  end;
+end;
+
+procedure TSQLKeyValue.SetKeyValue(Key: string; v: Variant);
+begin
+  CheckRest;
+
+  FillPrepare(fRest, 'Key = ?', [Key]);
+  if FillOne then
+  begin
+    fValue := v;
+    fRest.Update(Self);
+  end
+  else
+  begin
+    fKey := Key;
+    fValue := v;
+    fRest.Add(Self, True);
+  end;
+end;
+
+procedure TSQLKeyValue.SetKeyValue(Key: string; v: TWordDynArray);
+var
+  v2: Variant;
+  i: Integer;
+begin
+  TDocVariant.New(v2);
+  for i := Low(v) to High(v) do v2.Add(v[i]);
+  SetKeyValue(Key, v2);
+end;
 
 procedure TSQLKeyValue.SetArrayValue(aValue: TWordDynArray);
 var
@@ -790,6 +880,28 @@ begin
 
 end;
 
+procedure InternalSQLFunctionValueExist(Context: TSQLite3FunctionContext;
+  Argc: Integer; var Argv: TSQLite3ValueArray); cdecl;
+var
+  StartPos: Integer;
+begin
+  case Argc of
+    1:;
+    else
+    begin
+      ErrorWrongNumberOfArgs(Context);
+      Exit;
+    end;
+  end;
+  if (sqlite3.value_type(argv[0]) = SQLITE_NULL)
+    or (sqlite3.value_type(argv[1]) = SQLITE_NULL)
+  then
+    sqlite3.result_int64(Context, 0)
+  else
+    sqlite3.result_int64(Context, 1);
+  //sqlite3.value_text(argv[0]),sqlite3.value_text(argv[1]);
+end;
+
 procedure BinarySearch(First, Last: Cardinal; Func: TFunc<Cardinal, Byte>);
 var
   i: Cardinal;
@@ -805,9 +917,9 @@ begin
   end;
 end;
 
-procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>);
+procedure Foreach(TotalCount, EachTimeCount: Cardinal; Func: TFunc<Boolean>; Proc: TProc<TWordDynArray>);
 var
-  r: TCardinalDynArray;
+  r: TWordDynArray;
   i, i2, i3: Integer;
 begin
   if (TotalCount = 0) or (TotalCount < EachTimeCount) then Exit;
@@ -815,6 +927,7 @@ begin
   SetLength(r, EachTimeCount);
   for i := Low(r) to High(r) do r[i] := i + 1;
   repeat
+    if Func then Exit;
     Proc(r);
 
     r[High(r)] := r[High(r)] + 1;
@@ -832,6 +945,22 @@ begin
       end;
     end;
   until r[Low(r)] > TotalCount - i + 1;
+end;
+
+procedure Foreach2(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>);
+var
+  r: TCardinalDynArray;
+  i, i2, i3: Integer;
+begin
+  if (TotalCount = 0) or (TotalCount < EachTimeCount) then Exit;
+
+  SetLength(r, EachTimeCount);
+  for i := Low(r) to High(r) do r[i] := i + 1;
+  repeat
+    Proc(r);
+
+    for i := Low(r) to High(r) do r[i] := r[i] + 1;
+  until r[High(r)] > TotalCount;
 end;
 
 function DigitToString(Digit: Cardinal): string;
@@ -904,13 +1033,13 @@ begin
   SetLength(Result, 0);
   for i := Low(Self) to High(Self) do
   begin
-    //t := Self[i].ToArray(i * 64);
+    t := Self[i].ToArray;
     if Length(t) > 0 then
     begin
       i2 := Length(Result);
       SetLength(Result, i2 + Length(t));
       for i3 := Low(t) to High(t) do
-        Result[i2 + i3] := t[i3];
+        Result[i2 + i3] := i * 64 + t[i3];
     end;
   end;
 end;
@@ -932,6 +1061,18 @@ begin
       Exit;
     end;
     Result.AddValue(v2);
+  end;
+end;
+
+function TWordDynArrayHelper.ToString: string;
+var
+  v: Word;
+begin
+  Result := '';
+  for v in Self do
+  begin
+    if not Result.IsEmpty then Result := Result + '¡¢';
+    Result := Result + v.ToString;
   end;
 end;
 
@@ -1095,5 +1236,33 @@ begin
     h:=h div 2;
   end;
 end;
+
+class procedure TSortAlgorithm.ShellSort(var x: TWordDynArray; Compare: TFunc<Word, Word, Boolean>);
+var
+  i, j, gap: Integer;
+  t: Word;
+begin
+  gap := Length(x) div 2;
+  while gap > 0 do
+  begin
+    for i := gap to High(x) do
+    begin
+      j := i;
+      while (j >= gap) and Compare(x[j - gap], x[j]) do
+      begin
+        t := x[j - gap];
+        x[j - gap] := x[j];
+        x[j] := t;
+
+        j := j - gap;
+      end;
+    end;
+    gap := gap div 2;
+  end;
+end;
+
+initialization
+  fDirectory := TPath.GetDirectoryName(ParamStr(0));
+  if not fDirectory.Substring(fDirectory.Length - 1).Equals('\') then fDirectory := fDirectory + '\';
 
 end.

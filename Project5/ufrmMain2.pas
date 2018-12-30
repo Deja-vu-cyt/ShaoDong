@@ -178,8 +178,8 @@ begin
             SubIntervalNo := (v2 - 1) div SubIntervalValue + 1;
             v2 := v mod SubIntervalValue;
             if v2 = 0 then v2 := SubIntervalValue;
+            v2 := v2 - 1;
           end;
-          v2 := v2 - 1;
           Title.Caption := Format('%d-%d|%d', [i + 1, SubIntervalNo, v2]);
           Width := 45;
         end;
@@ -282,7 +282,7 @@ var
 begin
   SameColumnsSet(fDataComputer.IntervalValues, 1);
   if frmSameColumnsSet.ModalResult <> mrOK then Exit;
-  SameValuesChanged := frmSameColumnsSet.ValueChanged;
+  //SameValuesChanged := frmSameColumnsSet.ValueChanged;
   SameValues := frmSameColumnsSet.Values;
   EachPageRowCount := frmSameColumnsSet.EachPageRowCount;
 
@@ -313,7 +313,7 @@ begin
 
     try
       try
-        if SameValuesChanged then
+        //if SameValuesChanged then
         begin
           fDataComputer.CalcConformColumnCount(SameValues);
           ConformRowCount := fDataComputer.GetConformRowCount;

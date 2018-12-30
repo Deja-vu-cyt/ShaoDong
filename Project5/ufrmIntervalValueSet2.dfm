@@ -7,22 +7,22 @@ inherited frmIntervalValueSet2: TfrmIntervalValueSet2
   PixelsPerInch = 96
   TextHeight = 24
   inherited Label1: TLabel
-    Left = 38
+    Left = 56
     Top = 109
-    Width = 238
-    Caption = #65288' '#31532#19968#21306#22495' '#65289#21015#25968#33539#22260' '#65306
-    ExplicitLeft = 38
+    Width = 220
+    Caption = #65288#31532#19968#21306#22495#65289#21015#25968#33539#22260#65306
+    ExplicitLeft = 56
     ExplicitTop = 109
-    ExplicitWidth = 238
+    ExplicitWidth = 220
   end
   inherited Label2: TLabel
-    Left = 38
+    Left = 56
     Top = 144
-    Width = 238
-    Caption = #65288' '#31532#20108#21306#22495' '#65289#21015#25968#33539#22260' '#65306
-    ExplicitLeft = 38
+    Width = 220
+    Caption = #65288#31532#20108#21306#22495#65289#21015#25968#33539#22260#65306
+    ExplicitLeft = 56
     ExplicitTop = 144
-    ExplicitWidth = 238
+    ExplicitWidth = 220
   end
   object Label3: TLabel [2]
     Left = 8

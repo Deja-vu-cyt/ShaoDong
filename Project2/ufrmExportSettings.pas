@@ -134,11 +134,11 @@ begin
   if sReEnabledGroupCount.IsEmpty then fReEnabledGroupCount := 1
   else fReEnabledGroupCount := sReEnabledGroupCount.ToInteger;
   fHideSameGroup := chkHideSameGroup.Checked;
-  fDataComputer.SetKeyValue('KeepMaxRowSpacing', fKeepMaxRowSpacing);
+  {fDataComputer.SetKeyValue('KeepMaxRowSpacing', fKeepMaxRowSpacing);
   fDataComputer.SetKeyValue('GroupCount', fGroupCount);
   fDataComputer.SetKeyValue('GroupRowCount', fGroupRowCount);
   fDataComputer.SetKeyValue('ReEnabledGroupCount', fReEnabledGroupCount);
-  fDataComputer.SetKeyValue('HideSameGroup', Ord(fHideSameGroup));
+  fDataComputer.SetKeyValue('HideSameGroup', Ord(fHideSameGroup));}
 
   ModalResult := mrOK;
 end;
@@ -147,7 +147,7 @@ procedure TfrmExportSettings.FormCreate(Sender: TObject);
 var
   v: Variant;
 begin
-  fKeepMaxRowSpacing := 0;
+  {fKeepMaxRowSpacing := 0;
   v := fDataComputer.GetKeyValue('KeepMaxRowSpacing');
   if not VarIsEmpty(v) then fKeepMaxRowSpacing := v;
   fGroupCount := 0;
@@ -158,7 +158,7 @@ begin
   if not VarIsEmpty(v) then fGroupRowCount := v;
   fReEnabledGroupCount := 0;
   v := fDataComputer.GetKeyValue('ReEnabledGroupCount');
-  if not VarIsEmpty(v) then fReEnabledGroupCount := v;
+  if not VarIsEmpty(v) then fReEnabledGroupCount := v; }
 
   if fKeepMaxRowSpacing > 0 then
     edtKeepMaxRowSpacing.Text := fKeepMaxRowSpacing.ToString;
@@ -170,7 +170,7 @@ begin
     edtReEnabledGroupCount.Text := fReEnabledGroupCount.ToString;
 
   fHideSameGroup := False;
-  v := fDataComputer.GetKeyValue('HideSameGroup');
+  //v := fDataComputer.GetKeyValue('HideSameGroup');
   if not VarIsEmpty(v) then fHideSameGroup := Boolean(v);
   chkHideSameGroup.Checked := fHideSameGroup;
 

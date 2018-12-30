@@ -128,6 +128,11 @@
             <Form>frmExportVertSlantFileSettings</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="ufrmConsumer.pas">
+            <Form>frmConsumer</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ServiceIntf.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -154,7 +159,7 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="3">
-                <DeployFile LocalName="Win32\Debug\Project2s.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\Bin\Project2s.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>Project2s.exe</RemoteName>
                         <Overwrite>true</Overwrite>

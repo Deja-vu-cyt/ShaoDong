@@ -57,16 +57,16 @@ inherited frmIntervalValueSet3: TfrmIntervalValueSet3
   object Label7: TLabel [6]
     Left = 153
     Top = 200
-    Width = 266
+    Width = 260
     Height = 24
-    Caption = #9312'. '#30456#21516#21015#25968#65306'                    '#20010
+    Caption = #9312'. '#30456#21516#21015#25968#65306'                   '#20010
   end
   object Label8: TLabel [7]
     Left = 153
     Top = 235
-    Width = 266
+    Width = 260
     Height = 24
-    Caption = #9313'. '#34892#23545#27604#25968#65306'                    '#27425
+    Caption = #9313'. '#34892#23545#27604#25968#65306'                   '#27425
   end
   inherited edtIntervalValue: TEdit
     Left = 281

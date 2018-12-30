@@ -10,17 +10,15 @@ uses
 type
   TfrmRearrangeFileSettings = class(TForm)
     btnOK: TButton;
-    Label1: TLabel;
-    edtFirstIntervalCol: TEdit;
-    Label2: TLabel;
     edtPlaceholderFileName: TEdit;
-    edtFirstIntervalCol2: TEdit;
-    edtSecondIntervalCol2: TEdit;
     Label3: TLabel;
-    edtSecondIntervalCol: TEdit;
     OpenDialog: TOpenDialog;
+    Label5: TLabel;
     edtFileDirectory: TEdit;
-    Label4: TLabel;
+    Label1: TLabel;
+    Label2: TLabel;
+    edtFileDirectory2: TEdit;
+    Label6: TLabel;
     procedure btnOKClick(Sender: TObject);
     procedure edtPlaceholderFileNameClick(Sender: TObject);
     procedure edtFileDirectoryClick(Sender: TObject);
@@ -62,32 +60,36 @@ var
   v: Integer;
   l: TStringList;
 begin
-  if not (TryStrToInt(edtFirstIntervalCol.Text, v) and (v > 0)) then
-    raise Exception.Create('请输入有效区域位置');
-  fFirstIntervalCol := v;
-  if not (TryStrToInt(edtFirstIntervalCol2.Text, v) and (v > 0)) then
-    raise Exception.Create('请输入有效区域位置');
-  fFirstIntervalCol2 := v;
-  fSecondIntervalCol := 0;
-  if (edtSecondIntervalCol.Text <> '') and TryStrToInt(edtSecondIntervalCol.Text, v) then
-    fSecondIntervalCol := v;
-  fSecondIntervalCol2 := 0;
-  if (edtSecondIntervalCol2.Text <> '') and TryStrToInt(edtSecondIntervalCol2.Text, v) then
-    fSecondIntervalCol2 := v;
-
-  if FileExists(edtPlaceholderFileName.Text) then
+  fFileDirectory := Trim(edtFileDirectory.Text);
+  if fFileDirectory.IsEmpty then
   begin
-    l := TStringList.Create;
-    try
-      l.LoadFromFile(edtPlaceholderFileName.Text);
-      fPlaceholder := l.Text.Replace(' ', '');
-    finally
-      l.Free;
+    fFileDirectory := Trim(edtFileDirectory2.Text);
+    if fFileDirectory.IsEmpty then
+      raise Exception.Create('请选择文件夹');
+    if FileExists(edtPlaceholderFileName.Text) then
+    begin
+      l := TStringList.Create;
+      try
+        l.LoadFromFile(edtPlaceholderFileName.Text);
+        fPlaceholder := l.Text.Replace(' ', '');
+      finally
+        l.Free;
+      end;
     end;
+
+    fFirstIntervalCol := 18;
+    fFirstIntervalCol2 := 29;
+    fSecondIntervalCol := 30;
+    fSecondIntervalCol2 := 31;
+  end
+  else
+  begin
+    fFirstIntervalCol := 7;
+    fFirstIntervalCol2 := 14;
+    fSecondIntervalCol := 0;
+    fSecondIntervalCol2 := 0;
   end;
-
-  fFileDirectory := edtFileDirectory.Text;
-
+  //暂时已占位符区分模式
   ModalResult := mrOK;
 end;
 

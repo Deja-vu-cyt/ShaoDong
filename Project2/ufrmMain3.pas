@@ -3,15 +3,14 @@ unit ufrmMain3;
 interface
 
 uses
-  uDataComputer,
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Threading,
-  System.Classes, Vcl.Graphics, System.Math, System.Types, System.IOUtils, IdHTTP,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.FileCtrl,
+  System.Classes, Vcl.Graphics, System.Math, System.Types, System.IOUtils, System.Diagnostics,
+  Vcl.Controls, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.FileCtrl,
   FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
   FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
   Data.DB, FireDAC.Comp.DataSet, FireDAC.Comp.Client, DBGridEhGrouping,
   ToolCtrlsEh, DBGridEhToolCtrls, DynVarsEh, EhLibVCL, GridsEh, DBAxisGridsEh,
-  DBGridEh, Vcl.CheckLst, Vcl.ComCtrls;
+  DBGridEh, Vcl.CheckLst, Vcl.ComCtrls, Vcl.Menus, Vcl.Forms;
 
 type
   TfrmMain = class(TForm)
@@ -21,7 +20,6 @@ type
     Label5: TLabel;
     btnSlantCompare: TButton;
     edtExportTypeCount: TEdit;
-    btnExportCompareRow: TButton;
     OpenDialog: TOpenDialog;
     Label11: TLabel;
     btnVertCompare: TButton;
@@ -66,25 +64,50 @@ type
     btnExportVertSlantFileSettings: TButton;
     btnExportVertFileSettings: TButton;
     btnExportSlantFileSettings: TButton;
+    MainMenu: TMainMenu;
+    N1: TMenuItem;
+    miConsumer: TMenuItem;
+    Timer: TTimer;
+    miCombinationCalculator: TMenuItem;
     Label6: TLabel;
     Label13: TLabel;
+    edtAddress: TEdit;
+    edtPort: TEdit;
+    btnOk: TButton;
+    Label17: TLabel;
+    Label19: TLabel;
+    Label20: TLabel;
+    Label23: TLabel;
+    edtSlantMaxGroupCount: TEdit;
+    edtSlantMaxGroupCount2: TEdit;
+    Label24: TLabel;
+    Label21: TLabel;
+    edtVertMaxGroupCount: TEdit;
+    edtVertMaxGroupCount2: TEdit;
+    Label22: TLabel;
+    Label25: TLabel;
+    edtVertSlantMaxGroupCount: TEdit;
+    edtVertSlantMaxGroupCount2: TEdit;
+    Label26: TLabel;
+    edtVertSlantMaxGroupCount3: TEdit;
+    edtVertMaxGroupCount3: TEdit;
+    edtSlantMaxGroupCount3: TEdit;
     procedure FormCreate(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
     procedure edtFileNameClick(Sender: TObject);
     procedure btnCompareClick(Sender: TObject);
-    procedure btnExportCompareRowClick(Sender: TObject);
-    procedure Panel1DblClick(Sender: TObject);
     procedure btnExportSettingsClick(Sender: TObject);
     procedure btnExportVertSlantFileSettingsClick(Sender: TObject);
     procedure btnExportVertFileSettingsClick(Sender: TObject);
     procedure btnExportSlantFileSettingsClick(Sender: TObject);
+    procedure miConsumerClick(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure TimerTimer(Sender: TObject);
+    procedure miCombinationCalculatorClick(Sender: TObject);
+    procedure btnOkClick(Sender: TObject);
   private
     procedure OnStateChange(Working: Boolean);
-    procedure InitCompare(var CompareCrossRange: Boolean;
-      var VertCompareSpacing: Cardinal; var VertSameValueCount: Byte;
-      var VertSameValueCount2: Byte; var SlantCompareSpacing: Cardinal;
-      var SlantSameValueCount: Byte; var SlantSameValueCount2: Byte;
-      var CompareGroupValueCount: Byte; var ExportGroupValueCount: Byte);
+    procedure OnGroupCodeName(FirstRow: Word);
+    procedure OnFinish(Sender: TObject);
   public
 
   end;
@@ -95,110 +118,54 @@ var
 implementation
 
 uses
-  uTimer, ufrmExportSettings, ufrmExportVertSlantFileSettings,
-  ufrmExportVertFileSettings, ufrmExportSlantFileSettings;
+  uDataComputer, ufrmExportSettings, ufrmExportVertSlantFileSettings,
+  ufrmExportVertFileSettings, ufrmExportSlantFileSettings, ufrmConnectionSettings,
+  ufrmConsumer, ufrmCombinationCalculator;
 
 {$R *.dfm}
 
 procedure TfrmMain.OnStateChange(Working: Boolean);
 begin
-  btnSlantCompare.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmSlant]);
-  btnVertCompare.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVert]);
-  btnVertSlantCompare.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVertSlant]);
-  btnSlantExportSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmSlant]);
-  btnVertExportSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVert]);
-  btnVertSlantExportSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVertSlant]);
-  btnExportVertSlantFileSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVertSlant]);
-  btnExportVertFileSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmVert]);
-  btnExportSlantFileSettings.Enabled := not Working and (fDataComputer.CompareMode in [cmNone, cmSlant]);
+  btnSlantExportSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmSlant]);
+  btnExportSlantFileSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmSlant]);
+  btnSlantCompare.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmSlant]);
+
+  btnVertExportSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVert]);
+  btnExportVertFileSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVert]);
+  btnVertCompare.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVert]);
+
+  btnVertSlantExportSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVertSlant]);
+  btnExportVertSlantFileSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVertSlant]);
+  btnVertSlantCompare.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVertSlant]);
+
+  miConsumer.Enabled := not Working;
 end;
 
-procedure TfrmMain.Panel1DblClick(Sender: TObject);
+procedure TfrmMain.OnGroupCodeName(FirstRow: Word);
 begin
-  btnExportCompareRow.Visible := not btnExportCompareRow.Visible;
+  TThread.Queue(nil, procedure
+  begin
+    Caption := Format('正在处理首行：%d', [FirstRow]);
+  end);
 end;
 
-procedure TfrmMain.InitCompare(var CompareCrossRange: Boolean;
-  var VertCompareSpacing: Cardinal; var VertSameValueCount: Byte;
-  var VertSameValueCount2: Byte; var SlantCompareSpacing: Cardinal;
-  var SlantSameValueCount: Byte; var SlantSameValueCount2: Byte;
-  var CompareGroupValueCount: Byte; var ExportGroupValueCount: Byte);
+procedure TfrmMain.OnFinish(Sender: TObject);
+begin
+  Timer.Enabled := False;
+  OnStateChange(False);
+  ShowMessage('查询完毕');
+end;
+
+procedure TfrmMain.TimerTimer(Sender: TObject);
 var
-  v: Integer;
+  TS: TTimeStamp;
+  Days: Byte;
 begin
-  CompareCrossRange := chkCompareCrossRange.Checked;
-  case fDataComputer.CompareMode of
-    cmSlant:
-    begin
-      if not TryStrToInt(edtCompareSpacing.Text, v) then
-        raise Exception.Create('请输入有效比较次数');
-      SlantCompareSpacing := v;
-      if not TryStrToInt(edtExportTypeCount.Text, v) then
-        raise Exception.Create('请输入有效导出次数');
-      ExportGroupValueCount := v;
-
-      VertCompareSpacing := 0;
-      VertSameValueCount := 0;
-      VertSameValueCount2 := 0;
-      SlantSameValueCount := 0;
-      SlantSameValueCount2 := 0;
-      CompareGroupValueCount := 1;
-    end;
-    cmVert:
-    begin
-      if not TryStrToInt(edtVertCompareSpacing.Text, v) then
-        raise Exception.Create('请输入有效比较次数');
-      VertCompareSpacing := v;
-      if not TryStrToInt(edtVertSameValueCount.Text, v) then
-        raise Exception.Create('请输入有效相同列数');
-      VertSameValueCount := v;
-      if not TryStrToInt(edtVertSameValueCount2.Text, v) then
-        raise Exception.Create('请输入有效相同列数2');
-      VertSameValueCount2 := v;
-      if not TryStrToInt(edtVertCompareTypeCount.Text, v) then
-        raise Exception.Create('请输入有效比较组合数');
-      CompareGroupValueCount := v;
-      if not TryStrToInt(edtVertExportTypeCount.Text, v) then
-        raise Exception.Create('请输入有效导出次数');
-      ExportGroupValueCount := v;
-
-      SlantCompareSpacing := 0;
-      SlantSameValueCount := 0;
-      SlantSameValueCount2 := 0;
-    end;
-    cmVertSlant:
-    begin
-      if not TryStrToInt(edtVVertCompareSpacing.Text, v) then
-        raise Exception.Create('请输入有效直连比较次数');
-      VertCompareSpacing := v;
-      if not TryStrToInt(edtVVertSameValueCount.Text, v) then
-        raise Exception.Create('请输入有效相同列数');
-      VertSameValueCount := v;
-      if not TryStrToInt(edtVVertSameValueCount2.Text, v) then
-        raise Exception.Create('请输入有效相同列数2');
-      VertSameValueCount2 := v;
-      if not TryStrToInt(edtSlantCompareSpacing.Text, v) then
-        raise Exception.Create('请输入有效直连比较次数');
-      SlantCompareSpacing := v;
-      if not TryStrToInt(edtSlantSameValueCount.Text, v) then
-        raise Exception.Create('请输入有效相同列数');
-      SlantSameValueCount := v;
-      if not TryStrToInt(edtSlantSameValueCount2.Text, v) then
-        raise Exception.Create('请输入有效相同列数2');
-      SlantSameValueCount2 := v;
-      if not TryStrToInt(edtCompareGroupValueCount.Text, v) then
-        raise Exception.Create('请输入有效比较组合数');
-      CompareGroupValueCount := v;
-      if not TryStrToInt(edtExportGroupValueCount.Text, v) then
-        raise Exception.Create('请输入有效导出次数');
-      ExportGroupValueCount := v;
-    end;
-  end;
-end;
-
-procedure TfrmMain.btnExportCompareRowClick(Sender: TObject);
-begin
-  fDataComputer.ExportCompareRow;
+  TS.Date := DateDelta;
+  TS.Time := fDataComputer.Stopwatch.ElapsedMilliseconds;
+  Days := TS.Time div 86400000;
+  TS.Time := TS.Time mod 86400000;
+  lblUseTime.Caption := Format('处理所需时间：%d日', [Days]) + FormatDateTime('H小时M分S秒', TimeStampToDateTime(TS));
 end;
 
 procedure TfrmMain.btnExportSettingsClick(Sender: TObject);
@@ -224,6 +191,22 @@ begin
   frmExportVertSlantFileSettings.ShowModal;
 end;
 
+procedure TfrmMain.btnOkClick(Sender: TObject);
+var
+  Address, Port: string;
+  i: Integer;
+begin
+  Address := Trim(edtAddress.Text);
+  if Address.IsEmpty then raise Exception.Create('请输入有效地址');
+  Port := Trim(edtPort .Text);
+  if not (not Port.IsEmpty and TryStrToInt(Port, i) and (i > 0)) then
+    raise Exception.Create('请输入有效端口');
+
+  ConnectServer(Address, Port );
+  ShowMessage('连接成功');
+  OnStateChange(True);
+end;
+
 procedure TfrmMain.edtFileNameClick(Sender: TObject);
 begin
   if not OpenDialog.Execute then Exit;
@@ -231,95 +214,129 @@ begin
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
+var
+  v: Variant;
 begin
   PageControl1.ActivePageIndex := 0;
 
-  fDataComputer := TDataComputer.Create;
-  fDataComputer.DataMode := 1;
-  fDataComputer.InitCompareEvent := InitCompare;
-
-  chkCompareCrossRange.Checked := fDataComputer.CompareCrossRange;
-  if Length(fDataComputer.IntervalValues) > 0 then
+  with fSettings do
   begin
-    edtIntervalValue.ReadOnly := True;
-    edtIntervalValue.Text := fDataComputer.IntervalValues[0].ToString;
-    edtIntervalValue2.ReadOnly := True;
-    if Length(fDataComputer.IntervalValues) > 1 then
-      edtIntervalValue2.Text := fDataComputer.IntervalValues[1].ToString;
+    DataMode := 1;
+    if Length(IntervalValues) > 0 then
+    begin
+      edtIntervalValue.Text := IntervalValues[0].ToString;
+      edtIntervalValue2.Text := '0';
+      if Length(IntervalValues) > 1 then
+        edtIntervalValue2.Text := IntervalValues[1].ToString;
+    end;
+    chkCompareCrossRange.Checked := CompareCrossRange;
+
+    case CompareMode of
+      cmVert:
+      begin
+        PageControl1.ActivePageIndex := 1;
+        edtVertCompareSpacing.Text := VertCompareSpacing.ToString;
+        edtVertSameValueCount.Text := VertSameValueCount.ToString;
+        edtVertSameValueCount2.Text := VertSameValueCount2.ToString;
+        edtVertCompareTypeCount.Text := GroupValueCount.ToString;
+        edtVertMaxGroupCount.Text := (MaxGroupCount div 100000000).ToString;
+        edtVertMaxGroupCount2.Text := (MaxGroupCount mod 100000000 div 10000).ToString;
+        edtVertMaxGroupCount3.Text := (MaxGroupCount mod 10000).ToString;
+        edtVertExportTypeCount.Text := ExportGroupValueCount.ToString;
+      end;
+      cmSlant:
+      begin
+        PageControl1.ActivePageIndex := 2;
+        edtCompareSpacing.Text := SlantCompareSpacing.ToString;
+        edtExportTypeCount.Text := ExportGroupValueCount.ToString;
+        edtSlantMaxGroupCount.Text := (MaxGroupCount div 100000000).ToString;
+        edtSlantMaxGroupCount2.Text := (MaxGroupCount mod 100000000 div 10000).ToString;
+        edtSlantMaxGroupCount3.Text := (MaxGroupCount mod 10000).ToString;
+      end;
+      cmVertSlant:
+      begin
+        edtVVertCompareSpacing.Text := VertCompareSpacing.ToString;
+        edtVVertSameValueCount.Text := VertSameValueCount.ToString;
+        edtVVertSameValueCount2.Text := VertSameValueCount2.ToString;
+        edtSlantCompareSpacing.Text := SlantCompareSpacing.ToString;
+        edtSlantSameValueCount.Text := SlantSameValueCount.ToString;
+        edtSlantSameValueCount2.Text := SlantSameValueCount2.ToString;
+        edtCompareGroupValueCount.Text := GroupValueCount.ToString;
+        edtVertSlantMaxGroupCount.Text := (MaxGroupCount div 100000000).ToString;
+        edtVertSlantMaxGroupCount2.Text := (MaxGroupCount mod 100000000 div 10000).ToString;
+        edtVertSlantMaxGroupCount3.Text := (MaxGroupCount mod 10000).ToString;
+        edtExportGroupValueCount.Text := ExportGroupValueCount.ToString;
+      end;
+    end;
+
+    {edtIntervalValue.ReadOnly := CompareMode > cmNone;
+    edtIntervalValue2.ReadOnly := CompareMode > cmNone;
+    edtVertCompareSpacing.ReadOnly := CompareMode > cmNone;
+    edtVertSameValueCount.ReadOnly := CompareMode > cmNone;
+    edtVertSameValueCount2.ReadOnly := CompareMode > cmNone;
+    edtVertCompareTypeCount.ReadOnly := CompareMode > cmNone;
+    edtVertExportTypeCount.ReadOnly := CompareMode > cmNone;
+    edtCompareSpacing.ReadOnly := CompareMode > cmNone;
+    edtExportTypeCount.ReadOnly := CompareMode > cmNone;
+    edtVVertCompareSpacing.ReadOnly := CompareMode > cmNone;
+    edtVVertSameValueCount.ReadOnly := CompareMode > cmNone;
+    edtVVertSameValueCount2.ReadOnly := CompareMode > cmNone;
+    edtSlantCompareSpacing.ReadOnly := CompareMode > cmNone;
+    edtSlantSameValueCount.ReadOnly := CompareMode > cmNone;
+    edtSlantSameValueCount2.ReadOnly := CompareMode > cmNone;
+    edtCompareGroupValueCount.ReadOnly := CompareMode > cmNone;
+    edtExportGroupValueCount.ReadOnly := CompareMode > cmNone; }
   end;
-  case fDataComputer.CompareMode of
-    cmVert:
-    begin
-      PageControl1.ActivePageIndex := 1;
-      edtVertCompareSpacing.ReadOnly := True;
-      edtVertCompareSpacing.Text := fDataComputer.VertCompareSpacing.ToString;
-      edtVertSameValueCount.ReadOnly := True;
-      edtVertSameValueCount.Text := fDataComputer.VertSameValueCount.ToString;
-      edtVertSameValueCount2.ReadOnly := True;
-      edtVertSameValueCount2.Text := fDataComputer.VertSameValueCount2.ToString;
-      edtVertCompareTypeCount.ReadOnly := True;
-      edtVertCompareTypeCount.Text := fDataComputer.CompareGroupValueCount.ToString;
-      edtVertExportTypeCount.ReadOnly := True;
-      edtVertExportTypeCount.Text := fDataComputer.ExportGroupValueCount.ToString;
-    end;
-    cmSlant:
-    begin
-      PageControl1.ActivePageIndex := 2;
-      edtCompareSpacing.ReadOnly := True;
-      edtCompareSpacing.Text := fDataComputer.SlantCompareSpacing.ToString;
-      edtExportTypeCount.ReadOnly := True;
-      edtExportTypeCount.Text := fDataComputer.ExportGroupValueCount.ToString;
-    end;
-    cmVertSlant:
-    begin
-      edtVVertCompareSpacing.ReadOnly := True;
-      edtVVertCompareSpacing.Text := fDataComputer.VertCompareSpacing.ToString;
-      edtVVertSameValueCount.ReadOnly := True;
-      edtVVertSameValueCount.Text := fDataComputer.VertSameValueCount.ToString;
-      edtVVertSameValueCount2.ReadOnly := True;
-      edtVVertSameValueCount2.Text := fDataComputer.VertSameValueCount2.ToString;
-      edtSlantCompareSpacing.ReadOnly := True;
-      edtSlantCompareSpacing.Text := fDataComputer.SlantCompareSpacing.ToString;
-      edtSlantSameValueCount.ReadOnly := True;
-      edtSlantSameValueCount.Text := fDataComputer.SlantSameValueCount.ToString;
-      edtSlantSameValueCount2.ReadOnly := True;
-      edtSlantSameValueCount2.Text := fDataComputer.SlantSameValueCount2.ToString;
-      edtCompareGroupValueCount.ReadOnly := True;
-      edtCompareGroupValueCount.Text := fDataComputer.CompareGroupValueCount.ToString;
-      edtExportGroupValueCount.ReadOnly := True;
-      edtExportGroupValueCount.Text := fDataComputer.ExportGroupValueCount.ToString;
-    end;
-  end;
+
   OnStateChange(False);
+
+  fDataComputer := TDataComputer.Create;
+  fDataComputer.OnGroupCodeName := OnGroupCodeName;
+  fDataComputer.OnFinish := OnFinish;
+  fDataComputer.Start;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
+  fConsumers.Queue.DoShutDown;
+  fDataComputer.Terminate;
+  System.TMonitor.PulseAll(fDataComputer.Lock);
+  fDataComputer.WaitFor;
   fDataComputer.Free;
+end;
+
+procedure TfrmMain.miCombinationCalculatorClick(Sender: TObject);
+begin
+  CombinationCalculator;
+end;
+
+procedure TfrmMain.miConsumerClick(Sender: TObject);
+begin
+  frmConsumer.ShowModal;
 end;
 
 procedure TfrmMain.btnCompareClick(Sender: TObject);
 var
-  ExportFiles: TDataComputer.TExportFiles;
   v, v2: Integer;
   IntervalValues: TWordDynArray;
 begin
-  if Sender = btnSlantCompare then
-    fDataComputer.CompareMode := cmSlant
-  else if Sender = btnVertCompare then
-    fDataComputer.CompareMode := cmVert
-  else
-    fDataComputer.CompareMode := cmVertSlant;
-
-  if Length(fDataComputer.IntervalValues) = 0 then
+  fSettings.FileName := edtFileName.Text;
+  //if fSettings.CompareMode = cmNone then
   begin
-    if not (TryStrToInt(edtIntervalValue.Text, v) and (v >= 1) and (v <= 256)) then
+    if Sender = btnSlantCompare then
+      fSettings.CompareMode := cmSlant
+    else if Sender = btnVertCompare then
+      fSettings.CompareMode := cmVert
+    else
+      fSettings.CompareMode := cmVertSlant;
+
+    if not (TryStrToInt(edtIntervalValue.Text, v) and (v >= 1)) then
     begin
       edtIntervalValue.SetFocus;
       edtIntervalValue.SelectAll;
       raise Exception.Create('请输入有效值');
     end;
-    if not (TryStrToInt(edtIntervalValue2.Text, v2) and (v2 >= 0) and (v2 < 256)) then
+    if not (TryStrToInt(edtIntervalValue2.Text, v2) and (v2 >= 0)) then
     begin
       edtIntervalValue2.SetFocus;
       edtIntervalValue2.SelectAll;
@@ -334,143 +351,205 @@ begin
       SetLength(IntervalValues, 2);
       IntervalValues[1] := v2;
     end;
+    fSettings.IntervalValues := IntervalValues;
+    fSettings.CompareCrossRange := chkCompareCrossRange.Checked;
+
+    fSettings.ExportFiles := [];
+    case fSettings.CompareMode of
+      cmVert:
+      begin
+        if not TryStrToInt(edtVertCompareSpacing.Text, v) then
+          raise Exception.Create('请输入有效比较次数');
+        fSettings.VertCompareSpacing := v;
+        if not TryStrToInt(edtVertSameValueCount.Text, v) then
+          raise Exception.Create('请输入有效相同列数');
+        fSettings.VertSameValueCount := v;
+        if not TryStrToInt(edtVertSameValueCount2.Text, v) then
+          raise Exception.Create('请输入有效相同列数2');
+        fSettings.VertSameValueCount2 := v;
+        if not TryStrToInt(edtVertCompareTypeCount.Text, v) then
+          raise Exception.Create('请输入有效比较组合数');
+        fSettings.GroupValueCount := v;
+        v := 0;
+        if not Trim(edtVertMaxGroupCount.Text).IsEmpty
+          and not TryStrToInt(edtVertMaxGroupCount.Text, v)
+        then raise Exception.Create('请输入有效组合数上限');
+        fSettings.MaxGroupCount := v * 100000000;
+        v := 0;
+        if not Trim(edtVertMaxGroupCount2.Text).IsEmpty
+          and not TryStrToInt(edtVertMaxGroupCount2.Text, v)
+        then raise Exception.Create('请输入有效组合数上限');
+        fSettings.MaxGroupCount := fSettings.MaxGroupCount + v * 10000;
+        v := 0;
+        if not Trim(edtVertMaxGroupCount3.Text).IsEmpty
+          and not TryStrToInt(edtVertMaxGroupCount3.Text, v)
+        then raise Exception.Create('请输入有效组合数上限');
+        fSettings.MaxGroupCount := fSettings.MaxGroupCount + v;
+        if not TryStrToInt(edtVertExportTypeCount.Text, v) then
+          raise Exception.Create('请输入有效导出次数');
+        fSettings.ExportGroupValueCount := v;
+
+        fSettings.SlantCompareSpacing := 0;
+        fSettings.SlantSameValueCount := 0;
+        fSettings.SlantSameValueCount2 := 0;
+      end;
+      cmSlant:
+      begin
+        if not TryStrToInt(edtCompareSpacing.Text, v) then
+          raise Exception.Create('请输入有效比较次数');
+        fSettings.SlantCompareSpacing := v;
+        if not TryStrToInt(edtExportTypeCount.Text, v) then
+          raise Exception.Create('请输入有效导出次数');
+        fSettings.ExportGroupValueCount := v;
+        v := 0;
+        if not Trim(edtSlantMaxGroupCount.Text).IsEmpty
+          and not TryStrToInt(edtSlantMaxGroupCount.Text, v)
+        then raise Exception.Create('请输入有效组合数上限');
+        fSettings.MaxGroupCount := v * 100000000;
+        v := 0;
+        if not Trim(edtSlantMaxGroupCount2.Text).IsEmpty
+          and not TryStrToInt(edtSlantMaxGroupCount2.Text, v)
+        then raise Exception.Create('请输入有效组合数上限');
+        fSettings.MaxGroupCount := fSettings.MaxGroupCount + v * 10000;
+        v := 0;
+        if not Trim(edtSlantMaxGroupCount3.Text).IsEmpty
+          and not TryStrToInt(edtSlantMaxGroupCount3.Text, v)
+        then raise Exception.Create('请输入有效组合数上限');
+        fSettings.MaxGroupCount := fSettings.MaxGroupCount + v;
+
+        fSettings.VertCompareSpacing := 0;
+        fSettings.VertSameValueCount := 0;
+        fSettings.VertSameValueCount2 := 0;
+        fSettings.SlantSameValueCount := 0;
+        fSettings.SlantSameValueCount2 := 0;
+        fSettings.GroupValueCount := 1;
+      end;
+      cmVertSlant:
+      begin
+        if not TryStrToInt(edtVVertCompareSpacing.Text, v) then
+          raise Exception.Create('请输入有效直连比较次数');
+        fSettings.VertCompareSpacing := v;
+        if not TryStrToInt(edtVVertSameValueCount.Text, v) then
+          raise Exception.Create('请输入有效相同列数');
+        fSettings.VertSameValueCount := v;
+        if not TryStrToInt(edtVVertSameValueCount2.Text, v) then
+          raise Exception.Create('请输入有效相同列数2');
+        fSettings.VertSameValueCount2 := v;
+        if not TryStrToInt(edtSlantCompareSpacing.Text, v) then
+          raise Exception.Create('请输入有效直连比较次数');
+        fSettings.SlantCompareSpacing := v;
+        if not TryStrToInt(edtSlantSameValueCount.Text, v) then
+          raise Exception.Create('请输入有效相同列数');
+        fSettings.SlantSameValueCount := v;
+        if not TryStrToInt(edtSlantSameValueCount2.Text, v) then
+          raise Exception.Create('请输入有效相同列数2');
+        fSettings.SlantSameValueCount2 := v;
+        if not TryStrToInt(edtCompareGroupValueCount.Text, v) then
+          raise Exception.Create('请输入有效比较组合数');
+        fSettings.GroupValueCount := v;
+        v := 0;
+        if not Trim(edtVertSlantMaxGroupCount.Text).IsEmpty
+          and not TryStrToInt(edtVertSlantMaxGroupCount.Text, v)
+        then raise Exception.Create('请输入有效组合数上限');
+        fSettings.MaxGroupCount := v * 100000000;
+        v := 0;
+        if not Trim(edtVertSlantMaxGroupCount2.Text).IsEmpty
+          and not TryStrToInt(edtVertSlantMaxGroupCount2.Text, v)
+        then raise Exception.Create('请输入有效组合数上限');
+        fSettings.MaxGroupCount := fSettings.MaxGroupCount + v * 10000;
+        v := 0;
+        if not Trim(edtVertSlantMaxGroupCount3.Text).IsEmpty
+          and not TryStrToInt(edtVertSlantMaxGroupCount3.Text, v)
+        then raise Exception.Create('请输入有效组合数上限');
+        fSettings.MaxGroupCount := fSettings.MaxGroupCount + v;
+        if not TryStrToInt(edtExportGroupValueCount.Text, v) then
+          raise Exception.Create('请输入有效导出次数');
+        fSettings.ExportGroupValueCount := v;
+      end;
+    end;
+    fKeyValue.SetKeyValue('IntervalValues', fSettings.IntervalValues);
+    fKeyValue.SetKeyValue('CompareCrossRange', fSettings.CompareCrossRange);
+    fKeyValue.SetKeyValue('CompareMode', fSettings.CompareMode);
+    fKeyValue.SetKeyValue('VertCompareSpacing', fSettings.VertCompareSpacing);
+    fKeyValue.SetKeyValue('VertSameValueCount', fSettings.VertSameValueCount);
+    fKeyValue.SetKeyValue('VertSameValueCount2', fSettings.VertSameValueCount2);
+    fKeyValue.SetKeyValue('SlantCompareSpacing', fSettings.SlantCompareSpacing);
+    fKeyValue.SetKeyValue('SlantSameValueCount', fSettings.SlantSameValueCount);
+    fKeyValue.SetKeyValue('SlantSameValueCount2', fSettings.SlantSameValueCount2);
+    fKeyValue.SetKeyValue('GroupValueCount', fSettings.GroupValueCount);
+    fKeyValue.SetKeyValue('MaxGroupCount', fSettings.MaxGroupCount);
+    fKeyValue.SetKeyValue('ExportGroupValueCount', fSettings.ExportGroupValueCount);
   end;
 
-  ExportFiles := [];
-  case fDataComputer.CompareMode of
+  case fSettings.CompareMode of
     cmVert:
     begin
       with frmExportVertFileSettings do
       begin
-        if chkFile.Checked then ExportFiles := ExportFiles + [efFile];
-        if chkFile2.Checked then ExportFiles := ExportFiles + [efFile2];
-        if chkFile3.Checked then ExportFiles := ExportFiles + [efFile3];
-        if chkFile4.Checked then ExportFiles := ExportFiles + [efFile4];
-        if chkFile5.Checked then ExportFiles := ExportFiles + [efFile5];
-        if chkFile6.Checked then ExportFiles := ExportFiles + [efFile6];
-        if chkFile7.Checked then ExportFiles := ExportFiles + [efFile7];
-        if chkFile8.Checked then ExportFiles := ExportFiles + [efFile8];
-        if chkFile9.Checked then ExportFiles := ExportFiles + [efFile9];
-        if chkFile10.Checked then ExportFiles := ExportFiles + [efFile10];
-        if chkFile11.Checked then ExportFiles := ExportFiles + [efFile11];
-        if chkFile12.Checked then ExportFiles := ExportFiles + [efFile12];
-        if chkFile14.Checked then ExportFiles := ExportFiles + [efFile14];
-        if chkFile15.Checked then ExportFiles := ExportFiles + [efFile15];
+        if chkFile.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile];
+        if chkFile2.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile2];
+        if chkFile3.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile3];
+        if chkFile4.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile4];
+        if chkFile5.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile5];
+        if chkFile6.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile6];
+        if chkFile7.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile7];
+        if chkFile8.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile8];
+        if chkFile9.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile9];
+        if chkFile10.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile10];
+        if chkFile11.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile11];
+        if chkFile12.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile12];
+        if chkFile14.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile14];
+        if chkFile15.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile15];
       end;
     end;
     cmSlant:
     begin
       with frmExportSlantFileSettings do
       begin
-        if chkFile.Checked then ExportFiles := ExportFiles + [efFile];
-        if chkFile2.Checked then ExportFiles := ExportFiles + [efFile2];
-        if chkFile3.Checked then ExportFiles := ExportFiles + [efFile3];
-        if chkFile4.Checked then ExportFiles := ExportFiles + [efFile4];
-        if chkFile5.Checked then ExportFiles := ExportFiles + [efFile5];
-        if chkFile6.Checked then ExportFiles := ExportFiles + [efFile6];
-        if chkFile7.Checked then ExportFiles := ExportFiles + [efFile7];
-        if chkFile8.Checked then ExportFiles := ExportFiles + [efFile8];
-        if chkFile9.Checked then ExportFiles := ExportFiles + [efFile9];
-        if chkFile10.Checked then ExportFiles := ExportFiles + [efFile10];
-        if chkFile11.Checked then ExportFiles := ExportFiles + [efFile11];
-        if chkFile12.Checked then ExportFiles := ExportFiles + [efFile12];
-        if chkFile13.Checked then ExportFiles := ExportFiles + [efFile13];
-        if chkFile14.Checked then ExportFiles := ExportFiles + [efFile14];
-        if chkFile15.Checked then ExportFiles := ExportFiles + [efFile15];
+        if chkFile.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile];
+        if chkFile2.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile2];
+        if chkFile3.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile3];
+        if chkFile4.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile4];
+        if chkFile5.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile5];
+        if chkFile6.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile6];
+        if chkFile7.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile7];
+        if chkFile8.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile8];
+        if chkFile9.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile9];
+        if chkFile10.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile10];
+        if chkFile11.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile11];
+        if chkFile12.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile12];
+        if chkFile13.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile13];
+        if chkFile14.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile14];
+        if chkFile15.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile15];
       end;
     end;
     cmVertSlant:
     begin
       with frmExportVertSlantFileSettings do
       begin
-        if chkFile.Checked then ExportFiles := ExportFiles + [efFile];
-        if chkFile2.Checked then ExportFiles := ExportFiles + [efFile2];
-        if chkFile3.Checked then ExportFiles := ExportFiles + [efFile3];
-        if chkFile4.Checked then ExportFiles := ExportFiles + [efFile4];
-        if chkFile5.Checked then ExportFiles := ExportFiles + [efFile5];
-        if chkFile6.Checked then ExportFiles := ExportFiles + [efFile6];
-        if chkFile7.Checked then ExportFiles := ExportFiles + [efFile7];
-        if chkFile8.Checked then ExportFiles := ExportFiles + [efFile8];
-        if chkFile9.Checked then ExportFiles := ExportFiles + [efFile9];
-        if chkFile10.Checked then ExportFiles := ExportFiles + [efFile10];
-        if chkFile11.Checked then ExportFiles := ExportFiles + [efFile11];
-        if chkFile12.Checked then ExportFiles := ExportFiles + [efFile12];
-        if chkFile13.Checked then ExportFiles := ExportFiles + [efFile13];
-        if chkFile14.Checked then ExportFiles := ExportFiles + [efFile14];
-        if chkFile15.Checked then ExportFiles := ExportFiles + [efFile15];
+        if chkFile.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile];
+        if chkFile2.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile2];
+        if chkFile3.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile3];
+        if chkFile4.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile4];
+        if chkFile5.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile5];
+        if chkFile6.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile6];
+        if chkFile7.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile7];
+        if chkFile8.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile8];
+        if chkFile9.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile9];
+        if chkFile10.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile10];
+        if chkFile11.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile11];
+        if chkFile12.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile12];
+        if chkFile13.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile13];
+        if chkFile14.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile14];
+        if chkFile15.Checked then fSettings.ExportFiles := fSettings.ExportFiles + [efFile15];
       end;
     end;
   end;
 
   OnStateChange(True);
-  TTask.Create(procedure
-  var
-    fStopTime: Boolean;
-
-    procedure StopTime;
-    begin
-      TThread.Synchronize(nil, procedure
-      begin
-        fStopTime := True;
-      end);
-    end;
-  begin
-    StartTheTime(
-      function: Boolean
-      begin
-        Result := fStopTime;
-      end,
-      procedure(s: string)
-      begin
-        lblUseTime.Caption := s;
-      end
-    );
-
-    try
-      try
-        fDataComputer.LoadRow(edtFileName.Text, IntervalValues);
-        fDataComputer.Compare;
-        case frmExportSettings.RecalcMode of
-          1:
-          begin
-            if (fDataComputer.RecalcMode <> 1)
-              or (frmExportSettings.KeepMaxRowSpacing <> fDataComputer.KeepMaxRowSpacing)
-              or (frmExportSettings.GroupRowCount <> fDataComputer.GroupRowCount)
-              or (frmExportSettings.GroupCount <> fDataComputer.GroupCount)
-              or (frmExportSettings.ReEnabledGroupCount <> fDataComputer.ReEnabledGroupCount)
-              or (frmExportSettings.HideSameGroup <> fDataComputer.HideSameGroup)
-            then
-              fDataComputer.RecalcData(
-                frmExportSettings.KeepMaxRowSpacing,
-                frmExportSettings.GroupRowCount,
-                frmExportSettings.GroupCount,
-                frmExportSettings.ReEnabledGroupCount,
-                frmExportSettings.HideSameGroup
-              );
-          end;
-          2: if fDataComputer.RecalcMode <> 2 then fDataComputer.RecalcData;
-          else fDataComputer.RestoreRecalcMode;
-        end;
-        if ExportFiles <> [] then fDataComputer.ExportCompareData(ExportFiles);
-        StopTime;
-        ShowMessage('查询完毕');
-      except
-        on e: Exception do
-        begin
-          TThread.Synchronize(nil, procedure
-          begin
-            ShowMessage(e.Message);
-          end);
-        end;
-      end;
-    finally
-      StopTime;
-      TThread.Synchronize(nil, procedure
-      begin
-        OnStateChange(False);
-      end);
-    end;
-  end).Start;
+  System.TMonitor.PulseAll(fDataComputer.Lock);
+  Timer.OnTimer(Timer);
+  Timer.Enabled := True;
 end;
 
 end.

@@ -55,7 +55,7 @@ type
     destructor Destroy;
 
     procedure FormatData(l: TStrings; FirstIntervalCol, FirstIntervalCol2,
-      SecondIntervalCol, SecondIntervalCol2: Word);
+      SecondIntervalCol, SecondIntervalCol2: Word; Placeholder: string);
     procedure SortClearColumn(Files: TStrings);
     procedure RearrangeClearColumn(FileDirectory: string; ReverseOrder: Boolean); overload;
     procedure RearrangeClearColumn(FileDirectory: string;
@@ -141,7 +141,7 @@ begin
 end;
 
 procedure TDataComputer.FormatData(l: TStrings; FirstIntervalCol, FirstIntervalCol2,
-  SecondIntervalCol, SecondIntervalCol2: Word);
+  SecondIntervalCol, SecondIntervalCol2: Word; Placeholder: string);
 var
   i, v, SubIntervalNo: Integer;
   s, Digit, FirstInterval, SecondInterval: string;
@@ -163,7 +163,11 @@ begin
       Digit := '';
       for c in FirstInterval do
       begin
-        if c in ['0'..'9'] then Digit := Digit + c
+        if c in ['0'..'9'] then
+        begin
+          Digit := Digit + c;
+          if Placeholder.IsEmpty then Break;
+        end
         else Break;
       end;
       if Digit.IsEmpty then FirstInterval := FirstInterval.Substring(1)
@@ -246,10 +250,21 @@ begin
     begin
       l.LoadFromFile(FileName);
       for i := l.Count - 1 downto 0 do
-        if l[i].Trim.IsEmpty then l.Delete(i);
+      begin
+        if l[i].Trim.IsEmpty then l.Delete(i)
+        else
+        begin
+          //存在位数不一致情况补空格
+          if not Placeholder.IsEmpty then
+          begin
+            if l[i].Substring(12, 1).Equals('-') then l[i] := '0' + l[i];
+            if l[i].Substring(15, 1).Equals(' ') then l[i] := '0' + l[i];
+          end;
+        end;
+      end;
 
       if FirstIntervalCol > 0 then
-        FormatData(l, FirstIntervalCol, FirstIntervalCol2, SecondIntervalCol, SecondIntervalCol2);
+        FormatData(l, FirstIntervalCol, FirstIntervalCol2, SecondIntervalCol, SecondIntervalCol2, Placeholder);
 
       //值排序
       for i := 0 to l.Count - 1 do
@@ -948,12 +963,24 @@ begin
           sValue2 := '';
           Values := ResultData.Values(0);
           if Length(Values) > 0 then
-            sValue2 := (Values[0] - 1).ToString;
+          begin
+            v := Values[0];
+            v := v mod 10;
+            if v = 0 then v := 9
+            else v := v - 1;
+            sValue2 := v.ToString;
+          end;
           case MaxIntervalIndex of
             0:
             begin
               if Length(Values) > 1 then
-                sValue2 := sValue2 + '-' + Values[High(Values)].ToString;
+              begin
+                v := Values[High(Values)];
+                v := v mod 10;
+                if v = 0 then v := 9
+                else v := v - 1;
+                sValue2 := sValue2 + '-' + v.ToString;
+              end;
             end;
             else
             begin
@@ -992,7 +1019,7 @@ begin
           sValueCount := sValueCount + '-' + MaxValueCount.ToString;
 
         FileName := FileDirectory + SubFileDirectory
-          + Format('%d.%s（%s）、%d行.txt', [FileNo, sValue, sValueCount, FileRowCount]);
+          + Format('%d.%s（%s列）、%d行.txt', [FileNo, sValue, sValueCount, FileRowCount]);
         l.SaveToFile(FileName);
 
         FileRowCount := 0;

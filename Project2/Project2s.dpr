@@ -11,7 +11,9 @@ uses
   ufrmExportSettings2 in 'ufrmExportSettings2.pas' {frmExportSettings},
   ufrmExportSlantFileSettings2 in 'ufrmExportSlantFileSettings2.pas' {frmExportSlantFileSettings},
   ufrmExportVertFileSettings2 in 'ufrmExportVertFileSettings2.pas' {frmExportVertFileSettings},
-  ufrmExportVertSlantFileSettings2 in 'ufrmExportVertSlantFileSettings2.pas' {frmExportVertSlantFileSettings};
+  ufrmExportVertSlantFileSettings2 in 'ufrmExportVertSlantFileSettings2.pas' {frmExportVertSlantFileSettings},
+  ufrmConsumer in 'ufrmConsumer.pas' {frmConsumer},
+  ServiceIntf in 'ServiceIntf.pas';
 
 {$R *.res}
 
@@ -23,5 +25,6 @@ begin
   Application.CreateForm(TfrmExportSlantFileSettings, frmExportSlantFileSettings);
   Application.CreateForm(TfrmExportVertFileSettings, frmExportVertFileSettings);
   Application.CreateForm(TfrmExportVertSlantFileSettings, frmExportVertSlantFileSettings);
+  Application.CreateForm(TfrmConsumer, frmConsumer);
   Application.Run;
 end.
