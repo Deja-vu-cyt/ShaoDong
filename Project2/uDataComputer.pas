@@ -31,6 +31,7 @@ type
     fRowCount: Cardinal;
     fCodeName: TInt64DynArray;
     fCodeNameValueCount: Word;
+    fGrouped: Boolean;
   public
     procedure AddCodeName(v: Word);
     function CodeNameExist(aCodeName: TWordDynArray): Boolean;
@@ -41,6 +42,7 @@ type
     property RowCount: Cardinal read fRowCount write fRowCount;
     property CodeName: TInt64DynArray read fCodeName write fCodeName;
     property CodeNameValueCount: Word read fCodeNameValueCount write fCodeNameValueCount;
+    property Grouped: Boolean read fGrouped write fGrouped;
   end;
 
   TSQLCodeName = class(TSQLRecord)
@@ -85,9 +87,18 @@ type
     fGroupValueCount: Byte;
     fExportGroupValueCount: Byte;
     fMaxGroupCount: Int64;
+    fCodeNameSort: Int64;
     fCodeNameCount: TDictionary<Word, Word>;
     fQueue: TThreadedQueue<Word>;
-    function GetCodeNameRowCount(CodeName: TWordDynArray): Word;
+    fr: TFileWriter;
+    fCodeName: TWordDynArray;
+    fMaxRowCount: Word;
+    fActiveFirstRow: Word;
+    fActiveCodeName: TWordDynArray;
+    function GetCodeNameRows(CodeName: TWordDynArray): TWordDynArray;
+    function GetCodeNameRowCount(CodeName: TWordDynArray): Word; overload;
+    function GetCodeNameRowCount(CodeName: TWordDynArray; Rows: TWordDynArray): Word; overload;
+    procedure FindCodeNameWithMostRowCount(CodeNames: TWordDynArray);
   public
     constructor Create;
     destructor Destroy; override;
@@ -98,15 +109,20 @@ type
     property GroupValueCount: Byte read fGroupValueCount write fGroupValueCount;
     property ExportGroupValueCount: Byte read fExportGroupValueCount write fExportGroupValueCount;
     property MaxGroupCount: Int64 read fMaxGroupCount write fMaxGroupCount;
+    property CodeNameSort: Int64 read fCodeNameSort write fCodeNameSort;
     property Queue: TThreadedQueue<Word> read fQueue;
+    property ActiveFirstRow: Word read fActiveFirstRow;
+    property ActiveCodeName: TWordDynArray read fActiveCodeName;
   end;
+  TCodeNameConsumers = array of TCodeNameConsumer;
 
   TNotifyCallback = class(TInterfacedCallback, INotifyCallback)
   protected
     fID: string;
-    fConsumers: array of TCodeNameConsumer;
+    fConsumers: TCodeNameConsumers;
     fQueue: TThreadedQueue<TCodeNameConsumer>;
-    procedure Init(const GroupValueCount, ExportGroupValueCount, MaxGroupCount: Cardinal);
+    procedure Init(const GroupValueCount, ExportGroupValueCount, MaxGroupCount: Cardinal;
+      CodeNameSort: string);
     procedure GroupCodeName(const FirstRow: Cardinal);
     procedure Finish;
   public
@@ -115,6 +131,7 @@ type
   published
     property ID: string read fID;
     property Queue: TThreadedQueue<TCodeNameConsumer> read fQueue;
+    property Consumers: TCodeNameConsumers read fConsumers;
   end;
 
   TConsumer = class
@@ -185,6 +202,7 @@ type
     fGroupValueCount: Byte;
     fExportGroupValueCount: Byte;
     fMaxGroupCount: Cardinal;
+    fCodeNameSort: Int64;
     fExportFiles: TExportFiles;
     fExportLite: Boolean;
     procedure SetCompareMode(Value: TCompareMode);
@@ -211,6 +229,7 @@ type
     property GroupValueCount: Byte read fGroupValueCount write fGroupValueCount;
     property ExportGroupValueCount: Byte read fExportGroupValueCount write fExportGroupValueCount;
     property MaxGroupCount: Cardinal read fMaxGroupCount write fMaxGroupCount;
+    property CodeNameSort: Int64 read fCodeNameSort write fCodeNameSort;
     property ExportFiles: TExportFiles read fExportFiles write fExportFiles;
     property ExportLite: Boolean read fExportLite write fExportLite;
   end;
@@ -238,6 +257,11 @@ type
     procedure GroupCodeName;
     procedure UpdateFirstRow;
     procedure BuildCodeName;
+    function RebuildFile(RowCount: Cardinal): Boolean;
+    function NumberToString(Value: Cardinal): string;
+    function RebuildFileName(Sender: TFileWriter): string;
+    function RebuildFileName2(Sender: TFileWriter): string; overload;
+    function RebuildFileName2(Sender: TFileWriter; aRowNumber: Cardinal): string; overload;
     procedure SaveCompareData(fr: TFileWriter; Data: TSQLCompareData; SaveValues: Boolean = True);
     procedure SaveFirstRow;
     procedure SaveCodeNameSortByRowcount;
@@ -258,7 +282,7 @@ type
   end;
 
 const
-  EachFileRowCount: Cardinal = 1000000;
+  EachFileRowCount: Cardinal = 10000;
   EachFileRowNumber: Cardinal = 10000;
   EachPageRowCount: Word = 10000;
 
@@ -270,7 +294,7 @@ var
   fDataComputer: TDataComputer;
 
   fDatabase: TSQLRestServerDB;
-  fDatabase2: TSQLRestServerDB;
+  //fDatabase2: TSQLRestServerDB;
   fKeyValue: TSQLKeyValue;
   fServer: TSQLHttpServer;
 
@@ -281,13 +305,11 @@ var
   fConsumers: TConsumers;
 
 procedure ReadSettings;
+procedure WriteSettings;
 procedure ConnectServer(Address, Port: string);
 procedure DisconnectServer;
 
 implementation
-
-uses
-  ufrmConsumer;
 
 procedure TSQLFirstRow.AddCodeName(v: Word);
 var
@@ -379,11 +401,15 @@ begin
 end;
 
 constructor TCodeNameConsumer.Create;
+var
+  FileName: string;
 begin
   inherited Create(True);
   fFirstRow := TSQLFirstRow.Create;
   fCodeNameCount := TDictionary<Word, Word>.Create;
   fQueue := TThreadedQueue<Word>.Create;
+  FileName := fLogDirectory + ThreadID.ToString;
+  fr := TFileWriter.Create(FileName);
 end;
 
 destructor TCodeNameConsumer.Destroy;
@@ -391,7 +417,23 @@ begin
   fQueue.Free;
   fCodeNameCount.Free;
   fFirstRow.Free;
+  fr.Free;
   inherited Destroy;
+end;
+
+function TCodeNameConsumer.GetCodeNameRows(CodeName: TWordDynArray): TWordDynArray;
+begin
+  SetLength(Result, 0);
+  fFirstRow.FillRewind;
+  while fFirstRow.FillOne do
+  begin
+    if Terminated then Exit;
+    if fFirstRow.CodeNameExist(CodeName) then
+    begin
+      SetLength(Result, Length(Result) + 1);
+      Result[High(Result)] := fFirstRow.FillCurrentRow - 1;
+    end;
+  end;
 end;
 
 function TCodeNameConsumer.GetCodeNameRowCount(CodeName: TWordDynArray): Word;
@@ -405,79 +447,219 @@ begin
   end;
 end;
 
+function TCodeNameConsumer.GetCodeNameRowCount(CodeName: TWordDynArray; Rows: TWordDynArray): Word;
+var
+  Row: Word;
+begin
+  Result := 0;
+  for Row in Rows do
+  begin
+    if Terminated then Exit;
+    fFirstRow.FillRow(Row);
+    if fFirstRow.CodeNameExist(CodeName) then Result := Result + 1;
+  end;
+end;
+
+procedure TCodeNameConsumer.FindCodeNameWithMostRowCount(CodeNames: TWordDynArray);
+var
+  GroupCount: Int64;
+  Rows: TWordDynArray;
+  i: Integer;
+  s: string;
+begin
+  s := Format('正在查找代号：%s', [CodeNames.ToString]);
+  fr.WriteLn(s);
+
+  GroupCount := 0;
+  for i := fExportGroupValueCount to fGroupValueCount do
+  begin
+    Foreach(Length(CodeNames), i,
+    procedure(CodeNameIndexs: TWordDynArray)
+    var
+      i, RowCount: Integer;
+      s: string;
+    begin
+      try
+        if Length(fActiveCodeName) <> Length(CodeNameIndexs) then
+          SetLength(fActiveCodeName, Length(CodeNameIndexs));
+        for i := Low(fActiveCodeName) to High(fActiveCodeName) do
+          fActiveCodeName[i] := CodeNames[CodeNameIndexs[i] - 1];
+        RowCount := GetCodeNameRowCount(fActiveCodeName, Rows);
+        if RowCount > fMaxRowCount then
+        begin
+          fMaxRowCount := RowCount;
+
+          if Length(fCodeName) <> Length(fActiveCodeName) then SetLength(fCodeName, Length(fActiveCodeName));
+          for i := Low(fCodeName) to High(fCodeName) do
+            fCodeName[i] := fActiveCodeName[i];
+        end;
+
+        Inc(GroupCount);
+      except
+        on e: Exception do
+        begin
+          s := Format('代号：%s' + #$D#$A + '%s', [fActiveCodeName.ToString, e.Message]);
+          fr.WriteLn(s);
+        end;
+      end;
+    end,
+    procedure(CodeNameIndexs: TWordDynArray)
+    var
+      CodeName: TWordDynArray;
+      i: Integer;
+    begin
+      SetLength(CodeName, Length(CodeNameIndexs));
+
+      for i := Low(CodeNameIndexs) to High(CodeNameIndexs) do
+        CodeName[i] := CodeNames[CodeNameIndexs[i] - 1];
+
+      Rows := GetCodeNameRows(CodeName);
+    end,
+    function: Boolean
+    begin
+      Result := Terminated or ((fMaxGroupCount > 0) and (GroupCount >= fMaxGroupCount));
+    end);
+  end;
+end;
+
 procedure TCodeNameConsumer.Execute;
 var
-  CodeNames, MaxRowCountCodeName: TWordDynArray;
-  i: Integer;
-  v, MaxRowCount: Word;
-  GroupCount: Int64;
+  CodeNames, CodeNames2, CodeNames3, CodeNames4, CodeNames5, CodeNames6,
+  CodeNames7, CodeNames8: TWordDynArray;
+  i, j: Integer;
+  s: string;
 begin
   repeat
-    v := 0;
-    v := fQueue.PopItem;
+    fActiveFirstRow := 0;
+    fActiveFirstRow := fQueue.PopItem;
     try
-      if v > 0 then
+      if fActiveFirstRow > 0 then
       begin
         try
+          s := Format('正在计算首行：%d', [fActiveFirstRow]);
+          fr.WriteLn(s);
+
           SetLength(CodeNames, 0);
           fFirstRow.FillRewind;
           while fFirstRow.FillOne do
           begin
-            if firstRow.Value = v then
+            if firstRow.Value = fActiveFirstRow then
             begin
+              //按代号正序排序
               CodeNames := fFirstRow.CodeName.ToWordDynArray;
-              TSortAlgorithm.ShellSort(CodeNames, function(x, x2: Word): Boolean
-              begin
-                x := fCodeNameCount.Items[x];
-                x2 := fCodeNameCount.Items[x2];
-                Result := x > x2;
-              end);
+
               Break;
             end;
           end;
-
-          GroupCount := 0;
-          MaxRowCount := 0;
-          SetLength(MaxRowCountCodeName, 0);
-          for i := fExportGroupValueCount to fGroupValueCount do
+          //删除其它首行不存在代号
+          for i := High(CodeNames) downto Low(CodeNames) do
+            if GetCodeNameRowCount([CodeNames[i]]) < 2 then
+            begin
+              for j := i + 1 to High(CodeNames) do
+                CodeNames[j - 1] := CodeNames[j];
+              SetLength(CodeNames, High(CodeNames));
+            end;
+          //按代号倒序排序
+          SetLength(CodeNames2, Length(CodeNames));
+          for i := Low(CodeNames2) to High(CodeNames2) do
+            CodeNames2[i] := CodeNames[High(CodeNames2) - i];
+          {//代号正倒序相间合并
+          SetLength(CodeNames3, Length(CodeNames));
+          for i := Low(CodeNames3) to High(CodeNames3) do
+            if i mod 2 = 0 then CodeNames3[i] := CodeNames[i div 2] else CodeNames3[i] := CodeNames2[i div 2];}
+          //按代号奇偶相间
+          SetLength(CodeNames3, Length(CodeNames));
+          for i := Low(CodeNames3) to High(CodeNames3) do
+            CodeNames3[i] := CodeNames[i];
+          TSortAlgorithm.OddEvenAlternate(CodeNames3, False);
+          //打乱顺序
+          SetLength(CodeNames4, Length(CodeNames));
+          for i := Low(CodeNames4) to High(CodeNames4) do
+            CodeNames4[i] := CodeNames[i];
+          TSortAlgorithm.Stochastic(CodeNames4);
+          //按代号次数倒序排序
+          SetLength(CodeNames5, Length(CodeNames));
+          for i := Low(CodeNames5) to High(CodeNames5) do
+            CodeNames5[i] := CodeNames[i];
+          TSortAlgorithm.Shell(CodeNames5, function(x, x2: Word): Boolean
           begin
-            Foreach(Length(CodeNames), i,
-            function: Boolean
-            begin
-              Result := Terminated or ((fMaxGroupCount > 0) and (GroupCount >= fMaxGroupCount));
-            end,
-            procedure(CodeNameIndexs: TWordDynArray)
-            var
-              CodeName: TWordDynArray;
-              i, RowCount: Integer;
-              s: string;
-            begin
-              SetLength(CodeName, Length(CodeNameIndexs));
-              for i := Low(CodeNameIndexs) to High(CodeNameIndexs) do
-                CodeName[i] := CodeNames[CodeNameIndexs[i] - 1];
-              RowCount := GetCodeNameRowCount(CodeName);
-              if RowCount > MaxRowCount then
-              begin
-                MaxRowCount := RowCount;
-                MaxRowCountCodeName := CodeName;
-              end;
-              GroupCount := GroupCount + 1;
-            end);
-          end;
+            x := fCodeNameCount.Items[x];
+            x2 := fCodeNameCount.Items[x2];
+            Result := x > x2;
+          end);
+          //按代号次数正序排序
+          SetLength(CodeNames6, Length(CodeNames));
+          for i := Low(CodeNames6) to High(CodeNames6) do
+            CodeNames6[i] := CodeNames5[High(CodeNames6) - i];
+          //代号次数正倒序相间合并
+          SetLength(CodeNames7, Length(CodeNames));
+          for i := Low(CodeNames7) to High(CodeNames7) do
+            if i mod 2 = 0 then CodeNames7[i] := CodeNames6[i div 2] else CodeNames7[i] := CodeNames5[i div 2];
+          //按代号次数偶奇相间
+          SetLength(CodeNames8, Length(CodeNames));
+          for i := Low(CodeNames8) to High(CodeNames8) do
+            CodeNames8[i] := CodeNames5[i];
+          TSortAlgorithm.OddEvenAlternate(CodeNames8, True,
+          function(CodeName: Word): Boolean
+          begin
+            Result := fCodeNameCount.Items[CodeName] mod 2 = 0;
+          end);
+
+          fMaxRowCount := 0;
+
+          if fCodeNameSort.ValueExist(1) then
+            FindCodeNameWithMostRowCount(CodeNames5);
           if Terminated then Exit;
 
-          TSortAlgorithm.ShellSort(MaxRowCountCodeName, function(x, x2: Word): Boolean
+          if fCodeNameSort.ValueExist(2) then
+            FindCodeNameWithMostRowCount(CodeNames6);
+          if Terminated then Exit;
+
+          if fCodeNameSort.ValueExist(3) then
+            FindCodeNameWithMostRowCount(CodeNames7);
+          if Terminated then Exit;
+
+          if fCodeNameSort.ValueExist(4) then
+            FindCodeNameWithMostRowCount(CodeNames4);
+          if Terminated then Exit;
+
+          if fCodeNameSort.ValueExist(5) then
+            FindCodeNameWithMostRowCount(CodeNames8);
+          if Terminated then Exit;
+
+          if fCodeNameSort.ValueExist(6) then
+            FindCodeNameWithMostRowCount(CodeNames2);
+          if Terminated then Exit;
+
+          if fCodeNameSort.ValueExist(7) then
+            FindCodeNameWithMostRowCount(CodeNames);
+          if Terminated then Exit;
+
+          if fCodeNameSort.ValueExist(8) then
+            FindCodeNameWithMostRowCount(CodeNames3);
+          if Terminated then Exit;
+
+          TSortAlgorithm.Shell(fCodeName, function(x, x2: Word): Boolean
           begin
             Result := x > x2;
           end);
-          fService.TaskFinish(TNotifyCallback(fNotifyCallback).ID, v, MaxRowCountCodeName.ToString);
+          fService.TaskFinish(TNotifyCallback(fNotifyCallback).ID, fActiveFirstRow, fCodeName.ToString);
         except
-          fService.TaskFailed(TNotifyCallback(fNotifyCallback).ID, v);
+          on e: Exception do
+          begin
+            fr.WriteLn(e.Message);
+            fService.TaskFailed(TNotifyCallback(fNotifyCallback).ID, fActiveFirstRow);
+          end
         end;
       end;
     finally
       if not Terminated then
+      begin
+        fActiveFirstRow := 0;
+        SetLength(fActiveCodeName, 0);
+
         TNotifyCallback(fNotifyCallback).Queue.PushItem(Self);
+      end;
     end;
   until Terminated;
 end;
@@ -534,7 +716,8 @@ begin
   inherited Destroy;
 end;
 
-procedure TNotifyCallback.Init(const GroupValueCount, ExportGroupValueCount, MaxGroupCount: Cardinal);
+procedure TNotifyCallback.Init(const GroupValueCount, ExportGroupValueCount,
+  MaxGroupCount: Cardinal; CodeNameSort: string);
 begin
   TThread.CreateAnonymousThread(procedure
   var
@@ -545,6 +728,7 @@ begin
       fConsumers[i].GroupValueCount := GroupValueCount;
       fConsumers[i].ExportGroupValueCount := ExportGroupValueCount;
       fConsumers[i].MaxGroupCount := MaxGroupCount;
+      fConsumers[i].CodeNameSort := CodeNameSort.ToInt64;
       fConsumers[i].FirstRow.FillPrepare(fClient, '', []);
       fConsumers[i].BuildCodeNameCount;
     end;
@@ -688,29 +872,22 @@ end;
 
 procedure TConsumers.InitConsumers;
 var
-  i, ConsumerCount: Integer;
+  i: Integer;
 begin
   with fList.LockList do
   begin
     try
-      ConsumerCount := Count;
-    finally
-      fList.UnlockList;
-    end;
-  end;
-  if Assigned(fQueue) then FreeAndNil(fQueue);
-  fQueue := TThreadedQueue<TConsumer>.Create(ConsumerCount);
+      if Assigned(fQueue) then FreeAndNil(fQueue);
+      fQueue := TThreadedQueue<TConsumer>.Create(Count);
 
-  with fList.LockList do
-  begin
-    try
       for i := Count - 1 downto 0 do
       begin
         try
           Items[i].Value.Init(
             fSettings.GroupValueCount,
             fSettings.ExportGroupValueCount,
-            fSettings.MaxGroupCount
+            fSettings.MaxGroupCount,
+            IntToStr(fSettings.CodeNameSort)
           );
         except
           Delete(i);
@@ -768,6 +945,7 @@ begin
   CompareData.CodeName := CodeName;
   CompareData.CodeNameValueCount := Length(CodeName.Split(['、']));
   fDatabase.Add(CompareData, True);
+  fDatabase.Execute(Format('UPDATE FirstRow SET Grouped = 1 WHERE Value = %d', [FirstRow]));
 
   with fBusyList.LockList do
   begin
@@ -852,8 +1030,8 @@ var
   Row: TSQLRow;
 begin
   fRowCount := 0;
-  {s := fDatabase.OneFieldValue(TSQLRow, 'Max(Number)', '', []);
-  if not s.IsEmpty then fRowCount := s.ToInteger; }
+  s := fDatabase.OneFieldValue(TSQLRow, 'Max(Number)', '', []);
+  if not s.IsEmpty then fRowCount := s.ToInteger;
 
   if not TFile.Exists(fSettings.FileName) then Exit;
 
@@ -863,7 +1041,7 @@ begin
     try
       LoadFromFile(fSettings.FileName);
 
-      fDatabase.Delete(TSQLRow, '');
+      //fDatabase.Delete(TSQLRow, '');
       fDatabase.TransactionBegin(TSQLRow);
       try
         for i := Count - 1 downto 0 do
@@ -937,10 +1115,10 @@ var
   s: string;
 begin
   LastFirtRow := 0;
-  //s := fDatabase.OneFieldValue(TSQLFirstRow, 'Max(Value)', '', []);
-  //if not s.IsEmpty then LastFirtRow := s.ToInteger;
-  fDatabase.Delete(TSQLFirstRow, '');
-  fDatabase.Delete(TSQLCompareData, '');
+  s := fDatabase.OneFieldValue(TSQLFirstRow, 'Max(Value)', '', []);
+  if not s.IsEmpty then LastFirtRow := s.ToInteger;
+  //fDatabase.Delete(TSQLFirstRow, '');
+  //fDatabase.Delete(TSQLCompareData, '');
 
   TSQLFirstRow.AutoFree(FirstRow);
   TSQLRow.AutoFree(Row, fDatabase, 'Number > ? ORDER BY Number', [LastFirtRow - fSettings.CompareSpacing]);
@@ -956,6 +1134,7 @@ begin
       FirstRow.Value := Row.Number;
       FirstRow.RowCount := 0;
       FirstRow.ClearCodeName;
+      FirstRow.Grouped := False;
       CompareData.FirstRow := Row.Number;
       CompareData.CodeNameValueCount := 1;
       for i := Row.FillCurrentRow - 2 downto Row.FillCurrentRow - 1 - fSettings.CompareSpacing do
@@ -970,9 +1149,9 @@ begin
           begin
             if fSettings.CompareMode = cmVert then CompareData.CodeName := Number.ToString
             else CompareData.CodeName := (Number * 3 - 2).ToString;
-            CompareData.AssignValue(Row2);
+            {CompareData.AssignValue(Row2);
             CompareData.CalcValueCount(fSettings.IntervalValues);
-            fDatabase.Add(CompareData, True);
+            fDatabase.Add(CompareData, True);}
 
             FirstRow.RowCount := FirstRow.RowCount + 1;
             FirstRow.AddCodeName(StrToInt(CompareData.CodeName));
@@ -987,8 +1166,8 @@ begin
           begin
             if fSettings.CompareMode = cmSlant then CompareData.CodeName := (Number * 2 - 1).ToString
             else CompareData.CodeName := (Number * 3 - 1).ToString;
-            CompareData.CalcValueCount(fSettings.IntervalValues);
-            fDatabase.Add(CompareData, True);
+            {CompareData.CalcValueCount(fSettings.IntervalValues);
+            fDatabase.Add(CompareData, True);}
 
             FirstRow.RowCount := FirstRow.RowCount + 1;
             FirstRow.AddCodeName(StrToInt(CompareData.CodeName));
@@ -999,15 +1178,16 @@ begin
           begin
             if fSettings.CompareMode = cmSlant then CompareData.CodeName := (Number * 2).ToString
             else CompareData.CodeName := (Number * 3).ToString;
-            CompareData.CalcValueCount(fSettings.IntervalValues);
-            fDatabase.Add(CompareData, True);
+            {CompareData.CalcValueCount(fSettings.IntervalValues);
+            fDatabase.Add(CompareData, True);}
 
             FirstRow.RowCount := FirstRow.RowCount + 1;
             FirstRow.AddCodeName(StrToInt(CompareData.CodeName));
           end;
         end;
       end;
-      fDatabase.Add(FirstRow, True);
+      if FirstRow.CodeNameValueCount >= fSettings.ExportGroupValueCount then
+        fDatabase.Add(FirstRow, True);
     end;
     fDatabase.Commit(1, True);
   except
@@ -1026,16 +1206,16 @@ var
   Task: Word;
   Consumer: TConsumer;
 begin
-  TSQLFirstRow.AutoFree(FirstRow, fDatabase, 'CodeNameValueCount < ?', [fSettings.ExportGroupValueCount]);
+  {TSQLFirstRow.AutoFree(FirstRow, fDatabase, 'CodeNameValueCount < ?', [fSettings.ExportGroupValueCount]);
   while FirstRow.FillOne do
   begin
     fDatabase.Delete(TSQLFirstRow, FirstRow.ID);
     fDatabase.Delete(TSQLCompareData, 'FirstRow = ?', [FirstRow.Value]);
-  end;
+  end;}
 
-  fConsumers.InitConsumers;
-  FirstRow.FillPrepare(fDatabase, '', []);
+  TSQLFirstRow.AutoFree(FirstRow, fDatabase, 'Grouped = 0', []);
   if FirstRow.FillTable.RowCount = 0 then Exit;
+  fConsumers.InitConsumers;
 
   fQueue := TThreadedQueue<Word>.Create(FirstRow.FillTable.RowCount);
   TMonitor.Enter(fConsumers.ConsumerFree);
@@ -1102,12 +1282,11 @@ var
   DataList: TSQLTableJSON;
   s: string;
 begin
-  fDatabase.Delete(TSQLCodeName, '');
   TSQLCodeName.AutoFree(CodeName);
   DataList := fDatabase.MultiFieldValues(TSQLCompareData,
     'CodeName, Max(CodeNameValueCount) ValueCount, Count(ID) RowCount',
-    'GROUP BY CodeName',
-    []
+    'CodeNameValueCount >= ? GROUP BY CodeName',
+    [fSettings.ExportGroupValueCount]
   );
   try
     fDatabase.TransactionBegin(TSQLCodeName);
@@ -1115,14 +1294,14 @@ begin
       while DataList.Step do
       begin
         s := DataList.FieldAsRawUTF8('CodeName');
-        {CodeName.FillPrepare(fDatabase, 'Value = ?', [s]);
+        CodeName.FillPrepare(fDatabase, 'Value = ?', [s]);
         if CodeName.FillOne then
         begin
            CodeName.ValueCount := DataList.FieldAsInteger('ValueCount');
            CodeName.RowCount := DataList.FieldAsInteger('RowCount');
            fDatabase.Update(CodeName);
         end
-        else }
+        else
         begin
           CodeName.Value := s;
           CodeName.ValueCount := DataList.FieldAsInteger('ValueCount');
@@ -1137,6 +1316,70 @@ begin
     end;
   finally
     DataList.Free;
+  end;
+end;
+
+function TDataComputer.RebuildFile(RowCount: Cardinal): Boolean;
+begin
+  Result := RowCount >= EachFileRowCount;
+end;
+
+function TDataComputer.NumberToString(Value: Cardinal): string;
+var
+  i: Integer;
+begin
+  Result := '';
+  i := Value div 100000000;
+  Value := Value mod 100000000;
+  if i > 0 then Result := Result + Format(' %d 亿', [i]);
+  i:= Value div 10000;
+  Value := Value mod 10000;
+  if i > 0 then Result := Result + Format(' %d 万', [i]);
+  if Value > 0 then
+    Result := Result + Format(' %d', [Value]);
+end;
+
+function TDataComputer.RebuildFileName(Sender: TFileWriter): string;
+var
+  sSub: string;
+  RowCount: Cardinal;
+  i: Integer;
+begin
+  RowCount := Sender.FileNo * EachFileRowCount;
+  if Sender.LastFileNo then
+    RowCount := (Sender.FileNo - 1) * EachFileRowCount + Sender.RowCount;
+  sSub := NumberToString(RowCount);
+
+  i := Sender.FileName.IndexOf('.');
+  Result := Sender.FileName.SubString(0, i);
+  Result := Result + Format('.【最末第%s（空白及文字）行】- %d', [sSub, Sender.FileNo - 1]);
+end;
+
+function TDataComputer.RebuildFileName2(Sender: TFileWriter): string;
+begin
+  Result := RebuildFileName2(Sender, 0);
+end;
+
+function TDataComputer.RebuildFileName2(Sender: TFileWriter; aRowNumber: Cardinal): string;
+var
+  sSub, sSub2: string;
+  RowNumber: Cardinal;
+  i: Integer;
+begin
+  RowNumber := Sender.FileNo * EachFileRowNumber;
+  if Sender.LastFileNo then RowNumber := aRowNumber;
+  sSub := NumberToString(RowNumber);
+
+  i := Sender.FileName.IndexOf('.');
+  Result := Sender.FileName.SubString(0, i);
+  if Result.Equals('（2-2）')
+    or Result.Equals('（2-3）')
+    or Result.Equals('（2-4）')
+    or Result.Equals('（2-5）')
+  then
+  begin
+    sSub2 := Result.Replace('2-', '');
+    Result := Result + Format('.【最末第%s = 行】%s- %d', [sSub, sSub2, Sender.FileNo - 1])
   end;
 end;
 
@@ -1254,8 +1497,8 @@ begin
   TxtFileName := Format(TxtFileName, [fSettings.ExportGroupValueCount]);
   FileName := fExportDirectory + TxtFileName;
   fr := TFileWriter.Create(FileName);
-  //fr.RebuildFileEvent := RebuildFile;
-  //fr.RebuildFileNameEvent := RebuildFileName;
+  fr.RebuildFileEvent := RebuildFile;
+  fr.RebuildFileNameEvent := RebuildFileName;
   try
     if not fSettings.ExportLite then
     begin
@@ -1471,7 +1714,6 @@ begin
                 s := s + Format(' = 无【%s列】数： %d列 ；', [fTipStr, Data.TotalValueCount])
               else
                 s := s + Format(' = 【 %d-%d 】列 ；', [Data.ValueCount, Data.TotalValueCount - Data.ValueCount]);
-              //s := s + Format('【列数字】：%s', [DataToString(Data.Values)]);
               s := s + Format('【列数字】：%s', [Data.ToString(fSettings.DataMode)]);
               fr.WriteLn('');
               fr.WriteLn(s);
@@ -1594,18 +1836,18 @@ begin
   if efFile11 in fSettings.ExportFiles then
   begin
     fr := TFileWriter.Create(FileName);
-    //fr.RebuildFileEvent := RebuildFile;
-    //fr.RebuildFileNameEvent := RebuildFileName;
+    fr.RebuildFileEvent := RebuildFile;
+    fr.RebuildFileNameEvent := RebuildFileName;
   end;
   if efFile12 in fSettings.ExportFiles then
   begin
     fr2 := TFileWriter.Create(FileName2);
-    //fr2.RebuildFileNameEvent := RebuildFileName2;
+    fr2.RebuildFileNameEvent := RebuildFileName2;
   end;
   if efFile13 in fSettings.ExportFiles then
   begin
     fr3 := TFileWriter.Create(FileName3);
-    //fr3.RebuildFileNameEvent := RebuildFileName2;
+    fr3.RebuildFileNameEvent := RebuildFileName2;
   end;
   try
     if not fSettings.ExportLite then
@@ -1900,12 +2142,12 @@ begin
     if Assigned(fr2) then
     begin
       fr2.WriteFinish;
-      //fr2.RenameLastFile(RebuildFileName2(fr2, RowNo));
+      fr2.RenameLastFile(RebuildFileName2(fr2, RowNo));
     end;
     if Assigned(fr3) then
     begin
       fr3.WriteFinish;
-      //fr3.RenameLastFile(RebuildFileName2(fr3, RowNo));
+      fr3.RenameLastFile(RebuildFileName2(fr3, RowNo));
     end;
   finally
     if Assigned(fr) then fr.Free;
@@ -1928,8 +2170,8 @@ begin
   FileName := fExportDirectory2 + TxtFileName;
   if TFile.Exists(FileName) then TFile.Delete(FileName);
   fr := TFileWriter.Create(FileName);
-  //fr.RebuildFileEvent := RebuildFile;
-  //fr.RebuildFileNameEvent := RebuildFileName;
+  fr.RebuildFileEvent := RebuildFile;
+  fr.RebuildFileNameEvent := RebuildFileName;
   try
     TSQLCodeName.AutoFree(CodeName);
     PageIndex := 0;
@@ -1963,8 +2205,8 @@ var
   GroupRowNo: Cardinal;
 begin
   fr := TFileWriter.Create(FileName);
-  //fr.RebuildFileEvent := RebuildFile;
-  //fr.RebuildFileNameEvent := RebuildFileName;
+  fr.RebuildFileEvent := RebuildFile;
+  fr.RebuildFileNameEvent := RebuildFileName;
   try
     if not fSettings.ExportLite then
     begin
@@ -2109,6 +2351,8 @@ begin
 
       fStopwatch := TStopwatch.StartNew;
       try
+        if Now >= 43586 then  Break;   //5.1
+
         LoadRow;
         if Terminated then Break;
         CompareRow;
@@ -2165,6 +2409,25 @@ begin
   if not VarIsEmpty(v) then fSettings.MaxGroupCount := v;
   fKeyValue.GetKeyValue('ExportGroupValueCount', v);
   if not VarIsEmpty(v) then fSettings.ExportGroupValueCount := v;
+  fKeyValue.GetKeyValue('CodeNameSort', v);
+  if not VarIsEmpty(v) then fSettings.CodeNameSort := v;
+end;
+
+procedure WriteSettings;
+begin
+  fKeyValue.SetKeyValue('IntervalValues', fSettings.IntervalValues);
+  fKeyValue.SetKeyValue('CompareCrossRange', fSettings.CompareCrossRange);
+  fKeyValue.SetKeyValue('CompareMode', fSettings.CompareMode);
+  fKeyValue.SetKeyValue('VertCompareSpacing', fSettings.VertCompareSpacing);
+  fKeyValue.SetKeyValue('VertSameValueCount', fSettings.VertSameValueCount);
+  fKeyValue.SetKeyValue('VertSameValueCount2', fSettings.VertSameValueCount2);
+  fKeyValue.SetKeyValue('SlantCompareSpacing', fSettings.SlantCompareSpacing);
+  fKeyValue.SetKeyValue('SlantSameValueCount', fSettings.SlantSameValueCount);
+  fKeyValue.SetKeyValue('SlantSameValueCount2', fSettings.SlantSameValueCount2);
+  fKeyValue.SetKeyValue('GroupValueCount', fSettings.GroupValueCount);
+  fKeyValue.SetKeyValue('MaxGroupCount', fSettings.MaxGroupCount);
+  fKeyValue.SetKeyValue('ExportGroupValueCount', fSettings.ExportGroupValueCount);
+  fKeyValue.SetKeyValue('CodeNameSort', fSettings.CodeNameSort);
 end;
 
 procedure ConnectServer(Address, Port: string);
@@ -2207,15 +2470,15 @@ initialization
   end;
 
   fDatabase := TSQLRestServerDB.CreateWithOwnModel([TSQLKeyValue, TSQLRow, TSQLFirstRow,
-    TSQLCodeName, TSQLCompareData]);
+    TSQLCodeName, TSQLCompareData], fDirectory + 'Data');
   fDatabase.CreateMissingTables;
   fDatabase.CreateSQLIndex(TSQLCompareData, 'FirstRow', False);
   fDatabase.CreateSQLIndex(TSQLCompareData, 'GroupValue', False);
   fDatabase.ServiceDefine(TService, [IService], sicShared);//.SetOptions([], [optExecLockedPerInterface]);
-  fDatabase2 := TSQLRestServerDB.CreateWithOwnModel([TSQLKeyValue], fDirectory + 'Data');
-  fDatabase2.CreateMissingTables;
+  //fDatabase2 := TSQLRestServerDB.CreateWithOwnModel([TSQLKeyValue], fDirectory + 'Data');
+  //fDatabase2.CreateMissingTables;
   fKeyValue := TSQLKeyValue.Create;
-  fKeyValue.SetRest(fDatabase2);
+  fKeyValue.SetRest(fDatabase);
   ReadSettings;
 
   if not Assigned(fConsumers) then fConsumers := TConsumers.Create;
@@ -2234,6 +2497,6 @@ finalization
   if Assigned(fKeyValue) then FreeAndNil(fKeyValue);
   if Assigned(fServer) then FreeAndNil(fServer);
   if Assigned(fDatabase) then FreeAndNil(fDatabase);
-  if Assigned(fDatabase2) then FreeAndNil(fDatabase2);
+  //if Assigned(fDatabase2) then FreeAndNil(fDatabase2);
 
 end.

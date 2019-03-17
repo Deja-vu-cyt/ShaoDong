@@ -15,7 +15,8 @@ uses
   ufrmConnectionSettings in 'ufrmConnectionSettings.pas' {frmConnectionSettings},
   ufrmConsumer in 'ufrmConsumer.pas' {frmConsumer},
   ufrmCombinationCalculator in 'ufrmCombinationCalculator.pas' {frmCombinationCalculator},
-  Dejavu.WaitableTimer in '..\Dejavu.WaitableTimer.pas';
+  Dejavu.WaitableTimer in '..\Dejavu.WaitableTimer.pas',
+  UfrmCodeNameSortSettings in 'UfrmCodeNameSortSettings.pas' {frmCodeNameSortSettings};
 
 {$R *.res}
 

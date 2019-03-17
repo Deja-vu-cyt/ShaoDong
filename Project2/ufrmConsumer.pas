@@ -8,27 +8,32 @@ uses
   FireDAC.Stan.Param, FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf,
   FireDAC.DApt.Intf, Data.DB, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   DBGridEhGrouping, ToolCtrlsEh, DBGridEhToolCtrls, DynVarsEh, EhLibVCL,
-  GridsEh, DBAxisGridsEh, DBGridEh;
+  GridsEh, DBAxisGridsEh, DBGridEh, Vcl.ExtCtrls;
 
 type
   TfrmConsumer = class(TForm)
     fdmtConsumer: TFDMemTable;
     dbgrdConsumer: TDBGridEh;
     dsConsumer: TDataSource;
+    Timer: TTimer;
     procedure FormCreate(Sender: TObject);
+    procedure TimerTimer(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure FormHide(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
 
   public
-    procedure Add(Address: string);
-    procedure Delete(Address: string);
-    procedure Process(Address: string; FirstRow: Word);
-    procedure ProcessFinish(Address: string; FirstRow: Word);
+
   end;
 
 var
   frmConsumer: TfrmConsumer;
 
 implementation
+
+uses
+  uDataComputer, uCommon;
 
 {$R *.dfm}
 
@@ -37,104 +42,50 @@ begin
   fdmtConsumer.CreateDataSet;
 end;
 
-procedure TfrmConsumer.Add(Address: string);
+procedure TfrmConsumer.FormDestroy(Sender: TObject);
 begin
-  TThread.Queue(nil, procedure
-  var
-    RecNo: Integer;
+  Timer.Enabled := False;
+end;
+
+procedure TfrmConsumer.FormHide(Sender: TObject);
+begin
+  Timer.Enabled := False;
+end;
+
+procedure TfrmConsumer.FormShow(Sender: TObject);
+begin
+  Timer.Enabled := True;
+end;
+
+procedure TfrmConsumer.TimerTimer(Sender: TObject);
+var
+  i, RecNo: Integer;
+begin
+  if fNotifyCallback = nil then Exit;
+
+  with TNotifyCallback(fNotifyCallback) do
   begin
     RecNo := fdmtConsumer.RecNo;
     fdmtConsumer.DisableControls;
     try
-      if not fdmtConsumer.Locate('Address', Address, []) then
+      for i := Low(Consumers) to High(Consumers) do
       begin
-        fdmtConsumer.Append;
-        fdmtConsumer.FieldByName('Address').AsString := Address;
+        if fdmtConsumer.Locate('ThreadID', Consumers[i].ThreadID, []) then fdmtConsumer.Edit
+        else
+        begin
+          fdmtConsumer.Append;
+          fdmtConsumer.FieldByName('ThreadID').AsLargeInt := Consumers[i].ThreadID;
+        end;
+        fdmtConsumer.FieldByName('FirstRow').AsInteger := Consumers[i].ActiveFirstRow;
+        fdmtConsumer.FieldByName('CodeName').AsString := Consumers[i].ActiveCodeName.ToString;
         fdmtConsumer.Post;
       end;
     finally
       if (RecNo > 0) and (RecNo <= fdmtConsumer.RecordCount) then fdmtConsumer.RecNo := RecNo;
       fdmtConsumer.EnableControls;
     end;
-  end);
-end;
+  end;
 
-procedure TfrmConsumer.Delete(Address: string);
-begin
-  TThread.Queue(nil, procedure
-  var
-    RecNo: Integer;
-  begin
-    RecNo := fdmtConsumer.RecNo;
-    fdmtConsumer.DisableControls;
-    try
-      if fdmtConsumer.Locate('Address', Address, []) then fdmtConsumer.Delete;
-    finally
-      if (RecNo > 0) and (RecNo <= fdmtConsumer.RecordCount) then fdmtConsumer.RecNo := RecNo;
-      fdmtConsumer.EnableControls;
-    end;
-  end);
-end;
-
-procedure TfrmConsumer.Process(Address: string; FirstRow: Word);
-begin
-  TThread.Queue(nil, procedure
-  var
-    RecNo: Integer;
-    f: TField;
-    s: string;
-  begin
-    RecNo := fdmtConsumer.RecNo;
-    fdmtConsumer.DisableControls;
-    try
-      if fdmtConsumer.Locate('Address', Address, []) then
-      begin
-        f := fdmtConsumer.FieldByName('FirstRow');
-        for s in f.AsString.Split(['、']) do
-          if s.Equals(FirstRow.ToString) then Exit;
-        fdmtConsumer.Edit;
-        if not f.AsString.IsEmpty then f.AsString := f.AsString + '、';
-        f.AsString := f.AsString + FirstRow.ToString;
-        fdmtConsumer.Post;
-      end;
-    finally
-      if (RecNo > 0) and (RecNo <= fdmtConsumer.RecordCount) then fdmtConsumer.RecNo := RecNo;
-      fdmtConsumer.EnableControls;
-    end;
-  end);
-end;
-
-procedure TfrmConsumer.ProcessFinish(Address: string; FirstRow: Word);
-begin
-  TThread.Queue(nil, procedure
-  var
-    RecNo: Integer;
-    f: TField;
-    s, sFirstRow: string;
-  begin
-    RecNo := fdmtConsumer.RecNo;
-    fdmtConsumer.DisableControls;
-    try
-      if fdmtConsumer.Locate('Address', Address, []) then
-      begin
-        f := fdmtConsumer.FieldByName('FirstRow');
-        sFirstRow := '';
-        for s in f.AsString.Split(['、']) do
-          if not s.Equals(FirstRow.ToString) then
-          begin
-            if not sFirstRow.IsEmpty then sFirstRow := sFirstRow + '、';
-            sFirstRow := sFirstRow + s;
-          end;
-
-        fdmtConsumer.Edit;
-        f.AsString := sFirstRow;
-        fdmtConsumer.Post;
-      end;
-    finally
-      if (RecNo > 0) and (RecNo <= fdmtConsumer.RecordCount) then fdmtConsumer.RecNo := RecNo;
-      fdmtConsumer.EnableControls;
-    end;
-  end);
 end;
 
 end.

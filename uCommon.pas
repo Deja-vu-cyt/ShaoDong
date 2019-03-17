@@ -38,6 +38,12 @@ type
 
   TWordDynArrayHelper = record helper for TWordDynArray
   public
+    procedure Assign(s: string);
+    procedure Clear;
+    procedure Add(v: Word);
+    function Exist(v: Word): Boolean;
+    function Equals(v: TWordDynArray): Boolean;
+    function Contains(v: TWordDynArray): Boolean;
     function ToString: string;
   end;
 
@@ -141,18 +147,28 @@ type
 
   TSortAlgorithm = class
   public
-    class procedure ShellSort(var x: TWordDynArray; Compare: TFunc<Word, Word, Boolean>);
+    class procedure Shell(var x: TWordDynArray; Compare: TFunc<Word, Word, Boolean>);
+    class procedure Stochastic(var x: TWordDynArray);
+    class procedure OddEvenAlternate(var x: TWordDynArray; EvenFirst: Boolean;
+      CheckEven: TFunc<Word, Boolean> = nil);
   end;
 
 var
   fDirectory: string;
+  fLogDirectory: string;
 
 procedure InternalSQLFunctionValueExist(Context: TSQLite3FunctionContext;
   Argc: Integer; var Argv: TSQLite3ValueArray); cdecl;
 
 
 procedure BinarySearch(First, Last: Cardinal; Func: TFunc<Cardinal, Byte>);
-procedure Foreach(TotalCount, EachTimeCount: Cardinal; Func: TFunc<Boolean>; Proc: TProc<TWordDynArray>);
+
+procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
+  Stop: TFunc<Boolean> = nil); overload;
+procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
+  Proc2: TProc<TWordDynArray> = nil; Stop: TFunc<Boolean> = nil); overload;
+procedure Foreach(TotalCount, EachTimeCount, Number: Cardinal;
+  Proc: TProc<Cardinal, TWordDynArray>; Stop: TFunc<Boolean>); overload;
 procedure Foreach2(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>);
 function DigitToString(Digit: Cardinal): string;
 
@@ -917,21 +933,41 @@ begin
   end;
 end;
 
-procedure Foreach(TotalCount, EachTimeCount: Cardinal; Func: TFunc<Boolean>; Proc: TProc<TWordDynArray>);
+procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
+  Stop: TFunc<Boolean>);
+begin
+  Foreach(TotalCount, EachTimeCount, Proc, nil, Stop);
+end;
+
+procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
+  Proc2: TProc<TWordDynArray>; Stop: TFunc<Boolean>);
 var
-  r: TWordDynArray;
+  r, r2: TWordDynArray;
   i, i2, i3: Integer;
 begin
   if (TotalCount = 0) or (TotalCount < EachTimeCount) then Exit;
 
   SetLength(r, EachTimeCount);
+  if EachTimeCount > 0 then SetLength(r2, EachTimeCount - 1);
+
   for i := Low(r) to High(r) do r[i] := i + 1;
+  r[High(r)] := r[High(r)] - 1;
+
   repeat
-    if Func then Exit;
-    Proc(r);
+    if Assigned(Stop) and Stop then Exit;
 
     r[High(r)] := r[High(r)] + 1;
-    if r[High(r)] > TotalCount then
+    //每次新的前n-1位执行
+    if (Length(r) > 1) and (r[High(r)] - r[High(r) - 1] = 1) and Assigned(Proc2) then
+    begin
+      for i := Low(r2) to High(r2) do r2[i] := r[i];
+      Proc2(r2);
+      //不符合跳过
+    end;
+
+    if Assigned(Proc) then Proc(r);
+
+    if r[High(r)] = TotalCount then
     begin
       for i2 := High(r) - 1 downto Low(r) do
       begin
@@ -940,11 +976,59 @@ begin
         begin
           for i3 := i2 + 1 to High(r) do
             r[i3] := r[i3 - 1] + 1;
+          r[High(r)] := r[High(r)] - 1;
           Break;
         end;
       end;
     end;
-  until r[Low(r)] > TotalCount - i + 1;
+  until r[High(r)] = TotalCount;
+end;
+
+procedure Foreach(TotalCount, EachTimeCount, Number: Cardinal;
+  Proc: TProc<Cardinal, TWordDynArray>; Stop: TFunc<Boolean>);
+var
+  r, r2: TWordDynArray;
+  i, i2, i3: Integer;
+  StartNumber, EndNumber: Cardinal;
+begin
+  if (TotalCount = 0) or (TotalCount < EachTimeCount) or (TotalCount - EachTimeCount + 1 < Number) then Exit;
+
+  SetLength(r, EachTimeCount);
+  StartNumber := 1;
+  EndNumber := TotalCount - EachTimeCount + 1;
+  if Number > 0 then
+  begin
+    StartNumber := Number;
+    EndNumber := Number;
+  end;
+
+  for Number := StartNumber to EndNumber do
+  begin
+    for i := Low(r) to High(r) do r[i] := Number + i;
+    r[High(r)] := r[High(r)] - 1;
+
+    repeat
+      if Assigned(Stop) and Stop then Exit;
+
+      r[High(r)] := r[High(r)] + 1;
+      if Assigned(Proc) then Proc(Number, r);
+
+      if r[High(r)] = TotalCount then
+      begin
+        for i2 := High(r) - 1 downto Low(r) + 1 do
+        begin
+          r[i2] := r[i2] + 1;
+          if r[i2] < TotalCount - High(r) + 1 + i2 then
+          begin
+            for i3 := i2 + 1 to High(r) do
+              r[i3] := r[i3 - 1] + 1;
+            r[High(r)] := r[High(r)] - 1;
+            Break;
+          end;
+        end;
+      end;
+    until r[High(r)] = TotalCount;
+  end;
 end;
 
 procedure Foreach2(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>);
@@ -1062,6 +1146,67 @@ begin
     end;
     Result.AddValue(v2);
   end;
+end;
+
+procedure TWordDynArrayHelper.Assign(s: string);
+var
+  t: TArray<string>;
+  i, v: Integer;
+begin
+  t := s.Split(['、']);
+  SetLength(Self, Length(t));
+  for i := Low(Self) to High(Self) do
+    if TryStrToInt(t[i], v) then Self[i] := v else Self[i] := 0;
+end;
+
+procedure TWordDynArrayHelper.Clear;
+begin
+  SetLength(Self, 0);
+end;
+
+procedure TWordDynArrayHelper.Add(v: Word);
+begin
+  SetLength(Self, Length(Self) + 1);
+  Self[High(Self)] := v;
+end;
+
+function TWordDynArrayHelper.Exist(v: Word): Boolean;
+var
+  v2: Word;
+begin
+  Result := False;
+  for v2 in Self do
+  begin
+    Result := v2 = v;
+    if Result then Break;
+  end;
+end;
+
+function TWordDynArrayHelper.Equals(v: TWordDynArray): Boolean;
+var
+  i, SameCount: Integer;
+begin
+  Result := False;
+  if Length(Self) <> Length(v) then Exit;
+
+  SameCount := 0;
+  for i := Low(Self) to High(Self) do
+    if Self[i] = v[i] then Inc(SameCount) else Break;
+
+  Result := SameCount = Length(Self);
+end;
+
+function TWordDynArrayHelper.Contains(v: TWordDynArray): Boolean;
+var
+  v2: Word;
+  SameCount: Integer;
+begin
+  Result := False;
+  SameCount := 0;
+  for v2 in v do
+    if Self.Exist(v2) then Inc(SameCount) else Break;
+
+  Result := SameCount = Length(v);
 end;
 
 function TWordDynArrayHelper.ToString: string;
@@ -1237,7 +1382,7 @@ begin
   end;
 end;
 
-class procedure TSortAlgorithm.ShellSort(var x: TWordDynArray; Compare: TFunc<Word, Word, Boolean>);
+class procedure TSortAlgorithm.Shell(var x: TWordDynArray; Compare: TFunc<Word, Word, Boolean>);
 var
   i, j, gap: Integer;
   t: Word;
@@ -1261,8 +1406,67 @@ begin
   end;
 end;
 
+class procedure TSortAlgorithm.Stochastic(var x: TWordDynArray);
+var
+  i, i2: Integer;
+  t: Word;
+begin
+  for i := Low(x) to High(x) do
+  begin
+    i2 := Random(High(x));
+    if i2 = i then Continue;
+
+    t := x[i];
+    x[i] := x[i2];
+    x[i2] := t;
+  end;
+end;
+
+class procedure TSortAlgorithm.OddEvenAlternate(var x: TWordDynArray; EvenFirst: Boolean;
+  CheckEven: TFunc<Word, Boolean>);
+var
+  t, t2: TWordDynArray;
+  i, iMinCount: Integer;
+  IsEven: Boolean;
+begin
+  for i := Low(x) to High(x) do
+  begin
+    if Assigned(CheckEven) then IsEven := CheckEven(x[i])
+    else IsEven := x[i] mod 2 = 0;
+    if IsEven then
+    begin
+      SetLength(t, Length(t) + 1);
+      t[High(t)] := x[i];
+    end
+    else
+    begin
+      SetLength(t2, Length(t2) + 1);
+      t2[High(t2)] := x[i];
+    end;
+  end;
+  iMinCount := Length(t);
+  if Length(t2) < iMinCount then iMinCount := Length(t2);
+  for i := 0 to iMinCount - 1 do
+  begin
+    if EvenFirst then
+    begin
+      x[i * 2] := t[i];
+      x[i * 2 + 1] := t2[i];
+    end
+    else
+    begin
+      x[i * 2] := t2[i];
+      x[i * 2 + 1] := t[i];
+    end;
+  end;
+  for i := iMinCount to High(t) do x[iMinCount + i] := t[i];
+  for i := iMinCount to High(t2) do x[iMinCount + i] := t2[i];
+end;
+
 initialization
   fDirectory := TPath.GetDirectoryName(ParamStr(0));
   if not fDirectory.Substring(fDirectory.Length - 1).Equals('\') then fDirectory := fDirectory + '\';
+  fLogDirectory := fDirectory + 'Log\';
+  //if not TDirectory.Exists(fLogDirectory) then TDirectory.CreateDirectory(fLogDirectory);
 
 end.

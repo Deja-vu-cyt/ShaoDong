@@ -11,7 +11,8 @@ uses
   ufrmExportSettings2 in 'ufrmExportSettings2.pas' {frmExportSettings},
   ufrmExportSlantFileSettings2 in 'ufrmExportSlantFileSettings2.pas' {frmExportSlantFileSettings},
   ufrmExportVertFileSettings2 in 'ufrmExportVertFileSettings2.pas' {frmExportVertFileSettings},
-  ufrmExportVertSlantFileSettings2 in 'ufrmExportVertSlantFileSettings2.pas' {frmExportVertSlantFileSettings};
+  ufrmExportVertSlantFileSettings2 in 'ufrmExportVertSlantFileSettings2.pas' {frmExportVertSlantFileSettings},
+  UfrmCodeNameSortSettings in 'UfrmCodeNameSortSettings.pas' {frmCodeNameSortSettings};
 
 {$R *.res}
 

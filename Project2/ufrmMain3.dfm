@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  ClientHeight = 718
+  ClientHeight = 680
   ClientWidth = 1334
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -20,18 +20,14 @@ object frmMain: TfrmMain
     Left = 0
     Top = 251
     Width = 1334
-    Height = 467
-    ActivePage = TabSheet1
+    Height = 429
+    ActivePage = TabSheet3
     Align = alClient
     TabHeight = 40
     TabOrder = 0
     object TabSheet3: TTabSheet
       Caption = #19968'.'#26597#35810#65306#12304#21508#34892#38388#12305#30452#12289#26012#36830#12304#23545#24212#21015#12305#32452#21512'     '
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label10: TLabel
         Left = 12
         Top = 7
@@ -177,8 +173,8 @@ object frmMain: TfrmMain
         TabOrder = 5
       end
       object btnVertSlantCompare: TButton
-        Left = 12
-        Top = 371
+        Left = 407
+        Top = 325
         Width = 269
         Height = 40
         Caption = '11.'#8220#24320#22987#26597#35810#8221#24182#8220#23548#20986#25968#25454#8221
@@ -469,6 +465,10 @@ object frmMain: TfrmMain
     end
     object TabSheet1: TTabSheet
       Caption = '  '#19977'.'#26597#35810#65306#12304#21508#34892#38388#12305#26012#36830#12304#23545#24212#21015#12305#32452#21512'     '
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label5: TLabel
         Left = 12
         Top = 112
@@ -753,6 +753,15 @@ object frmMain: TfrmMain
       TabOrder = 6
       OnClick = btnOkClick
     end
+    object btnCodeNameSortSettings: TButton
+      Left = 552
+      Top = 192
+      Width = 640
+      Height = 40
+      Caption = '3-1.'#36873#25321':'#65288' 1-10 '#65289'. '#25490#24207#65339#65288#20195#21495#65289#20986#29616#27425#25968#12289#65288#20195#21495#65289#65341#65292#20877#32452#21512
+      TabOrder = 7
+      OnClick = btnCodeNameSortSettingsClick
+    end
   end
   object OpenDialog: TOpenDialog
     Filter = #25991#26412#25991#20214'|*.txt'
@@ -764,7 +773,7 @@ object frmMain: TfrmMain
     object N1: TMenuItem
       Caption = #35774#32622
       object miConsumer: TMenuItem
-        Caption = #22788#29702#22120
+        Caption = #28040#36153#32773
         OnClick = miConsumerClick
       end
       object miCombinationCalculator: TMenuItem

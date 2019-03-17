@@ -3,14 +3,10 @@ unit ufrmMain;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Threading,
-  System.Classes, Vcl.Graphics, System.Math, System.Types, System.IOUtils, System.Diagnostics,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics, System.Math, System.Types, System.IOUtils,
   Vcl.Controls, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.FileCtrl,
-  FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
-  FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
-  Data.DB, FireDAC.Comp.DataSet, FireDAC.Comp.Client, DBGridEhGrouping,
-  ToolCtrlsEh, DBGridEhToolCtrls, DynVarsEh, EhLibVCL, GridsEh, DBAxisGridsEh,
-  DBGridEh, Vcl.CheckLst, Vcl.ComCtrls, Vcl.Menus, Vcl.Forms;
+  Vcl.CheckLst, Vcl.ComCtrls, Vcl.Menus, Vcl.Forms;
 
 type
   TfrmMain = class(TForm)
@@ -90,6 +86,7 @@ type
     edtVertSlantMaxGroupCount3: TEdit;
     edtVertMaxGroupCount3: TEdit;
     edtSlantMaxGroupCount3: TEdit;
+    btnCodeNameSortSettings: TButton;
     procedure FormCreate(Sender: TObject);
     procedure edtFileNameClick(Sender: TObject);
     procedure btnCompareClick(Sender: TObject);
@@ -102,6 +99,7 @@ type
     procedure TimerTimer(Sender: TObject);
     procedure miCombinationCalculatorClick(Sender: TObject);
     procedure btnOkClick(Sender: TObject);
+    procedure btnCodeNameSortSettingsClick(Sender: TObject);
   private
     procedure OnStateChange(Working: Boolean);
     procedure OnGroupCodeName(FirstRow: Word);
@@ -118,13 +116,13 @@ implementation
 uses
   uDataComputer, ufrmExportSettings, ufrmExportVertSlantFileSettings,
   ufrmExportVertFileSettings, ufrmExportSlantFileSettings, ufrmConnectionSettings,
-  ufrmConsumer, ufrmCombinationCalculator;
+  ufrmConsumer, ufrmCombinationCalculator, ufrmCodeNameSortSettings;
 
 {$R *.dfm}
 
 procedure TfrmMain.OnStateChange(Working: Boolean);
 begin
-  {btnSlantExportSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmSlant]);
+  btnSlantExportSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmSlant]);
   btnExportSlantFileSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmSlant]);
   btnSlantCompare.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmSlant]);
 
@@ -134,9 +132,9 @@ begin
 
   btnVertSlantExportSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVertSlant]);
   btnExportVertSlantFileSettings.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVertSlant]);
-  btnVertSlantCompare.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVertSlant]);}
+  btnVertSlantCompare.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVertSlant]);
 
-  btnSlantCompare.Enabled := not Working;
+  {btnSlantCompare.Enabled := not Working;
   btnVertCompare.Enabled := not Working;
   btnVertSlantCompare.Enabled := not Working;
   btnSlantExportSettings.Enabled := not Working;
@@ -144,8 +142,7 @@ begin
   btnVertSlantExportSettings.Enabled := not Working;
   btnExportVertSlantFileSettings.Enabled := not Working;
   btnExportVertFileSettings.Enabled := not Working;
-  btnExportSlantFileSettings.Enabled := not Working;
-  miConsumer.Enabled := not Working;
+  btnExportSlantFileSettings.Enabled := not Working;}
 end;
 
 procedure TfrmMain.OnGroupCodeName(FirstRow: Word);
@@ -279,7 +276,7 @@ begin
       end;
     end;
 
-    {edtIntervalValue.ReadOnly := CompareMode > cmNone;
+    edtIntervalValue.ReadOnly := CompareMode > cmNone;
     edtIntervalValue2.ReadOnly := CompareMode > cmNone;
     edtVertCompareSpacing.ReadOnly := CompareMode > cmNone;
     edtVertSameValueCount.ReadOnly := CompareMode > cmNone;
@@ -295,7 +292,16 @@ begin
     edtSlantSameValueCount.ReadOnly := CompareMode > cmNone;
     edtSlantSameValueCount2.ReadOnly := CompareMode > cmNone;
     edtCompareGroupValueCount.ReadOnly := CompareMode > cmNone;
-    edtExportGroupValueCount.ReadOnly := CompareMode > cmNone;}
+    edtExportGroupValueCount.ReadOnly := CompareMode > cmNone;
+    edtVertMaxGroupCount.ReadOnly := CompareMode > cmNone;
+    edtVertMaxGroupCount2.ReadOnly := CompareMode > cmNone;
+    edtVertMaxGroupCount3.ReadOnly := CompareMode > cmNone;
+    edtSlantMaxGroupCount.ReadOnly := CompareMode > cmNone;
+    edtSlantMaxGroupCount2.ReadOnly := CompareMode > cmNone;
+    edtSlantMaxGroupCount3.ReadOnly := CompareMode > cmNone;
+    edtVertSlantMaxGroupCount.ReadOnly := CompareMode > cmNone;
+    edtVertSlantMaxGroupCount2.ReadOnly := CompareMode > cmNone;
+    edtVertSlantMaxGroupCount3.ReadOnly := CompareMode > cmNone;
   end;
 
   OnStateChange(False);
@@ -325,20 +331,26 @@ begin
   frmConsumer.ShowModal;
 end;
 
+procedure TfrmMain.btnCodeNameSortSettingsClick(Sender: TObject);
+begin
+  CodeNameSortSet;
+end;
+
 procedure TfrmMain.btnCompareClick(Sender: TObject);
 var
   v, v2: Integer;
   IntervalValues: TWordDynArray;
+  CompareMode: TCompareMode;
 begin
   fSettings.FileName := edtFileName.Text;
-  //if fSettings.CompareMode = cmNone then
+  if fSettings.CompareMode = cmNone then
   begin
     if Sender = btnSlantCompare then
-      fSettings.CompareMode := cmSlant
+      CompareMode := cmSlant
     else if Sender = btnVertCompare then
-      fSettings.CompareMode := cmVert
+      CompareMode := cmVert
     else
-      fSettings.CompareMode := cmVertSlant;
+      CompareMode := cmVertSlant;
 
     if not (TryStrToInt(edtIntervalValue.Text, v) and (v >= 1)) then
     begin
@@ -364,8 +376,11 @@ begin
     fSettings.IntervalValues := IntervalValues;
     fSettings.CompareCrossRange := chkCompareCrossRange.Checked;
 
+    if fSettings.CodeNameSort = 0 then
+      raise Exception.Create('«Î—°‘Ò¥˙∫≈≈≈–Ú');
+
     fSettings.ExportFiles := [];
-    case fSettings.CompareMode of
+    case CompareMode of
       cmVert:
       begin
         if not TryStrToInt(edtVertCompareSpacing.Text, v) then
@@ -477,18 +492,8 @@ begin
         fSettings.ExportGroupValueCount := v;
       end;
     end;
-    fKeyValue.SetKeyValue('IntervalValues', fSettings.IntervalValues);
-    fKeyValue.SetKeyValue('CompareCrossRange', fSettings.CompareCrossRange);
-    fKeyValue.SetKeyValue('CompareMode', fSettings.CompareMode);
-    fKeyValue.SetKeyValue('VertCompareSpacing', fSettings.VertCompareSpacing);
-    fKeyValue.SetKeyValue('VertSameValueCount', fSettings.VertSameValueCount);
-    fKeyValue.SetKeyValue('VertSameValueCount2', fSettings.VertSameValueCount2);
-    fKeyValue.SetKeyValue('SlantCompareSpacing', fSettings.SlantCompareSpacing);
-    fKeyValue.SetKeyValue('SlantSameValueCount', fSettings.SlantSameValueCount);
-    fKeyValue.SetKeyValue('SlantSameValueCount2', fSettings.SlantSameValueCount2);
-    fKeyValue.SetKeyValue('GroupValueCount', fSettings.GroupValueCount);
-    fKeyValue.SetKeyValue('MaxGroupCount', fSettings.MaxGroupCount);
-    fKeyValue.SetKeyValue('ExportGroupValueCount', fSettings.ExportGroupValueCount);
+    fSettings.CompareMode := CompareMode;
+    WriteSettings;
   end;
 
   case fSettings.CompareMode of

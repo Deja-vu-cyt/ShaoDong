@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  ClientHeight = 711
+  ClientHeight = 690
   ClientWidth = 1334
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -20,7 +20,7 @@ object frmMain: TfrmMain
     Left = 0
     Top = 251
     Width = 1334
-    Height = 460
+    Height = 439
     ActivePage = TabSheet3
     Align = alClient
     TabHeight = 40
@@ -262,10 +262,6 @@ object frmMain: TfrmMain
     object TabSheet2: TTabSheet
       Caption = '  '#20108'.'#26597#35810'      '
       ImageIndex = 1
-      ExplicitLeft = 8
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label11: TLabel
         Left = 9
         Top = 154
@@ -443,10 +439,6 @@ object frmMain: TfrmMain
     end
     object TabSheet1: TTabSheet
       Caption = '  '#19977'.'#26597#35810'     '
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label5: TLabel
         Left = 12
         Top = 82
@@ -706,6 +698,15 @@ object frmMain: TfrmMain
       TabOrder = 6
       OnClick = btnOkClick
     end
+    object btnCodeNameSortSettings: TButton
+      Left = 205
+      Top = 154
+      Width = 101
+      Height = 40
+      Caption = '3-1.'#36873#25321
+      TabOrder = 7
+      OnClick = btnCodeNameSortSettingsClick
+    end
   end
   object OpenDialog: TOpenDialog
     Filter = #25991#26412#25991#20214'|*.txt'
@@ -717,7 +718,7 @@ object frmMain: TfrmMain
     object N1: TMenuItem
       Caption = #35774#32622
       object miConsumer: TMenuItem
-        Caption = #22788#29702#22120
+        Caption = #28040#36153#32773
         OnClick = miConsumerClick
       end
       object miCombinationCalculator: TMenuItem

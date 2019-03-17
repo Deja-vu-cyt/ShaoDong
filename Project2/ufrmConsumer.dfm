@@ -13,6 +13,9 @@ object frmConsumer: TfrmConsumer
   OldCreateOrder = False
   Position = poMainFormCenter
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnHide = FormHide
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object dbgrdConsumer: TDBGridEh
@@ -28,11 +31,11 @@ object frmConsumer: TfrmConsumer
       item
         DynProps = <>
         EditButtons = <>
-        FieldName = 'Address'
+        FieldName = 'ThreadID'
         Footers = <>
         Title.Alignment = taCenter
-        Title.Caption = #22320#22336
-        Width = 120
+        Title.Caption = #32447#31243'ID'
+        Width = 100
       end
       item
         DynProps = <>
@@ -41,7 +44,16 @@ object frmConsumer: TfrmConsumer
         Footers = <>
         Title.Alignment = taCenter
         Title.Caption = #39318#34892
-        Width = 150
+        Width = 70
+      end
+      item
+        DynProps = <>
+        EditButtons = <>
+        FieldName = 'CodeName'
+        Footers = <>
+        Title.Alignment = taCenter
+        Title.Caption = #20195#21495
+        Width = 100
       end>
     object RowDetailData: TRowDetailPanelControlEh
     end
@@ -49,14 +61,17 @@ object frmConsumer: TfrmConsumer
   object fdmtConsumer: TFDMemTable
     FieldDefs = <
       item
-        Name = 'Address'
-        DataType = ftString
-        Size = 20
+        Name = 'ThreadID'
+        DataType = ftLargeint
       end
       item
         Name = 'FirstRow'
+        DataType = ftInteger
+      end
+      item
+        Name = 'CodeName'
         DataType = ftString
-        Size = 200
+        Size = 10000
       end>
     IndexDefs = <>
     FetchOptions.AssignedValues = [evMode]
@@ -74,5 +89,12 @@ object frmConsumer: TfrmConsumer
     DataSet = fdmtConsumer
     Left = 112
     Top = 24
+  end
+  object Timer: TTimer
+    Enabled = False
+    Interval = 2000
+    OnTimer = TimerTimer
+    Left = 328
+    Top = 64
   end
 end

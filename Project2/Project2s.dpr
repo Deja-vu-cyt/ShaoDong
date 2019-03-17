@@ -13,7 +13,8 @@ uses
   ufrmExportVertFileSettings2 in 'ufrmExportVertFileSettings2.pas' {frmExportVertFileSettings},
   ufrmExportVertSlantFileSettings2 in 'ufrmExportVertSlantFileSettings2.pas' {frmExportVertSlantFileSettings},
   ufrmConsumer in 'ufrmConsumer.pas' {frmConsumer},
-  ServiceIntf in 'ServiceIntf.pas';
+  ServiceIntf in 'ServiceIntf.pas',
+  UfrmCodeNameSortSettings in 'UfrmCodeNameSortSettings.pas' {frmCodeNameSortSettings};
 
 {$R *.res}
 

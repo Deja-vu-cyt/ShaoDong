@@ -27,6 +27,18 @@
         <Projects Include="Project5\Project5b.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Project6\Project6.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Project6\Project6s.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Project6\Project6b.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Project6\Project6bs.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -107,14 +119,50 @@
     <Target Name="Project5b:Make">
         <MSBuild Projects="Project5\Project5b.dproj" Targets="Make"/>
     </Target>
+    <Target Name="Project6">
+        <MSBuild Projects="Project6\Project6.dproj"/>
+    </Target>
+    <Target Name="Project6:Clean">
+        <MSBuild Projects="Project6\Project6.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project6:Make">
+        <MSBuild Projects="Project6\Project6.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Project6s">
+        <MSBuild Projects="Project6\Project6s.dproj"/>
+    </Target>
+    <Target Name="Project6s:Clean">
+        <MSBuild Projects="Project6\Project6s.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project6s:Make">
+        <MSBuild Projects="Project6\Project6s.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Project6b">
+        <MSBuild Projects="Project6\Project6b.dproj"/>
+    </Target>
+    <Target Name="Project6b:Clean">
+        <MSBuild Projects="Project6\Project6b.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project6b:Make">
+        <MSBuild Projects="Project6\Project6b.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Project6bs">
+        <MSBuild Projects="Project6\Project6bs.dproj"/>
+    </Target>
+    <Target Name="Project6bs:Clean">
+        <MSBuild Projects="Project6\Project6bs.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project6bs:Make">
+        <MSBuild Projects="Project6\Project6bs.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="Project2;Project2s;Project2b;Project2bs;Project3;Project4;Project5;Project5b"/>
+        <CallTarget Targets="Project2;Project2s;Project2b;Project2bs;Project3;Project4;Project5;Project5b;Project6;Project6s;Project6b;Project6bs"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Project2:Clean;Project2s:Clean;Project2b:Clean;Project2bs:Clean;Project3:Clean;Project4:Clean;Project5:Clean;Project5b:Clean"/>
+        <CallTarget Targets="Project2:Clean;Project2s:Clean;Project2b:Clean;Project2bs:Clean;Project3:Clean;Project4:Clean;Project5:Clean;Project5b:Clean;Project6:Clean;Project6s:Clean;Project6b:Clean;Project6bs:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Project2:Make;Project2s:Make;Project2b:Make;Project2bs:Make;Project3:Make;Project4:Make;Project5:Make;Project5b:Make"/>
+        <CallTarget Targets="Project2:Make;Project2s:Make;Project2b:Make;Project2bs:Make;Project3:Make;Project4:Make;Project5:Make;Project5b:Make;Project6:Make;Project6s:Make;Project6b:Make;Project6bs:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

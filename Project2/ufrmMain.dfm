@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  ClientHeight = 723
+  ClientHeight = 680
   ClientWidth = 1334
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -20,8 +20,8 @@ object frmMain: TfrmMain
     Left = 0
     Top = 251
     Width = 1334
-    Height = 472
-    ActivePage = TabSheet1
+    Height = 429
+    ActivePage = TabSheet3
     Align = alClient
     TabHeight = 40
     TabOrder = 0
@@ -73,20 +73,21 @@ object frmMain: TfrmMain
       object Label21: TLabel
         Left = 12
         Top = 180
-        Width = 1183
+        Width = 1730
         Height = 24
         Caption = 
           #65288'1'#65289'.'#35774#32622#12304' '#21508' [ '#26012#12289#30452#36830#65288#31532' N '#34892#20026#39318#34892#65289']'#65288#32452#21512#32452#25968#65289#26497#38480' '#12305#65306#23567#65288#25110#65289#31561#20110' '#8804'                  ' +
-          ' '#20159'           '#19975'          '#20010#65288#32452#21512#32452#25968#65289
+          ' '#20159'           '#19975'           '#20010#12304' '#22635#20837#65306'N '#65307#20363#65306'10000 '#12305#20159#12304' '#22635#20837#65306'N '#65307#20363#65306'1000 '#12305#19975#20010#65288#32452 +
+          #21512#32452#25968#65289
       end
       object Label22: TLabel
         Left = 12
         Top = 215
-        Width = 1199
+        Width = 1114
         Height = 24
         Caption = 
-          #65288' '#27880#65306' '#24403#8220' 6.'#35774#32622' '#8221#12304'...'#12305#65288#33267#65289#22635#20837' '#30340#65288#32452#21512#32452#25968#65289#65292#65288#20250#65289#33258#21160#20572#27490' '#65289#26102' '#65292#20877#27604#36739#65288#24182#65289#23548#20986' '#65306#21508' [ '#26368#22823#65288#19981#21516 +
-          #39318#34892#25968#65289'] '#32452#21512' '#65289
+          #65288' '#27880#65306' '#24403#8220' 5.'#35774#32622' '#8221#12304' '#21508' [ '#26012#12289#30452#36830#65288#31532' N '#34892#20026#39318#34892#65289']'#65288#32452#21512#32452#25968#65289#26497#38480' '#12305#65288#33267#65289#22635#20837' '#30340#65288#32452#21512#32452#25968#65289#65292#65288#20250#65289#33258#21160 +
+          #20572#27490' '#65289
       end
       object edtVVertSameValueCount2: TEdit
         Left = 267
@@ -273,6 +274,10 @@ object frmMain: TfrmMain
     object TabSheet2: TTabSheet
       Caption = '  '#20108'.'#26597#35810#65306#12304#21508#34892#38388#12305#30452#36830#12304#23545#24212#21015#12305#32452#21512'      '
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label11: TLabel
         Left = 9
         Top = 184
@@ -731,6 +736,15 @@ object frmMain: TfrmMain
       TabOrder = 6
       OnClick = btnOkClick
     end
+    object btnCodeNameSortSettings: TButton
+      Left = 424
+      Top = 154
+      Width = 640
+      Height = 40
+      Caption = '3-1.'#36873#25321':'#65288' 1-10 '#65289'. '#25490#24207#65339#65288#20195#21495#65289#20986#29616#27425#25968#12289#65288#20195#21495#65289#65341#65292#20877#32452#21512
+      TabOrder = 7
+      OnClick = btnCodeNameSortSettingsClick
+    end
   end
   object OpenDialog: TOpenDialog
     Filter = #25991#26412#25991#20214'|*.txt'
@@ -742,7 +756,7 @@ object frmMain: TfrmMain
     object N1: TMenuItem
       Caption = #35774#32622
       object miConsumer: TMenuItem
-        Caption = #22788#29702#22120
+        Caption = #28040#36153#32773
         OnClick = miConsumerClick
       end
       object miCombinationCalculator: TMenuItem

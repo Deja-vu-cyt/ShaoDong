@@ -11,7 +11,8 @@ uses
 type
   INotifyCallback = interface(IInvokable)
     ['{EA7EFE51-3EBA-4047-A356-253374518D1D}']
-    procedure Init(const GroupValueCount, ExportGroupValueCount, MaxGroupCount: Cardinal);
+    procedure Init(const GroupValueCount, ExportGroupValueCount, MaxGroupCount: Cardinal;
+      CodeNameSort: string);
     procedure GroupCodeName(const FirstRow: Cardinal);
     procedure Finish;
   end;
