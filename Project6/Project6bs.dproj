@@ -111,6 +111,15 @@
         <DCCReference Include="uDataComputer.pas"/>
         <DCCReference Include="..\uFileWriter.pas"/>
         <DCCReference Include="..\Dejavu.WaitableTimer.pas"/>
+        <DCCReference Include="ufrmGroupCodeNameSettings.pas">
+            <Form>frmGroupCodeNameSettings</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="..\uControlHelper.pas"/>
+        <DCCReference Include="ufrmGroupCodeNameSettings2.pas">
+            <Form>frmGroupCodeNameSettings2</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -147,12 +156,6 @@
                 <DeployFile LocalName="..\Bin\Project6bs.exe" Configuration="Release" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>Project6bs.exe</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="..\Bin\Project6bs.rsm" Configuration="Debug" Class="DebugSymbols">
-                    <Platform Name="Win32">
-                        <RemoteName>Project6bs.rsm</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

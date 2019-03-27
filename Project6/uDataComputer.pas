@@ -118,6 +118,12 @@ type
     procedure CallbackReleased(const Callback: IInvokable; const InterfaceName: RawUTF8);
   end;
 
+  TRange = record
+    Value: Integer;
+    Value2: Integer;
+    function Between(v: Integer): Boolean;
+  end;
+
   TCompareMode = (cmNone, cmVert, cmSlant, cmVertSlant);
   TSettings = record
   private
@@ -140,7 +146,11 @@ type
     fKeepCodeNameValueCount: Word;
     fGroupNumber: Byte;
     fGroupNumber2: Byte;
+    fGroupFirstNumberCount: Cardinal;
     fGroupCountEachFirstNumber: Cardinal;
+    fGroupNumber3: Byte;
+    fGroupNumber4: Byte;
+    fValidityCountEachGroupNumber: TArray<TRange>;
     fExportCodeNameValueCount: Word;
     fExportCodeNameValueCount2: Word;
     fExportLite: Boolean;
@@ -152,6 +162,8 @@ type
     procedure SetSlantCompareSpacing(Value: Word);
     procedure BuildCompareSpacing;
   public
+    procedure BuildValidityCountEachGroupNumber;
+    procedure AddValidityCountEachGroupNumber(v, v2: Word);
     property FileName: string read fFileName write fFileName;
     property DataMode: Byte read fDataMode write fDataMode;
     property IntervalValues: TWordDynArray read fIntervalValues write SetIntervalValues;
@@ -171,15 +183,17 @@ type
     property KeepCodeNameValueCount: Word read fKeepCodeNameValueCount write fKeepCodeNameValueCount;
     property GroupNumber: Byte read fGroupNumber write fGroupNumber;
     property GroupNumber2: Byte read fGroupNumber2 write fGroupNumber2;
+    property GroupFirstNumberCount: Cardinal read fGroupFirstNumberCount write fGroupFirstNumberCount;
     property GroupCountEachFirstNumber: Cardinal read fGroupCountEachFirstNumber write fGroupCountEachFirstNumber;
+    property GroupNumber3: Byte read fGroupNumber3 write fGroupNumber3;
+    property GroupNumber4: Byte read fGroupNumber4 write fGroupNumber4;
+    property ValidityCountEachGroupNumber: TArray<TRange> read fValidityCountEachGroupNumber write fValidityCountEachGroupNumber;
     property ExportCodeNameValueCount: Word read fExportCodeNameValueCount write fExportCodeNameValueCount;
     property ExportCodeNameValueCount2: Word read fExportCodeNameValueCount2 write fExportCodeNameValueCount2;
     property ExportLite: Boolean read fExportLite write fExportLite;
     property ExportSource: Boolean read fExportSource write fExportSource;
     property ExportFile: Boolean read fExportFile write fExportFile;
   end;
-
-  //TOnGroupCodeName = procedure(FirstRow: Word) of object;
 
   TDataComputer = class(TThread)
   private type
@@ -194,7 +208,6 @@ type
   private
     fStopwatch: TStopwatch;
     fLock: TObject;
-    //fOnGroupCodeName: TOnGroupCodeName;
     fOnFinish: TNotifyEvent;
     fOnError: TNotifyEvent;
     fErrorMessage: string;
@@ -205,7 +218,10 @@ type
     fLastComapreRow: Word;
     fBuildCodeNameFirstRow: Word;
     fLastGroupNumber: Byte;
-    fBatchNumber: Integer;
+    fBatchNumber: Byte;
+    fBatchNumberRowCount: Cardinal;
+    fFirstNumber: Cardinal;
+    fGroupCount: Cardinal;
     fFirstRowUpdated: Boolean;
     fBuildFirstRowValueCount: Word;
     fBuildFirstRowValueCount2: Word;
@@ -236,7 +252,7 @@ type
     procedure UploadCodeNameFinish(const ID: string);
     procedure ConsumerGroupCodeName2;
     procedure ConsumerSaveCodeName(CodeName: TSQLCodeName);
-    procedure GroupFirstRow;
+    procedure GroupCodeName;
 
     procedure MergeFirstRow;
     procedure UpdateFirstRow;
@@ -259,10 +275,13 @@ type
   published
     property Stopwatch: TStopwatch read fStopwatch;
     property Lock: TObject read fLock;
-    //property OnGroupCodeName: TOnGroupCodeName read fOnGroupCodeName write fOnGroupCodeName;
     property OnFinish: TNotifyEvent read fOnFinish write fOnFinish;
     property OnError: TNotifyEvent read fOnError write fOnError;
     property ErrorMessage: string read fErrorMessage;
+    property BatchNumber: Byte read fBatchNumber;
+    property BatchNumberRowCount: Cardinal read fBatchNumberRowCount;
+    property FirstNumber: Cardinal read fFirstNumber;
+    property GroupCount: Cardinal read fGroupCount;
   end;
 
   TGroupCodeName = class(TThread)
@@ -497,6 +516,11 @@ begin
   //  InterfaceArrayDelete(fConsumers, Callback);
 end;
 
+function TRange.Between(v: Integer): Boolean;
+begin
+  Result := (v >= Value) and (v <= Value2);
+end;
+
 procedure TSettings.SetCompareMode(Value: TCompareMode);
 begin
   fCompareMode := Value;
@@ -536,6 +560,30 @@ begin
   fCompareSpacing := fVertCompareSpacing;
   if fSlantCompareSpacing > fCompareSpacing then
     fCompareSpacing := fSlantCompareSpacing;
+end;
+
+procedure TSettings.BuildValidityCountEachGroupNumber;
+var
+  i: Integer;
+begin
+  SetLength(fValidityCountEachGroupNumber, 0);
+  if fGroupNumber = 0 then Exit;
+  SetLength(fValidityCountEachGroupNumber, fGroupNumber4 - fGroupNumber3 + 1);
+  for i := Low(fValidityCountEachGroupNumber) to High(fValidityCountEachGroupNumber) do
+  begin
+    fValidityCountEachGroupNumber[i].Value := -1;
+    fValidityCountEachGroupNumber[i].Value2 := -1;
+  end;
+end;
+
+procedure TSettings.AddValidityCountEachGroupNumber(v, v2: Word);
+var
+  i: Integer;
+begin
+  i := Length(fValidityCountEachGroupNumber);
+  SetLength(fValidityCountEachGroupNumber, i + 1);
+  fValidityCountEachGroupNumber[i].Value := v;
+  fValidityCountEachGroupNumber[i].Value2 := v2;
 end;
 
 constructor TDataComputer.Create;
@@ -1016,11 +1064,12 @@ begin
   end;
 end;
 
-procedure TDataComputer.GroupFirstRow;
+procedure TDataComputer.GroupCodeName;
 var
   CodeName, CodeName2: TSQLCodeName;
   s: string;
-  i, j, RowCount, PageIndex, GroupCountEachFirstNumber, GroupCount: Integer;
+  i, j, PageIndex, GroupCountEachFirstNumber, FirstRowCount: Integer;
+  ValidityFirstRowCount: TRange;
   v: Variant;
   Grouped: Boolean;
 begin
@@ -1056,19 +1105,22 @@ begin
     fDatabase.Delete(TSQLCodeName, 'BatchNumber = ?', [fBatchNumber]);
 
     GroupCountEachFirstNumber := 0;
-    if (fBatchNumber >= fSettings.GroupNumber)
-      and (fBatchNumber <= fSettings.GroupNumber2)
-    then GroupCountEachFirstNumber := fSettings.GroupCountEachFirstNumber;
+    if (fBatchNumber >= fSettings.GroupNumber) and (fBatchNumber <= fSettings.GroupNumber2) then
+      GroupCountEachFirstNumber := fSettings.GroupCountEachFirstNumber;
 
-    RowCount := fDatabase.TableRowCount(TSQLCodeName);
+    ValidityFirstRowCount.Value := -1;
+    if (fBatchNumber >= fSettings.GroupNumber3) and (fBatchNumber <= fSettings.GroupNumber4) then
+      ValidityFirstRowCount := fSettings.ValidityCountEachGroupNumber[fBatchNumber - fSettings.GroupNumber];
+
+    fBatchNumberRowCount := fDatabase.TableRowCount(TSQLCodeName);
     fDatabase.TransactionBegin(TSQLCodeName);
     try
-      for j := 1 to RowCount - 1 do
+      for j := 1 to fBatchNumberRowCount - 1 do
       begin
         if Terminated then Exit;
+        fFirstNumber := j;
 
-        GroupCount := 0;
-        Foreach(RowCount, 2, j,
+        Foreach(fBatchNumberRowCount, 2, fFirstNumber,
         procedure(FirstNumber: Cardinal; FirstRowIndexs: TWordDynArray)
         var
           s: string;
@@ -1078,35 +1130,42 @@ begin
           CodeName.FillOne;
           CodeName2.FillPrepare(fDatabase, s, [fBatchNumber - 1, FirstRowIndexs[1] - 1]);
           CodeName2.FillOne;
-          CodeName.Intersection(CodeName2.Value);
-          if (CodeName.ValueCount > 0)
-            and (CodeName.ValueCount >= fSettings.KeepCodeNameValueCount)
-          then
-          begin
-            CodeName.MergeFirstRow(CodeName2.FirstRow);
 
-            CodeName2.FillPrepare(fDatabase, 'Value = ?', [CodeName.Value]);
-            if CodeName2.FillOne then
-            begin
-              if CodeName2.BatchNumber <> fBatchNumber then
-              begin
-                CodeName2.BatchNumberRepeat := True;
-                fDatabase.Update(CodeName2);
-              end;
-              if CodeName2.MergeFirstRow(CodeName.FirstRow) then
-                fDatabase.Update(CodeName2);
-            end
-            else
-            begin
-              CodeName.BatchNumber := i;
-              fDatabase.Add(CodeName, True);
-            end;
+          CodeName.Intersection(CodeName2.Value);
+          if CodeName.ValueCount = 0 then Exit;
+          if (fSettings.KeepCodeNameValueCount > 0) and (CodeName.ValueCount < fSettings.KeepCodeNameValueCount) then Exit;
+          //相同首行个数是否在有效范围内
+          FirstRowCount := CodeName.FirstRowValueCount;
+          CodeName.MergeFirstRow(CodeName2.FirstRow);
+          if ValidityFirstRowCount.Value > -1 then
+          begin
+            FirstRowCount := FirstRowCount * 2 - CodeName.FirstRowValueCount;
+            if not ValidityFirstRowCount.Between(FirstRowCount) then Exit;
           end;
-          Inc(GroupCount);
+
+          CodeName2.FillPrepare(fDatabase, 'Value = ?', [CodeName.Value]);
+          if CodeName2.FillOne then
+          begin
+            if CodeName2.BatchNumber <> fBatchNumber then
+            begin
+              CodeName2.BatchNumberRepeat := True;
+              fDatabase.Update(CodeName2);
+            end;
+            if CodeName2.MergeFirstRow(CodeName.FirstRow) then
+              fDatabase.Update(CodeName2);
+          end
+          else
+          begin
+            CodeName.BatchNumber := i;
+            fDatabase.Add(CodeName, True);
+          end;
         end,
-        function: Boolean
+        function(FirstNumber, GroupCount: Cardinal): Boolean
         begin
-          Result := Terminated and not fDataComputer.Terminated;
+          fGroupCount := GroupCount;
+          Result := Terminated;
+          if not Result and (fSettings.GroupFirstNumberCount > 0) then
+            Result := FirstNumber > fSettings.GroupFirstNumberCount;
           if not Result and (GroupCountEachFirstNumber > 0) then
             Result := GroupCount >= GroupCountEachFirstNumber;
         end);
@@ -1952,7 +2011,7 @@ begin
           if Terminated then Break;
           BuildCodeName;
           if Terminated then Break;
-          GroupFirstRow;
+          GroupCodeName;
           if Terminated then Break;
           MergeFirstRow;
           if Terminated then Break;
@@ -2113,7 +2172,7 @@ begin
       end;
     end;
   end,
-  function: Boolean
+  function(FirstNumber, GroupCount: Cardinal): Boolean
   begin
     Result := Terminated;
   end);
@@ -2243,7 +2302,7 @@ begin
       end;}
     end;
   end,
-  function: Boolean
+  function(FirstNumber, GroupCount: Cardinal): Boolean
   begin
     Result := Terminated and not fDataComputer.Terminated;
   end);
@@ -2279,6 +2338,8 @@ procedure ReadSettings;
 var
   v: Variant;
   IntervalValues: TWordDynArray;
+  ValidityCountEachGroupNumber: TInt64DynArray;
+  i: Integer;
 begin
   fKeyValue.GetKeyValue('IntervalValues', IntervalValues);
   fSettings.IntervalValues := IntervalValues;
@@ -2307,8 +2368,24 @@ begin
   if not VarIsEmpty(v) then fSettings.GroupNumber := v;
   fKeyValue.GetKeyValue('GroupNumber2', v);
   if not VarIsEmpty(v) then fSettings.GroupNumber2 := v;
+  fKeyValue.GetKeyValue('GroupFirstNumberCount', v);
+  if not VarIsEmpty(v) then fSettings.GroupFirstNumberCount := v;
   fKeyValue.GetKeyValue('GroupCountEachFirstNumber', v);
   if not VarIsEmpty(v) then fSettings.GroupCountEachFirstNumber := v;
+  fKeyValue.GetKeyValue('GroupNumber3', v);
+  if not VarIsEmpty(v) then fSettings.GroupNumber3 := v;
+  fKeyValue.GetKeyValue('GroupNumber4', v);
+  if not VarIsEmpty(v) then fSettings.GroupNumber4 := v;
+  fKeyValue.GetKeyValue('ValidityCountEachGroupNumber', ValidityCountEachGroupNumber);
+  fSettings.BuildValidityCountEachGroupNumber;
+  for i := Low(fSettings.ValidityCountEachGroupNumber) to High(fSettings.ValidityCountEachGroupNumber) do
+  begin
+    if (i + 1) * 2 - 1 <= High(ValidityCountEachGroupNumber) then
+    begin
+      fSettings.ValidityCountEachGroupNumber[i].Value := ValidityCountEachGroupNumber[(i + 1) * 2 - 2];
+      fSettings.ValidityCountEachGroupNumber[i].Value2 := ValidityCountEachGroupNumber[(i + 1) * 2 - 1];
+    end;
+  end;
   fKeyValue.GetKeyValue('ExportSource', v);
   if not VarIsEmpty(v) then fSettings.ExportSource := v;
   fKeyValue.GetKeyValue('ExportCodeNameValueCount', v);
@@ -2330,9 +2407,6 @@ begin
   fKeyValue.SetKeyValue('SlantSameValueCount2', fSettings.SlantSameValueCount2);
   fKeyValue.SetKeyValue('GroupCount', fSettings.GroupCount);
   fKeyValue.SetKeyValue('KeepCodeNameValueCount', fSettings.KeepCodeNameValueCount);
-  fKeyValue.SetKeyValue('GroupNumber', fSettings.GroupNumber);
-  fKeyValue.SetKeyValue('GroupNumber2', fSettings.GroupNumber2);
-  fKeyValue.SetKeyValue('GroupCountEachFirstNumber', fSettings.GroupCountEachFirstNumber);
   fKeyValue.SetKeyValue('ExportSource', fSettings.ExportSource);
   fKeyValue.SetKeyValue('ExportCodeNameValueCount', fSettings.ExportCodeNameValueCount);
   fKeyValue.SetKeyValue('ExportCodeNameValueCount2', fSettings.ExportCodeNameValueCount2);

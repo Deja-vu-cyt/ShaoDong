@@ -73,32 +73,25 @@ type
     edtVertKeepCodeNameValueCount: TEdit;
     Label19: TLabel;
     edtSlantKeepCodeNameValueCount: TEdit;
-    Label21: TLabel;
-    edtVertSlantGroupNumber: TEdit;
-    edtVertSlantGroupNumber2: TEdit;
-    edtVertSlantGroupCountEachFirstNumber: TEdit;
     btnVertSlantCompare2: TButton;
-    Label22: TLabel;
-    edtVertGroupNumber: TEdit;
-    edtVertGroupNumber2: TEdit;
-    edtVertGroupCountEachFirstNumber: TEdit;
     btnVertCompare2: TButton;
-    Label24: TLabel;
-    edtSlantGroupNumber: TEdit;
-    edtSlantGroupNumber2: TEdit;
-    edtSlantGroupCountEachFirstNumber: TEdit;
     btnSlantCompare2: TButton;
-    Label26: TLabel;
-    Label27: TLabel;
-    Label28: TLabel;
-    Label20: TLabel;
+    btnVertSlantGroupCodeNameSettings: TButton;
+    btnVertGroupCodeNameSettings: TButton;
+    btnSlantGroupCodeNameSettings: TButton;
+    btnVertSlantGroupCodeNameSettings2: TButton;
+    btnVertGroupCodeNameSettings2: TButton;
+    btnSlantGroupCodeNameSettings2: TButton;
     procedure FormCreate(Sender: TObject);
     procedure edtFileNameClick(Sender: TObject);
     procedure btnCompareClick(Sender: TObject);
     procedure TimerTimer(Sender: TObject);
+    procedure btnVertSlantGroupCodeNameSettingsClick(Sender: TObject);
+    procedure btnVertGroupCodeNameSettingsClick(Sender: TObject);
+    procedure btnVertSlantGroupCodeNameSettings2Click(Sender: TObject);
+    procedure btnVertGroupCodeNameSettings2Click(Sender: TObject);
   private
     procedure OnStateChange(Working: Boolean);
-    procedure OnGroupCodeName(FirstRow: Word);
     procedure OnFinish(Sender: TObject);
     procedure OnError(Sender: TObject);
   public
@@ -111,7 +104,7 @@ var
 implementation
 
 uses
-  uDataComputer;
+  uDataComputer, ufrmGroupCodeNameSettings, ufrmGroupCodeNameSettings2;
 
 {$R *.dfm}
 
@@ -123,14 +116,16 @@ begin
   btnSlantCompare2.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmSlant]);
   btnVertCompare2.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVert]);
   btnVertSlantCompare2.Enabled := not Working and (fSettings.CompareMode in [cmNone, cmVertSlant]);
-end;
-
-procedure TfrmMain.OnGroupCodeName(FirstRow: Word);
-begin
-  TThread.Queue(nil, procedure
-  begin
-    Caption := Format('正在处理 [（第 N 行为首行）] ： %d  行', [FirstRow]);
-  end);
+  btnVertGroupCodeNameSettings.Enabled := fSettings.CompareMode in [cmNone, cmVert];
+  btnSlantGroupCodeNameSettings.Enabled := fSettings.CompareMode in [cmNone, cmSlant];
+  btnVertSlantGroupCodeNameSettings.Enabled := fSettings.CompareMode in [cmNone, cmVertSlant];
+  btnVertGroupCodeNameSettings2.Enabled := fSettings.CompareMode in [cmNone, cmVert];
+  btnSlantGroupCodeNameSettings2.Enabled := fSettings.CompareMode in [cmNone, cmSlant];
+  btnVertSlantGroupCodeNameSettings2.Enabled := fSettings.CompareMode in [cmNone, cmVertSlant];
+  if Assigned(frmGroupCodeNameSettings) then
+    frmGroupCodeNameSettings.btnOk.Enabled := not Working;
+  if Assigned(frmGroupCodeNameSettings2) then
+    frmGroupCodeNameSettings2.btnOk.Enabled := not Working;
 end;
 
 procedure TfrmMain.OnFinish(Sender: TObject);
@@ -165,6 +160,37 @@ begin
   Days := TS.Time div 86400000;
   TS.Time := TS.Time mod 86400000;
   lblUseTime.Caption := Format('处理所需时间：%d日', [Days]) + FormatDateTime('H小时M分S秒', TimeStampToDateTime(TS));
+
+  Caption := Format('正在处理 : ①. 第  %d  次（ 遍历 ）； ②.前一次遍历产生（ 第 1 - N 行为首行 ）总行数 :  %d  行 ；③. 第 %d 行为首行 ； ④.正在（ 遍历 ）（ 第 N 行为首行 ）总行数 :  %d  行 。', [
+    fDataComputer.BatchNumber,
+    fDataComputer.BatchNumberRowCount,
+    fDataComputer.FirstNumber,
+    fDataComputer.GroupCount
+  ]);
+end;
+
+procedure TfrmMain.btnVertGroupCodeNameSettings2Click(Sender: TObject);
+begin
+  frmGroupCodeNameSettings2.Number := 5;
+  frmGroupCodeNameSettings2.ShowModal;
+end;
+
+procedure TfrmMain.btnVertGroupCodeNameSettingsClick(Sender: TObject);
+begin
+  frmGroupCodeNameSettings.Number := 5;
+  frmGroupCodeNameSettings.ShowModal;
+end;
+
+procedure TfrmMain.btnVertSlantGroupCodeNameSettings2Click(Sender: TObject);
+begin
+  frmGroupCodeNameSettings2.Number := 6;
+  frmGroupCodeNameSettings2.ShowModal;
+end;
+
+procedure TfrmMain.btnVertSlantGroupCodeNameSettingsClick(Sender: TObject);
+begin
+  frmGroupCodeNameSettings.Number := 6;
+  frmGroupCodeNameSettings.ShowModal;
 end;
 
 procedure TfrmMain.edtFileNameClick(Sender: TObject);
@@ -199,9 +225,6 @@ begin
         edtVertSameValueCount2.Text := VertSameValueCount2.ToString;
         edtVertGroupCount.Text := GroupCount.ToString;
         edtVertKeepCodeNameValueCount.Text := KeepCodeNameValueCount.ToString;
-        edtVertGroupNumber.Text := GroupNumber.ToString;
-        edtVertGroupNumber2.Text := GroupNumber2.ToString;
-        edtVertGroupCountEachFirstNumber.Text := GroupCountEachFirstNumber.ToString;
         chkVertExportSource.Checked := ExportSource;
         edtVertExportCodeNameValueCount.Text := ExportCodeNameValueCount.ToString;
         edtVertExportCodeNameValueCount2.Text := ExportCodeNameValueCount2.ToString;
@@ -212,9 +235,6 @@ begin
         edtCompareSpacing.Text := SlantCompareSpacing.ToString;
         edtSlantGroupCount.Text := GroupCount.ToString;
         edtSlantKeepCodeNameValueCount.Text := KeepCodeNameValueCount.ToString;
-        edtSlantGroupNumber.Text := GroupNumber.ToString;
-        edtSlantGroupNumber2.Text := GroupNumber2.ToString;
-        edtSlantGroupCountEachFirstNumber.Text := GroupCountEachFirstNumber.ToString;
         chkSlantExportSource.Checked := ExportSource;
         edtSlantExportCodeNameValueCount.Text := ExportCodeNameValueCount.ToString;
         edtSlantExportCodeNameValueCount2.Text := ExportCodeNameValueCount2.ToString;
@@ -229,9 +249,6 @@ begin
         edtSlantSameValueCount2.Text := SlantSameValueCount2.ToString;
         edtVertSlantGroupCount.Text := GroupCount.ToString;
         edtVertSlantKeepCodeNameValueCount.Text := KeepCodeNameValueCount.ToString;
-        edtVertSlantGroupNumber.Text := GroupNumber.ToString;
-        edtVertSlantGroupNumber2.Text := GroupNumber2.ToString;
-        edtVertSlantGroupCountEachFirstNumber.Text := GroupCountEachFirstNumber.ToString;
         chkVertSlantExportSource.Checked := ExportSource;
         edtVertSlantExportCodeNameValueCount.Text := ExportCodeNameValueCount.ToString;
         edtVertSlantExportCodeNameValueCount2.Text := ExportCodeNameValueCount2.ToString;
@@ -374,15 +391,6 @@ begin
       if not TryStrToInt(edtVertKeepCodeNameValueCount.Text, v) then
         raise Exception.Create('请输入有效最小代号个数');
       fSettings.KeepCodeNameValueCount := v;
-      if not TryStrToInt(edtVertGroupNumber.Text, v) then
-        raise Exception.Create('请输入有效遍历范围');
-      fSettings.GroupNumber := v;
-      if not TryStrToInt(edtVertGroupNumber2.Text, v) then
-        raise Exception.Create('请输入有效遍历范围');
-      fSettings.GroupNumber2 := v;
-      if not TryStrToInt(edtVertGroupCountEachFirstNumber.Text, v) then
-        raise Exception.Create('请输入有效组合范围');
-      fSettings.GroupCountEachFirstNumber := v;
       fSettings.ExportSource := chkVertExportSource.Checked;
       if not TryStrToInt(edtVertExportCodeNameValueCount.Text, v) then
         raise Exception.Create('请输入有效导出代号个数');
@@ -399,15 +407,6 @@ begin
       if not TryStrToInt(edtSlantKeepCodeNameValueCount.Text, v) then
         raise Exception.Create('请输入有效最小代号个数');
       fSettings.KeepCodeNameValueCount := v;
-      if not TryStrToInt(edtSlantGroupNumber.Text, v) then
-        raise Exception.Create('请输入有效遍历范围');
-      fSettings.GroupNumber := v;
-      if not TryStrToInt(edtSlantGroupNumber2.Text, v) then
-        raise Exception.Create('请输入有效遍历范围');
-      fSettings.GroupNumber2 := v;
-      if not TryStrToInt(edtSlantGroupCountEachFirstNumber.Text, v) then
-        raise Exception.Create('请输入有效组合范围');
-      fSettings.GroupCountEachFirstNumber := v;
       fSettings.ExportSource := chkSlantExportSource.Checked;
       if not TryStrToInt(edtSlantExportCodeNameValueCount.Text, v) then
         raise Exception.Create('请输入有效导出代号个数');
@@ -424,15 +423,6 @@ begin
       if not TryStrToInt(edtVertSlantKeepCodeNameValueCount.Text, v) then
         raise Exception.Create('请输入有效最小代号个数');
       fSettings.KeepCodeNameValueCount := v;
-      if not TryStrToInt(edtVertSlantGroupNumber.Text, v) then
-        raise Exception.Create('请输入有效遍历范围');
-      fSettings.GroupNumber := v;
-      if not TryStrToInt(edtVertSlantGroupNumber2.Text, v) then
-        raise Exception.Create('请输入有效遍历范围');
-      fSettings.GroupNumber2 := v;
-      if not TryStrToInt(edtVertSlantGroupCountEachFirstNumber.Text, v) then
-        raise Exception.Create('请输入有效组合范围');
-      fSettings.GroupCountEachFirstNumber := v;
       fSettings.ExportSource := chkVertSlantExportSource.Checked;
       if not TryStrToInt(edtVertSlantExportCodeNameValueCount.Text, v) then
         raise Exception.Create('请输入有效导出代号个数');

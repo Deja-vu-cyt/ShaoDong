@@ -76,8 +76,10 @@ type
     procedure SetRest(aRest: TSQLRest);
     procedure GetKeyValue(Key: string; var v: Variant); overload;
     procedure GetKeyValue(Key: string; var v: TWordDynArray); overload;
+    procedure GetKeyValue(Key: string; var v: TInt64DynArray); overload;
     procedure SetKeyValue(Key: string; v: Variant); overload;
     procedure SetKeyValue(Key: string; v: TWordDynArray); overload;
+    procedure SetKeyValue(Key: string; v: TInt64DynArray); overload;
 
     procedure SetArrayValue(aValue: TWordDynArray);
   published
@@ -168,7 +170,7 @@ procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray
 procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
   Proc2: TProc<TWordDynArray> = nil; Stop: TFunc<Boolean> = nil); overload;
 procedure Foreach(TotalCount, EachTimeCount, Number: Cardinal;
-  Proc: TProc<Cardinal, TWordDynArray>; Stop: TFunc<Boolean>); overload;
+  Proc: TProc<Cardinal, TWordDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean>); overload;
 procedure Foreach2(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>);
 function DigitToString(Digit: Cardinal): string;
 
@@ -206,7 +208,21 @@ var
   i: Integer;
 begin
   GetKeyValue(Key, v2);
-  if VarIsEmpty(v2) then SetLength(v, 0)
+  if VarIsEmpty(v2) or VarIsNull(v2) then SetLength(v, 0)
+  else
+  begin
+    SetLength(v, Integer(v2._Count));
+    for i := 0 to v2._Count - 1 do v[i] := v2.Value(i);
+  end;
+end;
+
+procedure TSQLKeyValue.GetKeyValue(Key: string; var v: TInt64DynArray);
+var
+  v2: Variant;
+  i: Integer;
+begin
+  GetKeyValue(Key, v2);
+  if VarIsEmpty(v2) or VarIsNull(v2) then SetLength(v, 0)
   else
   begin
     SetLength(v, Integer(v2._Count));
@@ -233,6 +249,16 @@ begin
 end;
 
 procedure TSQLKeyValue.SetKeyValue(Key: string; v: TWordDynArray);
+var
+  v2: Variant;
+  i: Integer;
+begin
+  TDocVariant.New(v2);
+  for i := Low(v) to High(v) do v2.Add(v[i]);
+  SetKeyValue(Key, v2);
+end;
+
+procedure TSQLKeyValue.SetKeyValue(Key: string; v: TInt64DynArray);
 var
   v2: Variant;
   i: Integer;
@@ -985,11 +1011,11 @@ begin
 end;
 
 procedure Foreach(TotalCount, EachTimeCount, Number: Cardinal;
-  Proc: TProc<Cardinal, TWordDynArray>; Stop: TFunc<Boolean>);
+  Proc: TProc<Cardinal, TWordDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean>);
 var
   r, r2: TWordDynArray;
   i, i2, i3: Integer;
-  StartNumber, EndNumber: Cardinal;
+  StartNumber, EndNumber, GroupCount: Cardinal;
 begin
   if (TotalCount = 0) or (TotalCount < EachTimeCount) or (TotalCount - EachTimeCount + 1 < Number) then Exit;
 
@@ -1006,12 +1032,13 @@ begin
   begin
     for i := Low(r) to High(r) do r[i] := Number + i;
     r[High(r)] := r[High(r)] - 1;
-
+    GroupCount := 0;
     repeat
-      if Assigned(Stop) and Stop then Exit;
+      if Assigned(Stop) and Stop(Number, GroupCount) then Exit;
 
       r[High(r)] := r[High(r)] + 1;
       if Assigned(Proc) then Proc(Number, r);
+      GroupCount := GroupCount + 1;
 
       if r[High(r)] = TotalCount then
       begin
