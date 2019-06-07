@@ -113,7 +113,7 @@ begin
   fSettings.GroupNumber3 := GroupNumber3;
   fSettings.GroupNumber4 := GroupNumber4;
   fSettings.BuildValidityCountEachGroupNumber;
-  if fSettings.GroupNumber > 0 then
+  if fSettings.GroupNumber3 > 0 then
     for i := Low(fSettings.ValidityCountEachGroupNumber) to High(fSettings.ValidityCountEachGroupNumber) do
     begin
       fSettings.ValidityCountEachGroupNumber[i].Value := Ranges[i].Value;

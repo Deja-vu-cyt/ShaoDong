@@ -52,21 +52,9 @@ type
     miCombinationCalculator: TMenuItem;
     Label5: TLabel;
     edtSlantGroupCount: TEdit;
-    Label6: TLabel;
-    edtVertSlantExportCodeNameValueCount: TEdit;
-    edtVertSlantExportCodeNameValueCount2: TEdit;
     btnVertSlantCompare: TButton;
-    Label11: TLabel;
-    edtVertExportCodeNameValueCount: TEdit;
-    edtVertExportCodeNameValueCount2: TEdit;
     btnVertCompare: TButton;
-    Label13: TLabel;
-    edtSlantExportCodeNameValueCount: TEdit;
-    edtSlantExportCodeNameValueCount2: TEdit;
     btnSlantCompare: TButton;
-    chkVertSlantExportSource: TCheckBox;
-    chkVertExportSource: TCheckBox;
-    chkSlantExportSource: TCheckBox;
     Label16: TLabel;
     edtVertSlantKeepCodeNameValueCount: TEdit;
     Label17: TLabel;
@@ -83,6 +71,15 @@ type
     btnVertGroupCodeNameSettings2: TButton;
     btnSlantGroupCodeNameSettings: TButton;
     btnSlantGroupCodeNameSettings2: TButton;
+    Label20: TLabel;
+    Label21: TLabel;
+    Label22: TLabel;
+    edtAddress: TEdit;
+    edtPort: TEdit;
+    btnOk: TButton;
+    btnVertSlantExportFileSettings: TButton;
+    btnVertExportFileSettings: TButton;
+    btnSlantExportFileSettings: TButton;
     procedure FormCreate(Sender: TObject);
     procedure edtFileNameClick(Sender: TObject);
     procedure btnCompareClick(Sender: TObject);
@@ -91,6 +88,10 @@ type
     procedure btnVertSlantGroupCodeNameSettingsClick(Sender: TObject);
     procedure btnVertSlantGroupCodeNameSettings2Click(Sender: TObject);
     procedure btnVertGroupCodeNameSettings2Click(Sender: TObject);
+    procedure btnOkClick(Sender: TObject);
+    procedure btnVertSlantExportFileSettingsClick(Sender: TObject);
+    procedure btnVertExportFileSettingsClick(Sender: TObject);
+    procedure btnSlantExportFileSettingsClick(Sender: TObject);
   private
     procedure OnStateChange(Working: Boolean);
     procedure OnFinish(Sender: TObject);
@@ -105,7 +106,8 @@ var
 implementation
 
 uses
-  uDataComputer, ufrmGroupCodeNameSettings, ufrmGroupCodeNameSettings2;
+  uDataComputer, ufrmGroupCodeNameSettings, ufrmGroupCodeNameSettings2,
+  ufrmExportFileSettings;
 
 {$R *.dfm}
 
@@ -123,10 +125,15 @@ begin
   btnVertGroupCodeNameSettings2.Enabled := fSettings.CompareMode in [cmNone, cmVert];
   btnSlantGroupCodeNameSettings2.Enabled := fSettings.CompareMode in [cmNone, cmSlant];
   btnVertSlantGroupCodeNameSettings2.Enabled := fSettings.CompareMode in [cmNone, cmVertSlant];
+  btnVertExportFileSettings.Enabled := fSettings.CompareMode in [cmNone, cmVert];
+  btnSlantExportFileSettings.Enabled := fSettings.CompareMode in [cmNone, cmSlant];
+  btnVertSlantExportFileSettings.Enabled := fSettings.CompareMode in [cmNone, cmVertSlant];
   if Assigned(frmGroupCodeNameSettings) then
     frmGroupCodeNameSettings.btnOk.Enabled := not Working;
   if Assigned(frmGroupCodeNameSettings2) then
     frmGroupCodeNameSettings2.btnOk.Enabled := not Working;
+  if Assigned(frmExportFileSettings) then
+    frmExportFileSettings.btnOk.Enabled := not Working;
 end;
 
 procedure TfrmMain.OnFinish(Sender: TObject);
@@ -155,19 +162,61 @@ procedure TfrmMain.TimerTimer(Sender: TObject);
 var
   TS: TTimeStamp;
   Days: Byte;
+  Seconds: Int64;
 begin
-  TS.Date := DateDelta;
-  TS.Time := fDataComputer.Stopwatch.ElapsedMilliseconds;
-  Days := TS.Time div 86400000;
-  TS.Time := TS.Time mod 86400000;
-  lblUseTime.Caption := Format('处理所需时间：%d日', [Days]) + FormatDateTime('H小时M分S秒', TimeStampToDateTime(TS));
+  if fMainApp then
+  begin
+    Seconds := fDataComputer.Stopwatch.ElapsedMilliseconds;
+    TS.Date := DateDelta;
+    TS.Time := Seconds mod 86400000;
+    Days := Seconds div 86400000;
+    lblUseTime.Caption := Format('处理所需时间：%d日', [Days]) + FormatDateTime('H小时M分S秒', TimeStampToDateTime(TS));
+  end;
 
-  Caption := Format('正在处理 : ①. 第  %d  次（ 遍历 ）； ②.前一次遍历产生（ 第 1 - N 行为首行 ）总行数 :  %d  行 ；③. 第 %d 行为首行 ； ④.正在（ 遍历 ）（ 第 N 行为首行 ）总行数 :  %d  行 。', [
-    fDataComputer.BatchNumber,
-    fDataComputer.BatchNumberRowCount,
-    fDataComputer.FirstNumber,
-    fDataComputer.GroupCount
-  ]);
+  Caption := '';
+  case fGroupCodeName.Task of
+    ttSyncCodeName: Caption := '正在同步数据';
+    ttGroupCodeName:
+    begin
+      Caption := Format('1. 已处理 :  ①. 第 %d 次（ 遍历 ）产生（ 第 1 - %d 行 ）； 2. 正处理 :  ①. 第 %d 次（ 遍历 ）； ②.（ 第 %d 行 ）遍历 [ 该行（ 已组合 ）的（ 第 %d 行 ）]', [
+        fGroupCodeName.BatchNumber - 1,
+        fGroupCodeName.BatchNumberRowCount,
+        fGroupCodeName.BatchNumber,
+        fGroupCodeName.FirstNumber,
+        fGroupCodeName.GroupCount
+      ]);
+    end;
+    ttUploadCodeName: Caption := '正在上传数据';
+  end;
+end;
+
+procedure TfrmMain.btnOkClick(Sender: TObject);
+var
+  Address, Port: string;
+  i: Integer;
+begin
+  Address := Trim(edtAddress.Text);
+  if Address.IsEmpty then raise Exception.Create('请输入有效地址');
+  Port := Trim(edtPort .Text);
+  if not (not Port.IsEmpty and TryStrToInt(Port, i) and (i > 0)) then
+    raise Exception.Create('请输入有效端口');
+
+  ConnectServer(Address, Port );
+  ShowMessage('连接成功');
+  OnStateChange(True);
+  Timer.Enabled := True;
+end;
+
+procedure TfrmMain.btnSlantExportFileSettingsClick(Sender: TObject);
+begin
+  frmExportFileSettings.CompareMode := Ord(cmSlant);
+  frmExportFileSettings.ShowModal;
+end;
+
+procedure TfrmMain.btnVertExportFileSettingsClick(Sender: TObject);
+begin
+  frmExportFileSettings.CompareMode := Ord(cmVert);
+  frmExportFileSettings.ShowModal;
 end;
 
 procedure TfrmMain.btnVertGroupCodeNameSettings2Click(Sender: TObject);
@@ -180,6 +229,12 @@ procedure TfrmMain.btnVertGroupCodeNameSettingsClick(Sender: TObject);
 begin
   frmGroupCodeNameSettings.Number := 5;
   frmGroupCodeNameSettings.ShowModal;
+end;
+
+procedure TfrmMain.btnVertSlantExportFileSettingsClick(Sender: TObject);
+begin
+  frmExportFileSettings.CompareMode := Ord(cmVertSlant);
+  frmExportFileSettings.ShowModal;
 end;
 
 procedure TfrmMain.btnVertSlantGroupCodeNameSettings2Click(Sender: TObject);
@@ -227,9 +282,6 @@ begin
         edtVertSameValueCount2.Text := VertSameValueCount2.ToString;
         edtVertGroupCount.Text := GroupCount.ToString;
         edtVertKeepCodeNameValueCount.Text := KeepCodeNameValueCount.ToString;
-        chkVertExportSource.Checked := ExportSource;
-        edtVertExportCodeNameValueCount.Text := ExportCodeNameValueCount.ToString;
-        edtVertExportCodeNameValueCount2.Text := ExportCodeNameValueCount2.ToString;
       end;
       cmSlant:
       begin
@@ -237,9 +289,6 @@ begin
         edtCompareSpacing.Text := SlantCompareSpacing.ToString;
         edtSlantGroupCount.Text := GroupCount.ToString;
         edtSlantKeepCodeNameValueCount.Text := KeepCodeNameValueCount.ToString;
-        chkSlantExportSource.Checked := ExportSource;
-        edtSlantExportCodeNameValueCount.Text := ExportCodeNameValueCount.ToString;
-        edtSlantExportCodeNameValueCount2.Text := ExportCodeNameValueCount2.ToString;
       end;
       cmVertSlant:
       begin
@@ -251,9 +300,6 @@ begin
         edtSlantSameValueCount2.Text := SlantSameValueCount2.ToString;
         edtVertSlantGroupCount.Text := GroupCount.ToString;
         edtVertSlantKeepCodeNameValueCount.Text := KeepCodeNameValueCount.ToString;
-        chkVertSlantExportSource.Checked := ExportSource;
-        edtVertSlantExportCodeNameValueCount.Text := ExportCodeNameValueCount.ToString;
-        edtVertSlantExportCodeNameValueCount2.Text := ExportCodeNameValueCount2.ToString;
       end;
     end;
     edtIntervalValue.ReadOnly := CompareMode > cmNone;
@@ -261,30 +307,16 @@ begin
     edtVertCompareSpacing.ReadOnly := CompareMode > cmNone;
     edtVertSameValueCount.ReadOnly := CompareMode > cmNone;
     edtVertSameValueCount2.ReadOnly := CompareMode > cmNone;
-    //edtVertGroupCount.ReadOnly := CompareMode > cmNone;
-    //chkVertExportSource.Enabled := CompareMode = cmNone;
-    //edtVertExportCodeNameValueCount.ReadOnly := CompareMode > cmNone;
-    //edtVertExportCodeNameValueCount2.ReadOnly := CompareMode > cmNone;
     edtCompareSpacing.ReadOnly := CompareMode > cmNone;
-    //edtSlantGroupCount.ReadOnly := CompareMode > cmNone;
-    //chkSlantExportSource.Enabled := CompareMode = cmNone;
-    //edtSlantExportCodeNameValueCount.ReadOnly := CompareMode > cmNone;
-    //edtSlantExportCodeNameValueCount2.ReadOnly := CompareMode > cmNone;
     edtVVertCompareSpacing.ReadOnly := CompareMode > cmNone;
     edtVVertSameValueCount.ReadOnly := CompareMode > cmNone;
     edtVVertSameValueCount2.ReadOnly := CompareMode > cmNone;
     edtSlantCompareSpacing.ReadOnly := CompareMode > cmNone;
     edtSlantSameValueCount.ReadOnly := CompareMode > cmNone;
     edtSlantSameValueCount2.ReadOnly := CompareMode > cmNone;
-    //edtVertSlantGroupCount.ReadOnly := CompareMode > cmNone;
-    //chkVertSlantExportSource.Enabled := CompareMode = cmNone;
-    //edtVertSlantExportCodeNameValueCount.ReadOnly := CompareMode > cmNone;
-    //edtVertSlantExportCodeNameValueCount2.ReadOnly := CompareMode > cmNone;
   end;
 
   OnStateChange(False);
-
-  //fDataComputer.OnGroupCodeName := OnGroupCodeName;
   fDataComputer.OnFinish := OnFinish;
   fDataComputer.OnError := OnError;
 end;
@@ -298,9 +330,9 @@ begin
   fSettings.FileName := edtFileName.Text;
   if fSettings.CompareMode = cmNone then
   begin
-    if Sender = btnSlantCompare then
+    if (Sender = btnSlantCompare) or (Sender = btnSlantCompare2) then
       CompareMode := cmSlant
-    else if Sender = btnVertCompare then
+    else if (Sender = btnVertCompare) or (Sender = btnVertCompare2) then
       CompareMode := cmVert
     else
       CompareMode := cmVertSlant;
@@ -393,13 +425,6 @@ begin
       if not TryStrToInt(edtVertKeepCodeNameValueCount.Text, v) then
         raise Exception.Create('请输入有效最小代号个数');
       fSettings.KeepCodeNameValueCount := v;
-      fSettings.ExportSource := chkVertExportSource.Checked;
-      if not TryStrToInt(edtVertExportCodeNameValueCount.Text, v) then
-        raise Exception.Create('请输入有效导出代号个数');
-      fSettings.ExportCodeNameValueCount := v;
-      if not TryStrToInt(edtVertExportCodeNameValueCount2.Text, v) then
-        raise Exception.Create('请输入有效导出代号个数2');
-      fSettings.ExportCodeNameValueCount2 := v;
     end;
     cmSlant:
     begin
@@ -409,13 +434,6 @@ begin
       if not TryStrToInt(edtSlantKeepCodeNameValueCount.Text, v) then
         raise Exception.Create('请输入有效最小代号个数');
       fSettings.KeepCodeNameValueCount := v;
-      fSettings.ExportSource := chkSlantExportSource.Checked;
-      if not TryStrToInt(edtSlantExportCodeNameValueCount.Text, v) then
-        raise Exception.Create('请输入有效导出代号个数');
-      fSettings.ExportCodeNameValueCount := v;
-      if not TryStrToInt(edtSlantExportCodeNameValueCount2.Text, v) then
-        raise Exception.Create('请输入有效导出代号个数2');
-      fSettings.ExportCodeNameValueCount2 := v;
     end;
     cmVertSlant:
     begin
@@ -425,24 +443,15 @@ begin
       if not TryStrToInt(edtVertSlantKeepCodeNameValueCount.Text, v) then
         raise Exception.Create('请输入有效最小代号个数');
       fSettings.KeepCodeNameValueCount := v;
-      fSettings.ExportSource := chkVertSlantExportSource.Checked;
-      if not TryStrToInt(edtVertSlantExportCodeNameValueCount.Text, v) then
-        raise Exception.Create('请输入有效导出代号个数');
-      fSettings.ExportCodeNameValueCount := v;
-      if not TryStrToInt(edtVertSlantExportCodeNameValueCount2.Text, v) then
-        raise Exception.Create('请输入有效导出代号个数2');
-      fSettings.ExportCodeNameValueCount2 := v;
     end;
   end;
   WriteSettings;
-  fSettings.ExportFile := True;
-  if (Sender = btnVertCompare2)
-    or (Sender = btnSlantCompare2)
-    or (Sender = btnVertSlantCompare2)
-  then
+  if (Sender = btnVertCompare2) or (Sender = btnSlantCompare2) or (Sender = btnVertSlantCompare2) then
   begin
-    fSettings.ExportFile := False;
-    fSettings.ExportSource := True;
+    fSettings.ExportFile := True;
+    fSettings.ExportFile2 := False;
+    fSettings.ExportFile3 := False;
+    fSettings.ExportFile4 := False;
   end;
 
   OnStateChange(True);

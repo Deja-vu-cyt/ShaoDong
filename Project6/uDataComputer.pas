@@ -52,7 +52,6 @@ type
     fValue: RawUTF8;
     fValueCount: Word;
     fBatchNumber: Byte;
-    fBatchNumberRepeat: Boolean;
     fFirstRow: TWordDynArray;
     fFirstRowValueCount: Word;
     fVersion: TRecordVersion;
@@ -62,10 +61,9 @@ type
     procedure Intersection(aCodeName: string);
     function ToWordDynArray: TWordDynArray;
   published
-    property Value: RawUTF8 read fValue write fValue stored AS_UNIQUE;
+    property Value: RawUTF8 read fValue write fValue;// stored AS_UNIQUE;
     property ValueCount: Word read fValueCount write fValueCount;
     property BatchNumber: Byte read fBatchNumber write fBatchNumber;
-    property BatchNumberRepeat: Boolean read fBatchNumberRepeat write fBatchNumberRepeat;
     property FirstRow: TWordDynArray read fFirstRow write fFirstRow;
     property FirstRowValueCount: Word read fFirstRowValueCount write fFirstRowValueCount;
     property Version: TRecordVersion read fVersion write fVersion;
@@ -84,17 +82,31 @@ type
 
   INotifyCallback = interface(IInvokable)
     ['{EA7EFE51-3EBA-4047-A356-253374518D1D}']
+    procedure Stop;
     procedure SyncCodeName;
-    procedure GroupCodeName(const BatchNumber, TotalNumber, Number, KeepCodeNameValueCount: Cardinal);
+    procedure GroupCodeName(const BatchNumber, TotalNumber, Number,
+      KeepCodeNameValueCount, GroupFirstNumberCount, GroupCountEachFirstNumber,
+      ValidityFirstRowCount, ValidityFirstRowCount2: Cardinal);
     procedure UploadCodeName;
+    procedure ExportFile(const IntervalValues: TWordDynArray;
+      const CompareMode, VertCompareSpacing, SlantCompareSpacing,
+      ExportCodeNameValueCount, ExportCodeNameValueCount2: Cardinal;
+      const ExportFile, ExportFile2, ExportFile3, ExportFile4: Boolean);
   end;
 
   TNotifyCallback = class(TInterfacedCallback, INotifyCallback)
   protected
     fID: string;
+    procedure Stop;
     procedure SyncCodeName;
-    procedure GroupCodeName(const BatchNumber, ConsumerCount, Number, KeepCodeNameValueCount: Cardinal);
+    procedure GroupCodeName(const BatchNumber, ConsumerCount, Number,
+      KeepCodeNameValueCount, GroupFirstNumberCount, GroupCountEachFirstNumber,
+      ValidityFirstRowCount, ValidityFirstRowCount2: Cardinal);
     procedure UploadCodeName;
+    procedure ExportFile(const IntervalValues: TWordDynArray;
+      const CompareMode, VertCompareSpacing, SlantCompareSpacing,
+      ExportCodeNameValueCount, ExportCodeNameValueCount2: Cardinal;
+      const ExportFile, ExportFile2, ExportFile3, ExportFile4: Boolean);
   public
     constructor Create(aRest: TSQLRest; const aGUID: TGUID);
   published
@@ -124,11 +136,16 @@ type
     function Between(v: Integer): Boolean;
   end;
 
+  TExportFile = (efFile, efFile2, efFile3, efFile4);
+  TExportFiles = set of TExportFile;
+
   TCompareMode = (cmNone, cmVert, cmSlant, cmVertSlant);
+
   TSettings = record
   private
     fFileName: string;
     fDataMode: Byte;
+    fExportLite: Boolean;
     fIntervalValues: TWordDynArray;
     fFirstIntervalValue: Word;
     fTotalIntervalValue: Word;
@@ -153,19 +170,28 @@ type
     fValidityCountEachGroupNumber: TArray<TRange>;
     fExportCodeNameValueCount: Word;
     fExportCodeNameValueCount2: Word;
-    fExportLite: Boolean;
-    fExportSource: Boolean;
+    fKeepLastBatchCodeNameOnEachComputer: Boolean;
     fExportFile: Boolean;
+    fExportFile2: Boolean;
+    fExportFile3: Boolean;
+    fExportFile4: Boolean;
+    fExportFiles: TExportFiles;
     procedure SetCompareMode(Value: TCompareMode);
     procedure SetIntervalValues(Value: TWordDynArray);
     procedure SetVertCompareSpacing(Value: Word);
     procedure SetSlantCompareSpacing(Value: Word);
     procedure BuildCompareSpacing;
+    procedure BuildExportFile;
+    procedure SetExportFile(Value: Boolean);
+    procedure SetExportFile2(Value: Boolean);
+    procedure SetExportFile3(Value: Boolean);
+    procedure SetExportFile4(Value: Boolean);
   public
     procedure BuildValidityCountEachGroupNumber;
     procedure AddValidityCountEachGroupNumber(v, v2: Word);
     property FileName: string read fFileName write fFileName;
     property DataMode: Byte read fDataMode write fDataMode;
+    property ExportLite: Boolean read fExportLite write fExportLite;
     property IntervalValues: TWordDynArray read fIntervalValues write SetIntervalValues;
     property FirstIntervalValue: Word read fFirstIntervalValue;
     property TotalIntervalValue: Word read fTotalIntervalValue;
@@ -190,9 +216,12 @@ type
     property ValidityCountEachGroupNumber: TArray<TRange> read fValidityCountEachGroupNumber write fValidityCountEachGroupNumber;
     property ExportCodeNameValueCount: Word read fExportCodeNameValueCount write fExportCodeNameValueCount;
     property ExportCodeNameValueCount2: Word read fExportCodeNameValueCount2 write fExportCodeNameValueCount2;
-    property ExportLite: Boolean read fExportLite write fExportLite;
-    property ExportSource: Boolean read fExportSource write fExportSource;
-    property ExportFile: Boolean read fExportFile write fExportFile;
+    property KeepLastBatchCodeNameOnEachComputer: Boolean read fKeepLastBatchCodeNameOnEachComputer write fKeepLastBatchCodeNameOnEachComputer;
+    property ExportFile: Boolean read fExportFile write SetExportFile;
+    property ExportFile2: Boolean read fExportFile2 write SetExportFile2;
+    property ExportFile3: Boolean read fExportFile3 write SetExportFile3;
+    property ExportFile4: Boolean read fExportFile4 write SetExportFile4;
+    property ExportFiles: TExportFiles read fExportFiles;
   end;
 
   TDataComputer = class(TThread)
@@ -227,7 +256,11 @@ type
     fBuildFirstRowValueCount2: Word;
 
     fConsumers: TThreadList<TConsumer>;
+    fActiveConsumers: TList<TConsumer>;
     fFinishCount: Integer;
+    fGroupCountEachFirstNumber: Cardinal;
+    fGroupFirstNumberCount: Cardinal;
+    fValidityFirstRowCount: TRange;
 
     fLock2: TObject;
     fCodeName: TSQLCodeName;
@@ -247,6 +280,7 @@ type
     procedure ConsumerSyncCodeName;
     procedure ConsumerGroupCodeName;
     procedure ConsumerUploadCodeName;
+    procedure ConsumerExportFile;
     procedure SyncCodeNameFinish(const ID: string);
     procedure GroupCodeNameFinish(const ID: string);
     procedure UploadCodeNameFinish(const ID: string);
@@ -290,24 +324,32 @@ type
   private
     fLock: TObject;
     fTask: TThreadTask;
+    fStop: Boolean;
     fClient: TSQLHttpClientWebsockets;
-    fDatabase: TSQLRestServerDB;
+    fRest: TSQLRestServer;
     fCodeName: TSQLCodeName;
     fCodeName2: TSQLCodeName;
     fBatchNumber: Byte;
     fConsumerCount: Word;
     fNumber: Word;
     fKeepCodeNameValueCount: Word;
+    fGroupFirstNumberCount: Cardinal;
+    fGroupCountEachFirstNumber: Cardinal;
+    fValidityFirstRowCount: TRange;
     fCodeNameDeltaCount: Cardinal;
+    fBatchNumberRowCount: Cardinal;
+    fFirstNumber: Cardinal;
+    fGroupCount: Cardinal;
     procedure SyncCodeName;
     procedure Group; overload;
     procedure Group(RowCount, RowNumber: Int64); overload;
     procedure UploadCodeName;
   public
-    constructor Create;
+    constructor Create(aRest: TSQLRestServer);
     destructor Destroy; override;
     procedure Execute; override;
     procedure StartWork;
+    procedure StopWork;
     procedure Stop;
   published
     property Client: TSQLHttpClientWebsockets read fClient write fClient;
@@ -316,6 +358,12 @@ type
     property ConsumerCount: Word read fConsumerCount write fConsumerCount;
     property Number: Word read fNumber write fNumber;
     property KeepCodeNameValueCount: Word read fKeepCodeNameValueCount write fKeepCodeNameValueCount;
+    property GroupFirstNumberCount: Cardinal read fGroupFirstNumberCount write fGroupFirstNumberCount;
+    property GroupCountEachFirstNumber: Cardinal read fGroupCountEachFirstNumber write fGroupCountEachFirstNumber;
+    property ValidityFirstRowCount: TRange read fValidityFirstRowCount write fValidityFirstRowCount;
+    property BatchNumberRowCount: Cardinal read fBatchNumberRowCount;
+    property FirstNumber: Cardinal read fFirstNumber;
+    property GroupCount: Cardinal read fGroupCount;
   end;
 
   TGroupCodeName2 = class(TThread)
@@ -349,6 +397,7 @@ const
   EachPageRowCount: Word = 10000;
 
 var
+  fMainApp: Boolean;
   fSettings: TSettings;
   fDataComputer: TDataComputer;
   fDatabase: TSQLRestServerDB;
@@ -468,19 +517,33 @@ begin
   fID := TGUID.NewGuid.ToString;
 end;
 
+procedure TNotifyCallback.Stop;
+begin
+  fGroupCodeName.StopWork;
+end;
+
 procedure TNotifyCallback.SyncCodeName;
 begin
   fGroupCodeName.Task := ttSyncCodeName;
   fGroupCodeName.StartWork;
 end;
 
-procedure TNotifyCallback.GroupCodeName(const BatchNumber, ConsumerCount, Number, KeepCodeNameValueCount: Cardinal);
+procedure TNotifyCallback.GroupCodeName(const BatchNumber, ConsumerCount, Number,
+  KeepCodeNameValueCount, GroupFirstNumberCount, GroupCountEachFirstNumber,
+  ValidityFirstRowCount, ValidityFirstRowCount2: Cardinal);
+var
+  r: TRange;
 begin
   fGroupCodeName.Task := ttGroupCodeName;
   fGroupCodeName.BatchNumber := BatchNumber;
   fGroupCodeName.ConsumerCount := ConsumerCount;
   fGroupCodeName.Number := Number;
   fGroupCodeName.KeepCodeNameValueCount := KeepCodeNameValueCount;
+  fGroupCodeName.GroupFirstNumberCount := GroupFirstNumberCount;
+  fGroupCodeName.GroupCountEachFirstNumber := GroupCountEachFirstNumber;
+  r.Value := ValidityFirstRowCount;
+  r.Value2 := ValidityFirstRowCount2;
+  fGroupCodeName.ValidityFirstRowCount := r;
   fGroupCodeName.StartWork;
 end;
 
@@ -488,6 +551,26 @@ procedure TNotifyCallback.UploadCodeName;
 begin
   fGroupCodeName.Task := ttUploadCodeName;
   fGroupCodeName.StartWork;
+end;
+
+procedure TNotifyCallback.ExportFile(const IntervalValues: TWordDynArray;
+  const CompareMode, VertCompareSpacing, SlantCompareSpacing,
+  ExportCodeNameValueCount, ExportCodeNameValueCount2: Cardinal;
+  const ExportFile, ExportFile2, ExportFile3, ExportFile4: Boolean);
+begin
+  if fMainApp then Exit;
+
+  fSettings.IntervalValues := IntervalValues;
+  fSettings.CompareMode := TCompareMode(CompareMode);
+  fSettings.VertCompareSpacing := VertCompareSpacing;
+  fSettings.SlantCompareSpacing := SlantCompareSpacing;
+  fSettings.ExportCodeNameValueCount := ExportCodeNameValueCount;
+  fSettings.ExportCodeNameValueCount2 := ExportCodeNameValueCount2;
+  fSettings.ExportFile := ExportFile;
+  fSettings.ExportFile2 := ExportFile2;
+  fSettings.ExportFile3 := ExportFile3;
+  fSettings.ExportFile4 := ExportFile4;
+  TMonitor.PulseAll(fDataComputer.Lock);
 end;
 
 procedure TService.RegisterConsumer(const Consumer: INotifyCallback; const ID, Address: string);
@@ -562,12 +645,45 @@ begin
     fCompareSpacing := fSlantCompareSpacing;
 end;
 
+procedure TSettings.BuildExportFile;
+begin
+  fExportFiles := [];
+  if fExportFile then fExportFiles := fExportFiles + [efFile];
+  if fExportFile2 then fExportFiles := fExportFiles + [efFile2];
+  if fExportFile3 then fExportFiles := fExportFiles + [efFile3];
+  if fExportFile4 then fExportFiles := fExportFiles + [efFile4];
+end;
+
+procedure TSettings.SetExportFile(Value: Boolean);
+begin
+  fExportFile := Value;
+  BuildExportFile;
+end;
+
+procedure TSettings.SetExportFile2(Value: Boolean);
+begin
+  fExportFile2 := Value;
+  BuildExportFile;
+end;
+
+procedure TSettings.SetExportFile3(Value: Boolean);
+begin
+  fExportFile3 := Value;
+  BuildExportFile;
+end;
+
+procedure TSettings.SetExportFile4(Value: Boolean);
+begin
+  fExportFile4 := Value;
+  BuildExportFile;
+end;
+
 procedure TSettings.BuildValidityCountEachGroupNumber;
 var
   i: Integer;
 begin
   SetLength(fValidityCountEachGroupNumber, 0);
-  if fGroupNumber = 0 then Exit;
+  if fGroupNumber3 = 0 then Exit;
   SetLength(fValidityCountEachGroupNumber, fGroupNumber4 - fGroupNumber3 + 1);
   for i := Low(fValidityCountEachGroupNumber) to High(fValidityCountEachGroupNumber) do
   begin
@@ -592,6 +708,7 @@ begin
   fLock := TObject.Create;
   fLock2 := TObject.Create;
   fConsumers := TThreadList<TConsumer>.Create;
+  fActiveConsumers := TList<TConsumer>.Create;
   fCodeName := TSQLCodeName.Create;
   RestoreState;
 end;
@@ -600,6 +717,7 @@ destructor TDataComputer.Destroy;
 begin
   fLock.Free;
   fLock2.Free;
+  fActiveConsumers.Free;
   ClearConsumers;
   fConsumers.Free;
   fCodeName.Free;
@@ -820,7 +938,6 @@ begin
         CodeName.Value := FirstRow.CodeName.ToString;
         CodeName.ValueCount := Length(CodeName.Value);
         CodeName.BatchNumber := 0;
-        CodeName.BatchNumberRepeat := False;
         CodeName.FirstRow := [FirstRow.Value];
         CodeName.FirstRowValueCount := Length(CodeName.FirstRow);
         fDatabase.Add(CodeName, True);
@@ -860,7 +977,14 @@ begin
   with fConsumers.LockList do
   begin
     try
-      for i := Count - 1 downto 0 do Items[i].Free;
+      for i := Count - 1 downto 0 do
+      begin
+        try
+          Items[i].Value.Stop;
+        except
+        end;
+        Items[i].Free;
+      end;
     finally
       fConsumers.UnlockList;
     end
@@ -892,59 +1016,73 @@ var
   i, ConsumerCount: Integer;
 begin
   fFinishCount := 0;
+  fActiveConsumers.Clear;
   with fConsumers.LockList do
   begin
     try
       ConsumerCount := Count;
-      for i := 0 to Count - 1 do Items[i].Value.SyncCodeName;
+      for i := Count - 1 downto 0 do
+      begin
+        try
+          Items[i].Value.SyncCodeName;
+        except
+          raise;
+        end;
+      end;
     finally
       fConsumers.UnlockList;
     end
   end;
   repeat
     Sleep(1000);
-  until fFinishCount = ConsumerCount;
+  until Terminated or (fActiveConsumers.Count = ConsumerCount);
 end;
 
 procedure TDataComputer.ConsumerGroupCodeName;
 var
-  i, ConsumerCount: Integer;
+  i, iCount: Integer;
 begin
   fFinishCount := 0;
-  with fConsumers.LockList do
-  begin
-    try
-      ConsumerCount := Count;
-      for i := 0 to Count - 1 do
-        Items[i].Value.GroupCodeName(fBatchNumber, Count, i + 1, fSettings.KeepCodeNameValueCount);
-    finally
-      fConsumers.UnlockList;
-    end
-  end;
+  for i := 0 to fActiveConsumers.Count - 1 do
+    fActiveConsumers[i].Value.GroupCodeName(fBatchNumber, fActiveConsumers.Count, i + 1,
+      fSettings.KeepCodeNameValueCount, fGroupFirstNumberCount, fGroupCountEachFirstNumber,
+      fValidityFirstRowCount.Value, fValidityFirstRowCount.Value2);
   repeat
     Sleep(1000);
-  until fFinishCount = ConsumerCount;
+  until Terminated or (fFinishCount = fActiveConsumers.Count);
 end;
 
 procedure TDataComputer.ConsumerUploadCodeName;
 var
   i: Integer;
 begin
-  with fConsumers.LockList do
-  begin
-    try
-      for i := 0 to Count - 1 do
-      begin
-        fFinishCount := 0;
-        Items[i].Value.UploadCodeName;
-        repeat
-          Sleep(1000);
-        until fFinishCount = 1;
-      end;
-    finally
-      fConsumers.UnlockList;
-    end
-  end;
+  fFinishCount := 0;
+  for i := 0 to fActiveConsumers.Count - 1 do
+    fActiveConsumers[i].Value.UploadCodeName;
+  repeat
+    Sleep(1000);
+  until Terminated or (fFinishCount = fActiveConsumers.Count);
+end;
+
+procedure TDataComputer.ConsumerExportFile;
+var
+  i: Integer;
+begin
+  if not fSettings.KeepLastBatchCodeNameOnEachComputer then Exit;
+
+  for i := 0 to fActiveConsumers.Count - 1 do
+    fActiveConsumers[i].Value.ExportFile(
+      fSettings.IntervalValues,
+      Ord(fSettings.CompareMode),
+      fSettings.VertCompareSpacing,
+      fSettings.SlantCompareSpacing,
+      fSettings.ExportCodeNameValueCount,
+      fSettings.ExportCodeNameValueCount2,
+      fSettings.ExportFile,
+      fSettings.ExportFile2,
+      fSettings.ExportFile3,
+      fSettings.ExportFile4
+    );
 end;
 
 procedure TDataComputer.SyncCodeNameFinish(const ID: string);
@@ -953,8 +1091,7 @@ var
 begin
   Consumer := FindConsumer(ID);
   if not Assigned(Consumer) then Exit;
-
-  TInterlocked.Increment(fFinishCount);
+  fActiveConsumers.Add(Consumer);
 end;
 
 procedure TDataComputer.GroupCodeNameFinish(const ID: string);
@@ -971,8 +1108,8 @@ procedure TDataComputer.UploadCodeNameFinish(const ID: string);
 var
   Consumer: TConsumer;
 begin
-  //Consumer := FindConsumer(ID);
-  //if not Assigned(Consumer) then Exit;
+  Consumer := FindConsumer(ID);
+  if not Assigned(Consumer) then Exit;
 
   TInterlocked.Increment(fFinishCount);
 end;
@@ -1021,7 +1158,6 @@ begin
       while CodeName.FillOne and not Terminated do
       begin
         CodeName.BatchNumber := fBatchNumber;
-        CodeName.BatchNumberRepeat := False;
         fDatabase.Update(CodeName);
       end;
       fDatabase.Commit(1, True);
@@ -1045,7 +1181,6 @@ begin
     begin
       if fCodeName.BatchNumber <> fBatchNumber then
       begin
-        fCodeName.BatchNumberRepeat := True;
         fDatabase.Update(fCodeName);
       end;
       if fCodeName.MergeFirstRow(CodeName.FirstRow) then
@@ -1056,7 +1191,6 @@ begin
     else
     begin
       CodeName.BatchNumber := fBatchNumber;
-      CodeName.BatchNumberRepeat := False;
       fDatabase.Add(CodeName, True);
     end;
   finally
@@ -1068,8 +1202,7 @@ procedure TDataComputer.GroupCodeName;
 var
   CodeName, CodeName2: TSQLCodeName;
   s: string;
-  i, j, PageIndex, GroupCountEachFirstNumber, FirstRowCount: Integer;
-  ValidityFirstRowCount: TRange;
+  i, j, PageIndex, FirstRowCount: Integer;
   v: Variant;
   Grouped: Boolean;
 begin
@@ -1104,21 +1237,26 @@ begin
     fBatchNumber := i;
     fDatabase.Delete(TSQLCodeName, 'BatchNumber = ?', [fBatchNumber]);
 
-    GroupCountEachFirstNumber := 0;
+    fGroupFirstNumberCount := 0;
+    fGroupCountEachFirstNumber := 0;
     if (fBatchNumber >= fSettings.GroupNumber) and (fBatchNumber <= fSettings.GroupNumber2) then
-      GroupCountEachFirstNumber := fSettings.GroupCountEachFirstNumber;
+    begin
+      fGroupFirstNumberCount := fSettings.GroupFirstNumberCount;
+      fGroupCountEachFirstNumber := fSettings.GroupCountEachFirstNumber;
+    end;
 
-    ValidityFirstRowCount.Value := -1;
+    fValidityFirstRowCount.Value := -1;
+    fValidityFirstRowCount.Value2 := -1;
     if (fBatchNumber >= fSettings.GroupNumber3) and (fBatchNumber <= fSettings.GroupNumber4) then
-      ValidityFirstRowCount := fSettings.ValidityCountEachGroupNumber[fBatchNumber - fSettings.GroupNumber];
+      fValidityFirstRowCount := fSettings.ValidityCountEachGroupNumber[fBatchNumber - fSettings.GroupNumber3];
 
     fBatchNumberRowCount := fDatabase.TableRowCount(TSQLCodeName);
-    fDatabase.TransactionBegin(TSQLCodeName);
+    {fDatabase.TransactionBegin(TSQLCodeName);
     try
       for j := 1 to fBatchNumberRowCount - 1 do
       begin
         if Terminated then Exit;
-        fFirstNumber := j;
+        fFirstNumber := j; //判断跳过
 
         Foreach(fBatchNumberRowCount, 2, fFirstNumber,
         procedure(FirstNumber: Cardinal; FirstRowIndexs: TWordDynArray)
@@ -1171,46 +1309,6 @@ begin
         end);
       end;
 
-
-      {Foreach(RowCount, 2,
-      procedure(FirstRowIndexs: TWordDynArray)
-      begin
-        s := 'BatchNumber = ? LIMIT 1 OFFSET ?';
-        CodeName.FillPrepare(fDatabase, s, [i - 1, FirstRowIndexs[0] - 1]);
-        CodeName.FillOne;
-        CodeName2.FillPrepare(fDatabase, s, [i - 1, FirstRowIndexs[1] - 1]);
-        CodeName2.FillOne;
-        CodeName.Intersection(CodeName2.Value);
-        if (CodeName.ValueCount > 0)
-          and (CodeName.ValueCount >= fSettings.KeepCodeNameValueCount)
-        then
-        begin
-          CodeName.MergeFirstRow(CodeName2.FirstRow);
-
-          CodeName2.FillPrepare(fDatabase, 'Value = ?', [CodeName.Value]);
-          if CodeName2.FillOne then
-          begin
-            if CodeName2.BatchNumber <> fBatchNumber then
-            begin
-              CodeName2.BatchNumberRepeat := True;
-              fDatabase.Update(CodeName2);
-            end;
-            if CodeName2.MergeFirstRow(CodeName.FirstRow) then
-              fDatabase.Update(CodeName2);
-          end
-          else
-          begin
-            CodeName.BatchNumber := i;
-            fDatabase.Add(CodeName, True);
-          end;
-        end;
-      end,
-      function: Boolean
-      begin
-        Result := Terminated;
-      end);
-      if Terminated then Exit; }
-
       fDatabase.Commit(1, True);
     except
       on e: Exception do
@@ -1240,16 +1338,21 @@ begin
       end;
       Inc(PageIndex);
     until Terminated or (CodeName.FillTable.RowCount = 0);
+    if Terminated then Exit;}
+
+
+    ConsumerSyncCodeName;
     if Terminated then Exit;
+    ConsumerGroupCodeName;
+    if Terminated then Exit;
+    if not (fSettings.KeepLastBatchCodeNameOnEachComputer and (fBatchNumber = fSettings.GroupCount)) then
+      ConsumerUploadCodeName;
+    if Terminated then Exit;
+
+    //ConsumerGroupCodeName2;
 
     fDatabase.Delete(TSQLCodeName, 'BatchNumber < ?', [fBatchNumber]);
     if Terminated then Exit;
-
-    {ConsumerSyncCodeName;
-    ConsumerGroupCodeName;
-    ConsumerUploadCodeName;}
-
-    //ConsumerGroupCodeName2;
 
     fLastGroupNumber := fBatchNumber;
     fKeyValue.SetKeyValue('LastGroupNumber', fLastGroupNumber);
@@ -1334,10 +1437,10 @@ var
   sPage: string;
   i, PageIndex, LastFirstRowValue: Integer;
 begin
-  if fFirstRowUpdated
-    and fSettings.ExportFile
+  if not (efFile2 in fSettings.ExportFiles)
+    or (fFirstRowUpdated
     and (fBuildFirstRowValueCount = fSettings.ExportCodeNameValueCount)
-    and (fBuildFirstRowValueCount2 = fSettings.ExportCodeNameValueCount2)
+    and (fBuildFirstRowValueCount2 = fSettings.ExportCodeNameValueCount2))
   then Exit;
 
   fDatabase.Execute('UPDATE FirstRow SET RowCount = 0');
@@ -1577,34 +1680,46 @@ var
   CodeName: TSQLCodeName;
   RowNumber: Cardinal;
 begin
-  if fSettings.ExportLite then TxtFileName := '（2-1）.txt'
-  else
+  if efFile3 in fSettings.ExportFiles then
   begin
-    TxtFileName := '（2-1）.【排列】【“%d-%d”个[相同组合、不同首行]的组合[不同首行数：最多→少]】（1）.txt';
-    TxtFileName := Format(TxtFileName, [fSettings.ExportCodeNameValueCount, fSettings.ExportCodeNameValueCount2]);
+    if fSettings.ExportLite then TxtFileName := '（2-1）.txt'
+    else
+    begin
+      TxtFileName := '（2-1）.【排列】【“%d-%d”个[相同组合、不同首行]的组合[不同首行数：最多→少]】（1）.txt';
+      TxtFileName := Format(TxtFileName, [fSettings.ExportCodeNameValueCount, fSettings.ExportCodeNameValueCount2]);
+    end;
+    FileName := fExportDirectory + TxtFileName;
+    fr := TFileWriter.Create(FileName);
+    fr.RebuildFileNameEvent := RebuildFileName2;
   end;
-  FileName := fExportDirectory + TxtFileName;
-  fr := TFileWriter.Create(FileName);
-  fr.RebuildFileNameEvent := RebuildFileName2;
 
-  if fSettings.ExportLite then TxtFileName := '（6）.txt'
-  else
+  if efFile4 in fSettings.ExportFiles then
   begin
-    TxtFileName := '（6）.【简化】【“%d-%d”个[相同组合、不同首行]的组合】.txt';
-    TxtFileName := Format(TxtFileName, [fSettings.ExportCodeNameValueCount, fSettings.ExportCodeNameValueCount2]);
+    if fSettings.ExportLite then TxtFileName := '（6）.txt'
+    else
+    begin
+      TxtFileName := '（6）.【简化】【“%d-%d”个[相同组合、不同首行]的组合】.txt';
+      TxtFileName := Format(TxtFileName, [fSettings.ExportCodeNameValueCount, fSettings.ExportCodeNameValueCount2]);
+    end;
+    FileName2 := fExportDirectory2 + TxtFileName;
+    fr2 := TFileWriter.Create(FileName2);
+    fr2.RebuildFileNameEvent := RebuildFileName2;
   end;
-  FileName2 := fExportDirectory2 + TxtFileName;
-  fr2 := TFileWriter.Create(FileName2);
-  fr2.RebuildFileNameEvent := RebuildFileName2;
   try
-    s := TPath.GetFileNameWithoutExtension(FileName) + ':';
-    fr.WriteLn('');
-    fr.WriteLn(s);
-    fr.WriteLn('');
-    s := TPath.GetFileNameWithoutExtension(FileName2) + ':';
-    fr2.WriteLn('');
-    fr2.WriteLn(s);
-    fr2.WriteLn('');
+    if Assigned(fr) then
+    begin
+      s := TPath.GetFileNameWithoutExtension(FileName) + ':';
+      fr.WriteLn('');
+      fr.WriteLn(s);
+      fr.WriteLn('');
+    end;
+    if Assigned(fr2) then
+    begin
+      s := TPath.GetFileNameWithoutExtension(FileName2) + ':';
+      fr2.WriteLn('');
+      fr2.WriteLn(s);
+      fr2.WriteLn('');
+    end;
 
     TSQLCodeName.AutoFree(CodeName);
     sPage := 'ValueCount >= ? AND ValueCount <= ? ORDER BY ValueCount DESC LIMIT ? OFFSET ?';
@@ -1617,58 +1732,77 @@ begin
       begin
         RowNumber := RowNumber + 1;
 
-        s := '%d.【“%d”个 [ 相同组合、不同首行]的组合 [ 不同首行数：%d ]】[代号：%s ] ：';
-        s := Format(s, [
-          RowNumber,
-          CodeName.ValueCount,
-          Length(CodeName.FirstRow),
-          CodeNameToString(CodeName.ToWordDynArray)
-        ]);
-        fr.WriteLn('');
-        fr.WriteLn('');
-        fr.WriteLn(s);
+        if Assigned(fr) then
+        begin
+          s := '%d.【“%d”个 [ 相同组合、不同首行]的组合 [ 不同首行数：%d ]】[代号：%s ] ：';
+          s := Format(s, [
+            RowNumber,
+            CodeName.ValueCount,
+            Length(CodeName.FirstRow),
+            CodeNameToString(CodeName.ToWordDynArray)
+          ]);
+          fr.WriteLn('');
+          fr.WriteLn('');
+          fr.WriteLn(s);
+        end;
 
-        s := '%d.[ %d个组合；代号：（%s）]';
-        s := Format(s, [
-          RowNumber,
-          CodeName.ValueCount,
-          CodeNameToString(CodeName.ToWordDynArray)
-        ]);
-        fr2.WriteLn('');
-        fr2.WriteLn(s);
+        if Assigned(fr2) then
+        begin
+          s := '%d.[ %d个组合；代号：（%s）]';
+          s := Format(s, [
+            RowNumber,
+            CodeName.ValueCount,
+            CodeNameToString(CodeName.ToWordDynArray)
+          ]);
+          fr2.WriteLn('');
+          fr2.WriteLn(s);
+        end;
 
         for i := High(CodeName.FirstRow) downto Low(CodeName.FirstRow) do
         begin
-          s := '【%d】.第%d行为首行';
-          s := Format(s, [Length(CodeName.FirstRow) - i, CodeName.FirstRow[i]]);
-          fr.WriteLn('');
-          fr.WriteLn(s);
+          if Assigned(fr) then
+          begin
+            s := '【%d】.第%d行为首行';
+            s := Format(s, [Length(CodeName.FirstRow) - i, CodeName.FirstRow[i]]);
+            fr.WriteLn('');
+            fr.WriteLn(s);
+          end;
 
           if i = High(CodeName.FirstRow) then
           begin
-            s := '（第%d行为首行）';
-            s := Format(s, [CodeName.FirstRow[i]]);
-            fr2.WriteLn('');
-            fr2.WriteLn(s);
+            if Assigned(fr2) then
+            begin
+              s := '（第%d行为首行）';
+              s := Format(s, [CodeName.FirstRow[i]]);
+              fr2.WriteLn('');
+              fr2.WriteLn(s);
+            end;
           end;
         end;
 
         if RowNumber mod EachFileRowNumber = 0 then
         begin
-          fr.BuildActiveFileName;
-          fr2.BuildActiveFileName;
+          if Assigned(fr) then fr.BuildActiveFileName;
+          if Assigned(fr2) then fr2.BuildActiveFileName;
         end;
       end;
 
       Inc(PageIndex);
     until Terminated or (CodeName.FillTable.RowCount = 0);
 
-    fr.WriteFinish;
-    fr.RenameLastFile(RebuildFileName2(fr, RowNumber));
-    fr2.WriteFinish;
-    fr2.RenameLastFile(RebuildFileName2(fr2, RowNumber));
+    if Assigned(fr) then
+    begin
+      fr.WriteFinish;
+      fr.RenameLastFile(RebuildFileName2(fr, RowNumber));
+    end;
+    if Assigned(fr2) then
+    begin
+      fr2.WriteFinish;
+      fr2.RenameLastFile(RebuildFileName2(fr2, RowNumber));
+    end;
   finally
-    fr.Free;
+    if Assigned(fr) then fr.Free;
+    if Assigned(fr2) then fr2.Free;
   end;
 end;
 
@@ -1971,7 +2105,7 @@ begin
     TDirectory.CreateDirectory(fExportDirectory2);
   for s in TDirectory.GetFiles(fExportDirectory2, '*.txt') do TFile.Delete(s);
 
-  if fSettings.ExportSource then
+  if efFile in fSettings.ExportFiles then
   begin
     DataList := fDatabase.MultiFieldValues(TSQLCodeName,
       'BatchNumber',
@@ -1985,11 +2119,8 @@ begin
       DataList.Free;
     end;
   end;
-  if fSettings.ExportFile then
-  begin
-    SaveToFile2;
-    SaveToFile3;
-  end;
+  if efFile2 in fSettings.ExportFiles then SaveToFile3;
+  if (efFile3 in fSettings.ExportFiles) or (efFile4 in fSettings.ExportFiles) then SaveToFile2;
 end;
 
 procedure TDataComputer.Execute;
@@ -2003,7 +2134,7 @@ begin
 
         fStopwatch := TStopwatch.StartNew;
         try
-          if Now >= 43586 then  Break;   //5.1
+          if Now >= 43646 then  Break;   //5.1
 
           LoadRow;
           if Terminated then Break;
@@ -2016,6 +2147,8 @@ begin
           MergeFirstRow;
           if Terminated then Break;
           UpdateFirstRow;
+          if Terminated then Break;
+          ConsumerExportFile;
           if Terminated then Break;
           ExportData;
           if Terminated then Break;
@@ -2038,13 +2171,14 @@ begin
   end;
 end;
 
-constructor TGroupCodeName.Create;
+constructor TGroupCodeName.Create(aRest: TSQLRestServer);
 begin
   inherited Create(True);
   fLock := TObject.Create;
   fTask := ttWait;
   fCodeName := TSQLCodeName.Create;
   fCodeName2 := TSQLCodeName.Create;
+  fRest := aRest;
 end;
 
 destructor TGroupCodeName.Destroy;
@@ -2056,16 +2190,14 @@ begin
 end;
 
 procedure TGroupCodeName.SyncCodeName;
-var
-  FileName: string;
 begin
-  if Assigned(fDatabase) then FreeAndNil(fDatabase);
-  FileName := fDirectory + 'Cache';
-  if FileExists(FileName) then DeleteFile(FileName);
-
-  fDatabase := TSQLRestServerDB.CreateWithOwnModel([TSQLCodeName], FileName);
-  fDatabase.CreateMissingTables;
-  fDatabase.RecordVersionSynchronizeSlave(TSQLCodeName, fClient);
+  if not fMainApp then
+  begin
+    fRest.Delete(TSQLCodeName, '', []);
+    fRest.RecordVersionSynchronizeSlave(TSQLCodeName, fClient);
+    if Terminated then Exit;
+    fBatchNumberRowCount := fRest.TableRowCount(TSQLCodeName);
+  end;
 
   fService.SyncCodeNameFinish(TNotifyCallback(fNotifyCallback).ID);
   fTask := ttWait;
@@ -2073,25 +2205,27 @@ end;
 
 procedure TGroupCodeName.Group;
 var
-  RowCount, RowNumber: Int64;
   PageIndex: Integer;
 begin
-  RowCount := fDatabase.TableRowCount(TSQLCodeName);
-  RowNumber := fNumber;
+  fRest.Delete(TSQLCodeName, 'BatchNumber = ?', [fBatchNumber]);
+  fBatchNumberRowCount := fRest.TableRowCount(TSQLCodeName);
+  fFirstNumber := fNumber;
   fCodeNameDeltaCount := 0;
-  fDatabase.TransactionBegin(TSQLCodeName);
-  while (RowNumber <= Ceil((RowCount - 1) / 2)) and not Terminated do
+  fRest.TransactionBegin(TSQLCodeName, 1);
+  while (fFirstNumber <= Ceil((fBatchNumberRowCount - 1) / 2)) and not fStop and not Terminated do
   begin
-    Group(RowCount, RowNumber);
-    if RowCount - RowNumber <> RowNumber then
-      Group(RowCount, RowCount - RowNumber);
+    if (fGroupFirstNumberCount > 0) and (fFirstNumber > fGroupFirstNumberCount) then Break;
 
-    RowNumber := RowNumber + fConsumerCount;
+    Group(fBatchNumberRowCount, fFirstNumber);
+    if fBatchNumberRowCount - fFirstNumber <> fFirstNumber then
+      Group(fBatchNumberRowCount, fBatchNumberRowCount - fFirstNumber);
+
+    fFirstNumber := fFirstNumber + fConsumerCount;
   end;
-  if Terminated then Exit;
-  fDatabase.Commit(1, True);
-
-  PageIndex := 0;
+  if fStop or Terminated then Exit;
+  fRest.Commit(1, True);
+  if fStop or Terminated then Exit;
+  {PageIndex := 0;
   repeat
     fCodeName.FillPrepare(fDatabase, 'BatchNumberRepeat = 1 LIMIT ? OFFSET ?',
       [EachPageRowCount, PageIndex * EachPageRowCount]);
@@ -2113,68 +2247,63 @@ begin
     end;
     Inc(PageIndex);
   until Terminated or (fCodeName.FillTable.RowCount = 0);
-  if Terminated then Exit;
+  if Terminated then Exit;}
 
-  fDatabase.Delete(TSQLCodeName, 'BatchNumber < ?', [fBatchNumber]);
-  if Terminated then Exit;
+  if not fMainApp then
+  begin
+    fRest.Delete(TSQLCodeName, 'BatchNumber < ?', [fBatchNumber]);
+    fKeyValue.SetKeyValue('LastGroupNumber', fBatchNumber);
+    if fStop or Terminated then Exit;
+  end;
 
   fService.GroupCodeNameFinish(TNotifyCallback(fNotifyCallback).ID);
   fTask := ttWait;
 end;
 
 procedure TGroupCodeName.Group(RowCount, RowNumber: Int64);
+var
+  FirstRowCount: Integer;
 begin
-  Foreach(RowCount, 2, RowNumber,
-  procedure(FirstNumber: Cardinal; FirstRowIndexs: TWordDynArray)
+  TCombinatorialAlgorithm.For(RowCount, 2, RowNumber,
+  procedure(FirstNumber: Cardinal; FirstRowIndexs: TCardinalDynArray)
   var
     s: string;
   begin
     s := 'BatchNumber = ? LIMIT 1 OFFSET ?';
-    fCodeName.FillPrepare(fDatabase, s, [fBatchNumber - 1, FirstRowIndexs[0] - 1]);
+    fCodeName.FillPrepare(fRest, s, [fBatchNumber - 1, FirstRowIndexs[0] - 1]);
     fCodeName.FillOne;
-    fCodeName2.FillPrepare(fDatabase, s, [fBatchNumber - 1, FirstRowIndexs[1] - 1]);
+    fCodeName2.FillPrepare(fRest, s, [fBatchNumber - 1, FirstRowIndexs[1] - 1]);
     fCodeName2.FillOne;
     fCodeName.Intersection(fCodeName2.Value);
-    if (fCodeName.ValueCount > 0)
-      and (fCodeName.ValueCount >= fKeepCodeNameValueCount)
-    then
+    if fCodeName.ValueCount = 0 then Exit;
+    if (fKeepCodeNameValueCount > 0) and (fCodeName.ValueCount < fKeepCodeNameValueCount) then Exit;
+    //相同首行个数是否在有效范围内
+    FirstRowCount := fCodeName.FirstRowValueCount;
+    fCodeName.MergeFirstRow(fCodeName2.FirstRow);
+    if fValidityFirstRowCount.Value > -1 then
     begin
-      fCodeName.MergeFirstRow(fCodeName2.FirstRow);
+      FirstRowCount := FirstRowCount * 2 - fCodeName.FirstRowValueCount;
+      if not fValidityFirstRowCount.Between(FirstRowCount) then Exit;
+    end;
 
-      s := 'Value = ?';
-      fCodeName2.FillPrepare(fDatabase, s, [fCodeName.Value]);
-      if fCodeName2.FillOne then
-      begin
-        if fCodeName2.BatchNumber <> fBatchNumber then
-        begin
-          fCodeName2.BatchNumberRepeat := True;
-          fDatabase.Update(fCodeName2);
-        end;
-        if fCodeName2.MergeFirstRow(fCodeName.FirstRow) then
-        begin
-          fDatabase.Update(fCodeName2);
-          fCodeNameDeltaCount := fCodeNameDeltaCount + 1;
-        end;
-      end
-      else
-      begin
-        fCodeName.BatchNumber := fBatchNumber;
-        fCodeName.BatchNumberRepeat := False;
-        fDatabase.Add(fCodeName, True);
-        fCodeNameDeltaCount := fCodeNameDeltaCount + 1;
-      end;
+    fCodeName.BatchNumber := fBatchNumber;
+    //fCodeName.BatchNumberRepeat := False;
+    fRest.Add(fCodeName, True);
+    fCodeNameDeltaCount := fCodeNameDeltaCount + 1;
 
-      if fCodeNameDeltaCount >= 100000 then
-      begin
-        fDatabase.Commit(1, True);
-        fDatabase.TransactionBegin(TSQLCodeName);
-        fCodeNameDeltaCount := 0;
-      end;
+    if fCodeNameDeltaCount >= 100000 then
+    begin
+      fRest.Commit(1, True);
+      fRest.TransactionBegin(TSQLCodeName, 1);
+      fCodeNameDeltaCount := 0;
     end;
   end,
   function(FirstNumber, GroupCount: Cardinal): Boolean
   begin
-    Result := Terminated;
+    fGroupCount := GroupCount;
+    Result := fStop or Terminated;
+    if not Result and (fGroupCountEachFirstNumber > 0) then
+      Result := GroupCount >= fGroupCountEachFirstNumber;
   end);
 end;
 
@@ -2182,36 +2311,38 @@ procedure TGroupCodeName.UploadCodeName;
 var
   PageIndex: Integer;
 begin
-  PageIndex := 0;
-  repeat
-    fCodeName.FillPrepare(fDatabase, 'LIMIT ? OFFSET ?',
-      [EachPageRowCount, PageIndex * EachPageRowCount]);
-    fClient.TransactionBegin(TSQLCodeName);
-    try
-      while fCodeName.FillOne and not Terminated do
-      begin
-        fCodeName2.FillPrepare(fClient, 'Value = ?', [fCodeName.Value]);
-        if fCodeName2.FillOne then
+  if not fMainApp then
+  begin
+    PageIndex := 0;
+    repeat
+      fCodeName.FillPrepare(fRest, 'LIMIT ? OFFSET ?', [EachPageRowCount, PageIndex * EachPageRowCount]);
+      fClient.TransactionBegin(TSQLCodeName);
+      try
+        while fCodeName.FillOne and not fStop and not Terminated do
         begin
-          if fCodeName2.MergeFirstRow(fCodeName2.FirstRow) then
-            fClient.Update(fCodeName2);
-        end
-        else
+          {fCodeName2.FillPrepare(fClient, 'Value = ?', [fCodeName.Value]);
+          if fCodeName2.FillOne then
+          begin
+            if fCodeName2.MergeFirstRow(fCodeName2.FirstRow) then
+              fClient.Update(fCodeName2);
+          end
+          else}
+          begin
+            fClient.Add(fCodeName, True);
+          end;
+        end;
+        fClient.Commit(1, True);
+      except
+        on e: Exception do
         begin
-          fClient.Add(fCodeName, True);
+          fClient.RollBack;
+          raise;
         end;
       end;
-      fClient.Commit(1, True);
-    except
-      on e: Exception do
-      begin
-        fClient.RollBack;
-        raise;
-      end;
-    end;
-    Inc(PageIndex);
-  until Terminated or (fCodeName.FillTable.RowCount = 0);
-  if Terminated then Exit;
+      Inc(PageIndex);
+    until fStop or Terminated or (fCodeName.FillTable.RowCount = 0);
+    if fStop or Terminated then Exit;
+  end;
 
   fService.UploadCodeNameFinish(TNotifyCallback(fNotifyCallback).ID);
   fTask := ttWait;
@@ -2228,6 +2359,11 @@ begin
         ttGroupCodeName: Group;
         ttUploadCodeName: UploadCodeName;
       end;
+      if fStop then
+      begin
+        fTask := ttWait;
+        fStop := False;
+      end;
     until Terminated;
   finally
     TMonitor.Exit(fLock);
@@ -2237,6 +2373,11 @@ end;
 procedure TGroupCodeName.StartWork;
 begin
   TMonitor.PulseAll(fLock);
+end;
+
+procedure TGroupCodeName.StopWork;
+begin
+  fStop := True;
 end;
 
 procedure TGroupCodeName.Stop;
@@ -2262,8 +2403,8 @@ end;
 
 procedure TGroupCodeName2.Group(RowCount, RowNumber: Int64);
 begin
-  Foreach(RowCount, 2, RowNumber,
-  procedure(FirstNumber: Cardinal; FirstRowIndexs: TWordDynArray)
+  TCombinatorialAlgorithm.For(RowCount, 2, RowNumber,
+  procedure(FirstNumber: Cardinal; FirstRowIndexs: TCardinalDynArray)
   var
     s: string;
   begin
@@ -2362,7 +2503,7 @@ begin
   if not VarIsEmpty(v) then fSettings.SlantSameValueCount2 := v;
   fKeyValue.GetKeyValue('GroupCount', v);
   if not VarIsEmpty(v) then fSettings.GroupCount := v;
-  fKeyValue.GetKeyValue('fGroupCountEachFirstNumber', v);
+  fKeyValue.GetKeyValue('KeepCodeNameValueCount', v);
   if not VarIsEmpty(v) then fSettings.KeepCodeNameValueCount := v;
   fKeyValue.GetKeyValue('GroupNumber', v);
   if not VarIsEmpty(v) then fSettings.GroupNumber := v;
@@ -2386,12 +2527,20 @@ begin
       fSettings.ValidityCountEachGroupNumber[i].Value2 := ValidityCountEachGroupNumber[(i + 1) * 2 - 1];
     end;
   end;
-  fKeyValue.GetKeyValue('ExportSource', v);
-  if not VarIsEmpty(v) then fSettings.ExportSource := v;
   fKeyValue.GetKeyValue('ExportCodeNameValueCount', v);
   if not VarIsEmpty(v) then fSettings.ExportCodeNameValueCount := v;
   fKeyValue.GetKeyValue('ExportCodeNameValueCount2', v);
   if not VarIsEmpty(v) then fSettings.ExportCodeNameValueCount2 := v;
+  fKeyValue.GetKeyValue('KeepLastBatchCodeNameOnEachComputer', v);
+  if not VarIsEmpty(v) then fSettings.KeepLastBatchCodeNameOnEachComputer := v;
+  fKeyValue.GetKeyValue('ExportFile', v);
+  if not VarIsEmpty(v) then fSettings.ExportFile := v;
+  fKeyValue.GetKeyValue('ExportFile2', v);
+  if not VarIsEmpty(v) then fSettings.ExportFile2 := v;
+  fKeyValue.GetKeyValue('ExportFile3', v);
+  if not VarIsEmpty(v) then fSettings.ExportFile3 := v;
+  fKeyValue.GetKeyValue('ExportFile4', v);
+  if not VarIsEmpty(v) then fSettings.ExportFile4 := v;
 end;
 
 procedure WriteSettings;
@@ -2407,9 +2556,6 @@ begin
   fKeyValue.SetKeyValue('SlantSameValueCount2', fSettings.SlantSameValueCount2);
   fKeyValue.SetKeyValue('GroupCount', fSettings.GroupCount);
   fKeyValue.SetKeyValue('KeepCodeNameValueCount', fSettings.KeepCodeNameValueCount);
-  fKeyValue.SetKeyValue('ExportSource', fSettings.ExportSource);
-  fKeyValue.SetKeyValue('ExportCodeNameValueCount', fSettings.ExportCodeNameValueCount);
-  fKeyValue.SetKeyValue('ExportCodeNameValueCount2', fSettings.ExportCodeNameValueCount2);
 end;
 
 procedure ConnectServer(Address, Port: string);
@@ -2429,6 +2575,8 @@ begin
   fNotifyCallback := TNotifyCallback.Create(fClient, INotifyCallback);
   fService.RegisterConsumer(fNotifyCallback, TNotifyCallback(fNotifyCallback).ID, fLocalIP);
   fGroupCodeName.Client := fClient;
+
+  fMainApp := Assigned(fServer);
 end;
 
 procedure DisconnectServer;
@@ -2442,7 +2590,8 @@ begin
 end;
 
 initialization
-  //TInterfaceFactory.RegisterInterfaces([TypeInfo(IService), TypeInfo(INotifyCallback)]);
+  fMainApp := True;
+  TInterfaceFactory.RegisterInterfaces([TypeInfo(IService), TypeInfo(INotifyCallback)]);
 
   fDatabase := TSQLRestServerDB.CreateWithOwnModel(
     [TSQLKeyValue, TSQLRow, TSQLFirstRow, TSQLCodeName, TSQLFirstRowCodeName],
@@ -2453,7 +2602,7 @@ initialization
   fDatabase.CreateSQLIndex(TSQLCodeName, 'ValueCount', False);
   fDatabase.CreateSQLIndex(TSQLCodeName, 'FirstRowValueCount', False);
   fDatabase.CreateSQLIndex(TSQLFirstRowCodeName, 'FirstRow', False);
-  //fDatabase.ServiceDefine(TService, [IService], sicShared).SetOptions([], [optExecLockedPerInterface]);
+  fDatabase.ServiceDefine(TService, [IService], sicShared).SetOptions([], [optExecLockedPerInterface]);
 
   //sqlite3.create_function(fDatabase.DB.DB, 'WordDynArrayEquals', 2, SQLITE_ANY,
   //  TypeInfo(TWordDynArray), Int64DynArrayEquals, nil, nil);
@@ -2462,11 +2611,11 @@ initialization
   fKeyValue.SetRest(fDatabase);
   ReadSettings;
 
-  {try
-    fServer := TSQLHttpServer.Create('8888', [fDatabase], '+', useBidirSocket);
-    fServer.WebSocketsEnable(fDatabase, 'encryptionkey');
-  except
-  end;
+  fDataComputer := TDataComputer.Create;
+  fDataComputer.Start;
+
+  fGroupCodeName := TGroupCodeName.Create(fDatabase);
+  fGroupCodeName.Start;
 
   with TIdIPWatch.Create do
   begin
@@ -2475,15 +2624,15 @@ initialization
     finally
       Free;
     end;
-  end; }
+  end;
 
-  fDataComputer := TDataComputer.Create;
-  fDataComputer.Start;
+  try
+    fServer := TSQLHttpServer.Create('8888', [fDatabase], '+', useBidirSocket);
+    fServer.WebSocketsEnable(fDatabase, 'encryptionkey');
 
-  fGroupCodeName := TGroupCodeName.Create;
-  fGroupCodeName.Start;
-
-  //ConnectServer('127.0.0.1', '8888');
+    ConnectServer('127.0.0.1', '8888');
+  except
+  end;
 
 finalization
   DisconnectServer;

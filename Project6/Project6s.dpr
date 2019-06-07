@@ -10,7 +10,8 @@ uses
   Dejavu.WaitableTimer in '..\Dejavu.WaitableTimer.pas',
   ufrmGroupCodeNameSettings in 'ufrmGroupCodeNameSettings.pas' {frmGroupCodeNameSettings},
   uControlHelper in '..\uControlHelper.pas',
-  ufrmGroupCodeNameSettings2 in 'ufrmGroupCodeNameSettings2.pas' {frmGroupCodeNameSettings2};
+  ufrmGroupCodeNameSettings2 in 'ufrmGroupCodeNameSettings2.pas' {frmGroupCodeNameSettings2},
+  ufrmExportFileSettings in 'ufrmExportFileSettings.pas' {frmExportFileSettings};
 
 {$R *.res}
 
@@ -20,5 +21,6 @@ begin
   Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TfrmGroupCodeNameSettings, frmGroupCodeNameSettings);
   Application.CreateForm(TfrmGroupCodeNameSettings2, frmGroupCodeNameSettings2);
+  Application.CreateForm(TfrmExportFileSettings, frmExportFileSettings);
   Application.Run;
 end.

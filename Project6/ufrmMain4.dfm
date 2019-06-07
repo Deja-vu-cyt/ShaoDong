@@ -17,18 +17,16 @@ object frmMain: TfrmMain
   TextHeight = 24
   object PageControl1: TPageControl
     Left = 0
-    Top = 201
+    Top = 230
     Width = 1334
-    Height = 489
+    Height = 460
     ActivePage = TabSheet3
     Align = alClient
     TabHeight = 40
     TabOrder = 0
-    ExplicitHeight = 539
     object TabSheet3: TTabSheet
       Caption = '  '#19968'.'#26597#35810'      '
       ImageIndex = 2
-      ExplicitHeight = 489
       object Label10: TLabel
         Left = 15
         Top = 7
@@ -63,13 +61,6 @@ object frmMain: TfrmMain
         Width = 77
         Height = 24
         Caption = '6.'#35774#32622#65306
-      end
-      object Label6: TLabel
-        Left = 15
-        Top = 308
-        Width = 163
-        Height = 24
-        Caption = '7. '#35774#32622#65306'          '#33267
       end
       object Label16: TLabel
         Left = 15
@@ -176,50 +167,14 @@ object frmMain: TfrmMain
         ParentFont = False
         TabOrder = 6
       end
-      object edtVertSlantExportCodeNameValueCount: TEdit
-        Left = 99
-        Top = 308
-        Width = 50
-        Height = 29
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -17
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        NumbersOnly = True
-        ParentFont = False
-        TabOrder = 7
-      end
-      object edtVertSlantExportCodeNameValueCount2: TEdit
-        Left = 184
-        Top = 308
-        Width = 50
-        Height = 29
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -17
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        NumbersOnly = True
-        ParentFont = False
-        TabOrder = 8
-      end
       object btnVertSlantCompare: TButton
         Left = 15
-        Top = 374
-        Width = 137
+        Top = 354
+        Width = 130
         Height = 40
-        Caption = '7-2.'#23548#20986#25968#25454
-        TabOrder = 9
+        Caption = '8.'#23548#20986#25968#25454
+        TabOrder = 7
         OnClick = btnCompareClick
-      end
-      object chkVertSlantExportSource: TCheckBox
-        Left = 15
-        Top = 343
-        Width = 250
-        Height = 25
-        Caption = '7-1. '#21482#23384#20648#65288#24182#65289#23548#20986
-        TabOrder = 10
       end
       object edtVertSlantKeepCodeNameValueCount: TEdit
         Left = 109
@@ -233,7 +188,7 @@ object frmMain: TfrmMain
         Font.Style = []
         NumbersOnly = True
         ParentFont = False
-        TabOrder = 11
+        TabOrder = 8
       end
       object btnVertSlantCompare2: TButton
         Left = 15
@@ -241,7 +196,7 @@ object frmMain: TfrmMain
         Width = 282
         Height = 40
         Caption = '6-3.'#35774#32622' '#65306#26242#20445#30041#65288#24182#65289#23548#20986
-        TabOrder = 12
+        TabOrder = 9
         OnClick = btnCompareClick
       end
       object btnVertSlantGroupCodeNameSettings: TButton
@@ -250,7 +205,7 @@ object frmMain: TfrmMain
         Width = 285
         Height = 40
         Caption = '6-2'#65288'1'#65289'.'#35774#32622#65288' '#36941#21382' '#65289#26465#20214
-        TabOrder = 13
+        TabOrder = 10
         OnClick = btnVertSlantGroupCodeNameSettingsClick
       end
       object btnVertSlantGroupCodeNameSettings2: TButton
@@ -259,14 +214,26 @@ object frmMain: TfrmMain
         Width = 285
         Height = 40
         Caption = '6-2'#65288'2'#65289'.'#35774#32622#65288' '#36941#21382' '#65289#26465#20214
-        TabOrder = 14
+        TabOrder = 11
         OnClick = btnVertSlantGroupCodeNameSettings2Click
+      end
+      object btnVertSlantExportFileSettings: TButton
+        Left = 15
+        Top = 308
+        Width = 378
+        Height = 40
+        Caption = '7. '#35774#32622#65288' '#36941#21382#26465#20214' '#65289#21450#65288' '#23548#20986#26041#24335' '#65289
+        TabOrder = 12
+        OnClick = btnVertSlantExportFileSettingsClick
       end
     end
     object TabSheet2: TTabSheet
       Caption = '  '#20108'.'#26597#35810'      '
       ImageIndex = 1
-      ExplicitHeight = 489
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label7: TLabel
         Left = 15
         Top = 15
@@ -287,13 +254,6 @@ object frmMain: TfrmMain
         Width = 83
         Height = 24
         Caption = '5. '#35774#32622#65306
-      end
-      object Label11: TLabel
-        Left = 15
-        Top = 292
-        Width = 163
-        Height = 24
-        Caption = '6. '#35774#32622#65306'          '#33267
       end
       object Label17: TLabel
         Left = 15
@@ -358,50 +318,14 @@ object frmMain: TfrmMain
         ParentFont = False
         TabOrder = 3
       end
-      object edtVertExportCodeNameValueCount: TEdit
-        Left = 99
-        Top = 292
-        Width = 50
-        Height = 29
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -17
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        NumbersOnly = True
-        ParentFont = False
-        TabOrder = 4
-      end
-      object edtVertExportCodeNameValueCount2: TEdit
-        Left = 184
-        Top = 292
-        Width = 50
-        Height = 29
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -17
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        NumbersOnly = True
-        ParentFont = False
-        TabOrder = 5
-      end
       object btnVertCompare: TButton
         Left = 15
-        Top = 358
-        Width = 143
+        Top = 338
+        Width = 130
         Height = 40
-        Caption = '6-2.'#23548#20986#25968#25454
-        TabOrder = 6
+        Caption = '7.'#23548#20986#25968#25454
+        TabOrder = 4
         OnClick = btnCompareClick
-      end
-      object chkVertExportSource: TCheckBox
-        Left = 15
-        Top = 327
-        Width = 250
-        Height = 25
-        Caption = '6-1. '#21482#23384#20648#65288#24182#65289#23548#20986
-        TabOrder = 7
       end
       object edtVertKeepCodeNameValueCount: TEdit
         Left = 104
@@ -415,7 +339,7 @@ object frmMain: TfrmMain
         Font.Style = []
         NumbersOnly = True
         ParentFont = False
-        TabOrder = 8
+        TabOrder = 5
       end
       object btnVertCompare2: TButton
         Left = 15
@@ -423,7 +347,7 @@ object frmMain: TfrmMain
         Width = 290
         Height = 40
         Caption = '5-3.'#35774#32622' '#65306#26242#20445#30041#65288#24182#65289#23548#20986
-        TabOrder = 9
+        TabOrder = 6
         OnClick = btnCompareClick
       end
       object btnVertGroupCodeNameSettings: TButton
@@ -432,7 +356,7 @@ object frmMain: TfrmMain
         Width = 285
         Height = 40
         Caption = '5-2'#65288'1'#65289'.'#35774#32622#65288' '#36941#21382' '#65289#26465#20214
-        TabOrder = 10
+        TabOrder = 7
         OnClick = btnVertGroupCodeNameSettingsClick
       end
       object btnVertGroupCodeNameSettings2: TButton
@@ -441,13 +365,25 @@ object frmMain: TfrmMain
         Width = 285
         Height = 40
         Caption = '5-2'#65288'2'#65289'.'#35774#32622#65288' '#36941#21382' '#65289#26465#20214
-        TabOrder = 11
+        TabOrder = 8
         OnClick = btnVertGroupCodeNameSettings2Click
+      end
+      object btnVertExportFileSettings: TButton
+        Left = 15
+        Top = 292
+        Width = 378
+        Height = 40
+        Caption = '6. '#35774#32622#65288' '#36941#21382#26465#20214' '#65289#21450#65288' '#23548#20986#26041#24335' '#65289
+        TabOrder = 9
+        OnClick = btnVertExportFileSettingsClick
       end
     end
     object TabSheet1: TTabSheet
       Caption = '  '#19977'.'#26597#35810'      '
-      ExplicitHeight = 489
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label2: TLabel
         Left = 15
         Top = 47
@@ -461,13 +397,6 @@ object frmMain: TfrmMain
         Width = 77
         Height = 24
         Caption = '4.'#35774#32622#65306
-      end
-      object Label13: TLabel
-        Left = 15
-        Top = 255
-        Width = 151
-        Height = 24
-        Caption = '6. '#35774#32622#65306'        '#33267
       end
       object Label19: TLabel
         Left = 15
@@ -510,50 +439,14 @@ object frmMain: TfrmMain
         ParentFont = False
         TabOrder = 1
       end
-      object edtSlantExportCodeNameValueCount: TEdit
-        Left = 92
-        Top = 255
-        Width = 50
-        Height = 29
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -17
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        NumbersOnly = True
-        ParentFont = False
-        TabOrder = 2
-      end
-      object edtSlantExportCodeNameValueCount2: TEdit
-        Left = 172
-        Top = 255
-        Width = 50
-        Height = 29
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -17
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        NumbersOnly = True
-        ParentFont = False
-        TabOrder = 3
-      end
       object btnSlantCompare: TButton
         Left = 15
-        Top = 321
-        Width = 151
+        Top = 301
+        Width = 130
         Height = 40
-        Caption = '6-2.'#23548#20986#25968#25454
-        TabOrder = 4
+        Caption = '7.'#23548#20986#25968#25454
+        TabOrder = 2
         OnClick = btnCompareClick
-      end
-      object chkSlantExportSource: TCheckBox
-        Left = 15
-        Top = 290
-        Width = 250
-        Height = 25
-        Caption = '6-1. '#21482#23384#20648#65288#24182#65289#23548#20986
-        TabOrder = 5
       end
       object edtSlantKeepCodeNameValueCount: TEdit
         Left = 109
@@ -567,7 +460,7 @@ object frmMain: TfrmMain
         Font.Style = []
         NumbersOnly = True
         ParentFont = False
-        TabOrder = 6
+        TabOrder = 3
       end
       object btnSlantCompare2: TButton
         Left = 15
@@ -575,7 +468,7 @@ object frmMain: TfrmMain
         Width = 282
         Height = 40
         Caption = '5-3.'#35774#32622' '#65306#26242#20445#30041#65288#24182#65289#23548#20986
-        TabOrder = 7
+        TabOrder = 4
         OnClick = btnCompareClick
       end
       object btnSlantGroupCodeNameSettings: TButton
@@ -584,7 +477,7 @@ object frmMain: TfrmMain
         Width = 285
         Height = 40
         Caption = '5-2'#65288'1'#65289'.'#35774#32622#65288' '#36941#21382' '#65289#26465#20214
-        TabOrder = 8
+        TabOrder = 5
         OnClick = btnVertGroupCodeNameSettingsClick
       end
       object btnSlantGroupCodeNameSettings2: TButton
@@ -593,8 +486,17 @@ object frmMain: TfrmMain
         Width = 285
         Height = 40
         Caption = '5-2'#65288'2'#65289'.'#35774#32622#65288' '#36941#21382' '#65289#26465#20214
-        TabOrder = 9
+        TabOrder = 6
         OnClick = btnVertGroupCodeNameSettings2Click
+      end
+      object btnSlantExportFileSettings: TButton
+        Left = 15
+        Top = 255
+        Width = 378
+        Height = 40
+        Caption = '6. '#35774#32622#65288' '#36941#21382#26465#20214' '#65289#21450#65288' '#23548#20986#26041#24335' '#65289
+        TabOrder = 7
+        OnClick = btnSlantExportFileSettingsClick
       end
     end
   end
@@ -602,43 +504,65 @@ object frmMain: TfrmMain
     Left = 0
     Top = 0
     Width = 1334
-    Height = 201
+    Height = 230
     Align = alTop
     TabOrder = 1
     DesignSize = (
       1334
-      201)
+      230)
     object Label1: TLabel
       Left = 19
-      Top = 51
+      Top = 81
       Width = 77
       Height = 24
       Caption = '1.'#35835#21462#65306
     end
     object lblUseTime: TLabel
       Left = 19
-      Top = 16
+      Top = 46
       Width = 140
       Height = 24
       Caption = #22788#29702#25152#38656#26102#38388#65306
     end
     object Label3: TLabel
       Left = 19
-      Top = 86
+      Top = 116
       Width = 77
       Height = 24
       Caption = '2.'#35774#32622#65306
     end
     object Label4: TLabel
       Left = 19
-      Top = 121
+      Top = 151
       Width = 77
       Height = 24
       Caption = '3.'#35774#32622#65306
     end
+    object Label20: TLabel
+      Left = 321
+      Top = 16
+      Width = 495
+      Height = 24
+      Caption = #9313'.'#65288#35774#32622#65289'['#65288' '#20027#26426' IP '#22320#22336' '#65289#36830#25509#65288' N '#21488#26381#21153#22120' '#65289'] '#65306
+    end
+    object Label21: TLabel
+      Left = 14
+      Top = 16
+      Width = 226
+      Height = 24
+      Caption = #9312'.'#65288#24050#35774#32622#65289#20027#26426#31471#21475' '#65306
+    end
+    object Label22: TLabel
+      Left = 1199
+      Top = 16
+      Width = 20
+      Height = 24
+      Anchors = [akTop, akRight]
+      Caption = #9314'.'
+    end
     object edtFileName: TEdit
       Left = 97
-      Top = 51
+      Top = 81
       Width = 1220
       Height = 29
       Anchors = [akLeft, akTop, akRight]
@@ -654,7 +578,7 @@ object frmMain: TfrmMain
     end
     object edtIntervalValue: TEdit
       Left = 97
-      Top = 86
+      Top = 116
       Width = 100
       Height = 29
       Font.Charset = DEFAULT_CHARSET
@@ -668,7 +592,7 @@ object frmMain: TfrmMain
     end
     object edtIntervalValue2: TEdit
       Left = 97
-      Top = 121
+      Top = 151
       Width = 100
       Height = 29
       Font.Charset = DEFAULT_CHARSET
@@ -682,11 +606,38 @@ object frmMain: TfrmMain
     end
     object chkCompareCrossRange: TCheckBox
       Left = 19
-      Top = 160
+      Top = 190
       Width = 220
       Height = 25
       Caption = #26597#35810#65306'( '#31532' 4 '#27169#24335' ) '
       TabOrder = 3
+    end
+    object edtAddress: TEdit
+      Left = 822
+      Top = 16
+      Width = 363
+      Height = 32
+      Anchors = [akLeft, akTop, akRight]
+      TabOrder = 4
+    end
+    object edtPort: TEdit
+      Left = 246
+      Top = 16
+      Width = 60
+      Height = 32
+      NumbersOnly = True
+      TabOrder = 5
+      Text = '8888'
+    end
+    object btnOk: TButton
+      Left = 1230
+      Top = 9
+      Width = 75
+      Height = 40
+      Anchors = [akTop, akRight]
+      Caption = #30830#23450
+      TabOrder = 6
+      OnClick = btnOkClick
     end
   end
   object OpenDialog: TOpenDialog

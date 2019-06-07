@@ -155,6 +155,17 @@ type
       CheckEven: TFunc<Word, Boolean> = nil);
   end;
 
+  TCombinatorialAlgorithm = class
+  private
+    class procedure ForWorker(TotalCount, EachTimeCount, Number: Cardinal;
+      Proc: TProc<Cardinal, TCardinalDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean> = nil);
+  public
+    class procedure &For(TotalCount, EachTimeCount, Number: Cardinal;
+      Proc: TProc<Cardinal, TCardinalDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean> = nil); overload;
+    class procedure &For(TotalCount, EachTimeCount: Cardinal;
+      Proc: TProc<Cardinal, TCardinalDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean> = nil); overload;
+  end;
+
 var
   fDirectory: string;
   fLogDirectory: string;
@@ -165,13 +176,13 @@ procedure InternalSQLFunctionValueExist(Context: TSQLite3FunctionContext;
 
 procedure BinarySearch(First, Last: Cardinal; Func: TFunc<Cardinal, Byte>);
 
-procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
+{procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
   Stop: TFunc<Boolean> = nil); overload;
 procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
   Proc2: TProc<TWordDynArray> = nil; Stop: TFunc<Boolean> = nil); overload;
 procedure Foreach(TotalCount, EachTimeCount, Number: Cardinal;
   Proc: TProc<Cardinal, TWordDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean>); overload;
-procedure Foreach2(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>);
+procedure Foreach2(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>); }
 function DigitToString(Digit: Cardinal): string;
 
 function SeparateDigit(var s: string): string;
@@ -401,11 +412,12 @@ end;}
 procedure TSQLData.AssignValue(s: string; aPlaceholder: string;
   aIntervalValues: TWordDynArray; aDataMode: Byte);
 var
-  sValue, sDigit: string;
+  sValue, sDigit, sTemp: string;
   c, c2: Char;
   i, i2, Digit, IntervalIndex: Integer;
   v, IntervaValue: Word;
   CalcIntervalValues: Boolean;
+  HasLeft: Boolean;
 begin
   ClearValue;
   fIntervalValues := aIntervalValues;
@@ -507,7 +519,37 @@ begin
           end;
         end;
       end;
-    end
+    end;
+    2:
+    begin
+      for c in s do
+      begin
+        case c of
+          '£¨':
+          begin
+            sValue := '';
+            HasLeft := True;
+          end;
+          '£©':
+          begin
+            i := sValue.IndexOf('-');
+            if i > -1 then sValue := sValue.Substring(i + 1).Trim;
+            if not sTemp.IsEmpty then sTemp := sTemp + '¡¢';
+            sTemp := sTemp + sValue;
+            HasLeft := False;
+          end;
+          else
+          begin
+            if HasLeft then
+              sValue := sValue + c
+            else
+              sTemp := sTemp + c;
+          end;
+        end;
+      end;
+      AssignValue(sTemp, '', aIntervalValues, 0);
+      Exit;
+    end;
     else
     begin
       if CalcIntervalValues then
@@ -803,20 +845,23 @@ const
 var
   v, v2, IntervalValue, SubIntervalNo, LastSubIntervalNo: Word;
   s: string;
-  i, IntervalIndex: Integer;
+  i, IntervalIndex, ValueNo: Integer;
   Unclosed: Boolean;
 begin
   Result := '';
   IntervalIndex := Low(aIntervalValues);
   IntervalValue := 0;
   LastSubIntervalNo := 0;
+  ValueNo := 0;
   Unclosed := False;
   for v in aValues do
   begin
+    Inc(ValueNo);
     while v > IntervalValue + aIntervalValues[IntervalIndex] do
     begin
       LastSubIntervalNo := 0;
       Inc(IntervalIndex);
+      ValueNo := 0;
       IntervalValue := IntervalValue + aIntervalValues[IntervalIndex - 1];
       if Unclosed then
       begin
@@ -855,6 +900,18 @@ begin
           Unclosed := True;
         end;
         if not Result.Substring(Result.Length -1).Equals('£º') then Result := Result + '¡¢';
+        Result := Result + s;
+      end;
+      2:
+      begin
+        s := v2.ToString;
+        if IntervalIndex = 0 then
+          s := Format('£¨ %d-%d £©', [ValueNo, v2])
+        else
+        begin
+          if not Result.Substring(Result.Length -1).Equals('-') then Result := Result + '¡¢';
+          if ValueNo = 0 then Result := Result + ' ';
+        end;
         Result := Result + s;
       end;
       else
@@ -959,7 +1016,7 @@ begin
   end;
 end;
 
-procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
+{procedure Foreach(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TWordDynArray>;
   Stop: TFunc<Boolean>);
 begin
   Foreach(TotalCount, EachTimeCount, Proc, nil, Stop);
@@ -1072,7 +1129,7 @@ begin
 
     for i := Low(r) to High(r) do r[i] := r[i] + 1;
   until r[High(r)] > TotalCount;
-end;
+end;}
 
 function DigitToString(Digit: Cardinal): string;
 begin
@@ -1489,6 +1546,67 @@ begin
   for i := iMinCount to High(t) do x[iMinCount + i] := t[i];
   for i := iMinCount to High(t2) do x[iMinCount + i] := t2[i];
 end;
+
+class procedure TCombinatorialAlgorithm.ForWorker(TotalCount, EachTimeCount, Number: Cardinal;
+  Proc: TProc<Cardinal, TCardinalDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean>);
+var
+  r: TCardinalDynArray;
+  i, i2, i3: Integer;
+  StartNumber, EndNumber, GroupCount: Cardinal;
+begin
+  if (TotalCount = 0) or (TotalCount < EachTimeCount) or (TotalCount - EachTimeCount + 1 < Number) then Exit;
+
+  SetLength(r, EachTimeCount);
+  StartNumber := 1;
+  EndNumber := TotalCount - EachTimeCount + 1;
+  if Number > 0 then
+  begin
+    StartNumber := Number;
+    EndNumber := Number;
+  end;
+
+  for Number := StartNumber to EndNumber do
+  begin
+    for i := Low(r) to High(r) do r[i] := Number + i;
+    r[High(r)] := r[High(r)] - 1;
+    GroupCount := 0;
+    repeat
+      if Assigned(Stop) and Stop(Number, GroupCount) then Exit;
+
+      r[High(r)] := r[High(r)] + 1;
+      if Assigned(Proc) then Proc(Number, r);
+      GroupCount := GroupCount + 1;
+
+      if r[High(r)] = TotalCount then
+      begin
+        for i2 := High(r) - 1 downto Low(r) + 1 do
+        begin
+          r[i2] := r[i2] + 1;
+          if r[i2] < TotalCount - High(r) + 1 + i2 then
+          begin
+            for i3 := i2 + 1 to High(r) do
+              r[i3] := r[i3 - 1] + 1;
+            r[High(r)] := r[High(r)] - 1;
+            Break;
+          end;
+        end;
+      end;
+    until r[High(r)] = TotalCount;
+  end;
+end;
+
+class procedure TCombinatorialAlgorithm.&For(TotalCount, EachTimeCount, Number: Cardinal;
+  Proc: TProc<Cardinal, TCardinalDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean> = nil);
+begin
+  ForWorker(TotalCount, EachTimeCount, Number, Proc, Stop);
+end;
+
+class procedure TCombinatorialAlgorithm.&For(TotalCount, EachTimeCount: Cardinal;
+  Proc: TProc<Cardinal, TCardinalDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean> = nil);
+begin
+  ForWorker(TotalCount, EachTimeCount, 0, Proc, Stop);
+end;
+
 
 initialization
   fDirectory := TPath.GetDirectoryName(ParamStr(0));

@@ -28,16 +28,16 @@ object frmGroupCodeNameSettings: TfrmGroupCodeNameSettings
   object lblLine1: TLabel
     Left = 23
     Top = 58
-    Width = 439
+    Width = 523
     Height = 24
-    Caption = '6-2 '#9312'.'#35774#32622' '#65306#21508#65288' '#26368#21069' '#65289'                    '#30340#39318#34892' '#65292
+    Caption = '6-2 '#9312'.'#35774#32622' '#65306#21508#65288' '#26368#21069' '#65289'                                  '#30340#39318#34892' '#65292
   end
   object lblLine2: TLabel
     Left = 23
     Top = 93
-    Width = 525
+    Width = 609
     Height = 24
-    Caption = '6-2 '#9313'.'#35774#32622' '#65306#21508#65288' '#38543#21518' '#65289'                    '#30340#39318#34892' '#65292#20877#36941#21382' '#12290
+    Caption = '6-2 '#9313'.'#35774#32622' '#65306#21508#65288' '#38543#21518' '#65289'                                  '#30340#39318#34892' '#65292#20877#36941#21382' '#12290
   end
   object Label1: TLabel
     Left = 23
@@ -77,9 +77,9 @@ object frmGroupCodeNameSettings: TfrmGroupCodeNameSettings
     TabOrder = 1
   end
   object edtGroupCountEachFirstNumber: TEdit
-    Left = 264
+    Left = 254
     Top = 93
-    Width = 100
+    Width = 200
     Height = 29
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -91,9 +91,9 @@ object frmGroupCodeNameSettings: TfrmGroupCodeNameSettings
     TabOrder = 2
   end
   object edtGroupFirstNumberCount: TEdit
-    Left = 264
+    Left = 254
     Top = 58
-    Width = 100
+    Width = 200
     Height = 29
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText

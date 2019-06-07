@@ -39,6 +39,9 @@
         <Projects Include="Project6\Project6bs.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Project7\Project7.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -155,14 +158,23 @@
     <Target Name="Project6bs:Make">
         <MSBuild Projects="Project6\Project6bs.dproj" Targets="Make"/>
     </Target>
+    <Target Name="Project7">
+        <MSBuild Projects="Project7\Project7.dproj"/>
+    </Target>
+    <Target Name="Project7:Clean">
+        <MSBuild Projects="Project7\Project7.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project7:Make">
+        <MSBuild Projects="Project7\Project7.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="Project2;Project2s;Project2b;Project2bs;Project3;Project4;Project5;Project5b;Project6;Project6s;Project6b;Project6bs"/>
+        <CallTarget Targets="Project2;Project2s;Project2b;Project2bs;Project3;Project4;Project5;Project5b;Project6;Project6s;Project6b;Project6bs;Project7"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Project2:Clean;Project2s:Clean;Project2b:Clean;Project2bs:Clean;Project3:Clean;Project4:Clean;Project5:Clean;Project5b:Clean;Project6:Clean;Project6s:Clean;Project6b:Clean;Project6bs:Clean"/>
+        <CallTarget Targets="Project2:Clean;Project2s:Clean;Project2b:Clean;Project2bs:Clean;Project3:Clean;Project4:Clean;Project5:Clean;Project5b:Clean;Project6:Clean;Project6s:Clean;Project6b:Clean;Project6bs:Clean;Project7:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Project2:Make;Project2s:Make;Project2b:Make;Project2bs:Make;Project3:Make;Project4:Make;Project5:Make;Project5b:Make;Project6:Make;Project6s:Make;Project6b:Make;Project6bs:Make"/>
+        <CallTarget Targets="Project2:Make;Project2s:Make;Project2b:Make;Project2bs:Make;Project3:Make;Project4:Make;Project5:Make;Project5b:Make;Project6:Make;Project6s:Make;Project6b:Make;Project6bs:Make;Project7:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

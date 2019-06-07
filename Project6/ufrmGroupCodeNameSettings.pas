@@ -46,9 +46,9 @@ begin
   begin
     s := lblLine.Caption;
     lblLine.Caption := s.Replace(Format('%d-2', [fNumber]), Format('%d-2', [Value]));
-    s := lblLine.Caption;
+    s := lblLine1.Caption;
     lblLine1.Caption := s.Replace(Format('%d-2', [fNumber]), Format('%d-2', [Value]));
-    s := lblLine.Caption;
+    s := lblLine2.Caption;
     lblLine2.Caption := s.Replace(Format('%d-2', [fNumber]), Format('%d-2', [Value]));
 
     fNumber := Value;
