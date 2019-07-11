@@ -13,6 +13,7 @@ object frmMain: TfrmMain
   OldCreateOrder = False
   Position = poDesktopCenter
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 24
   object PageControl1: TPageControl
@@ -20,7 +21,7 @@ object frmMain: TfrmMain
     Top = 230
     Width = 1334
     Height = 470
-    ActivePage = TabSheet3
+    ActivePage = TabSheet1
     Align = alClient
     TabHeight = 40
     TabOrder = 0
@@ -232,10 +233,6 @@ object frmMain: TfrmMain
     object TabSheet2: TTabSheet
       Caption = '  '#20108'.'#26597#35810#65306#12304#21508#34892#38388#12305#30452#36830#12304#23545#24212#21015#12305#32452#21512'      '
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label7: TLabel
         Left = 15
         Top = 15
@@ -384,13 +381,9 @@ object frmMain: TfrmMain
     end
     object TabSheet1: TTabSheet
       Caption = '  '#19977'.'#26597#35810#65306#12304#21508#34892#38388#12305#26012#36830#12304#23545#24212#21015#12305#32452#21512'     '
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label2: TLabel
         Left = 15
-        Top = 50
+        Top = 80
         Width = 1296
         Height = 24
         Caption = 
@@ -406,10 +399,17 @@ object frmMain: TfrmMain
       end
       object Label19: TLabel
         Left = 15
-        Top = 87
+        Top = 117
         Width = 607
         Height = 24
         Caption = '5-1.'#35774#32622#65306#26242#20445#30041#65288#24182#65289#23548#20986#65288' '#31526#21512#35774#32622' '#65289#30340'          '#20010#20197#19978#32452#21512#30340#34892
+      end
+      object Label6: TLabel
+        Left = 15
+        Top = 45
+        Width = 473
+        Height = 24
+        Caption = #65288'1'#65289'.'#65288#26012#36830#65289'y'#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
       end
       object edtCompareSpacing: TEdit
         Left = 834
@@ -427,7 +427,7 @@ object frmMain: TfrmMain
       end
       object edtSlantGroupCount: TEdit
         Left = 857
-        Top = 50
+        Top = 80
         Width = 50
         Height = 29
         Font.Charset = DEFAULT_CHARSET
@@ -441,7 +441,7 @@ object frmMain: TfrmMain
       end
       object btnSlantCompare: TButton
         Left = 15
-        Top = 301
+        Top = 331
         Width = 463
         Height = 40
         Caption = '7.'#8220#26681#25454#65306'1- 6.'#35774#32622#8220#23548#20986' ...'#8220'N-N'#8221#20010#32452#21512#8221#23548#20986#25968#25454
@@ -450,7 +450,7 @@ object frmMain: TfrmMain
       end
       object edtSlantKeepCodeNameValueCount: TEdit
         Left = 428
-        Top = 87
+        Top = 117
         Width = 50
         Height = 29
         Font.Charset = DEFAULT_CHARSET
@@ -464,7 +464,7 @@ object frmMain: TfrmMain
       end
       object btnSlantCompare2: TButton
         Left = 15
-        Top = 209
+        Top = 239
         Width = 800
         Height = 40
         Caption = '5-3.'#35774#32622' '#65306#26242#20445#30041#65288#24182#65289#23548#20986#65288' '#31526#21512#35774#32622' '#65289#30340#12304' '#22635#20837#65306'N '#65307#20363' '#65306'20 '#12305#20010#20197#19978#32452#21512#30340#34892
@@ -473,7 +473,7 @@ object frmMain: TfrmMain
       end
       object btnSlantGroupCodeNameSettings: TButton
         Left = 15
-        Top = 117
+        Top = 147
         Width = 285
         Height = 40
         Caption = '5-2'#65288'1'#65289'.'#35774#32622#65288' '#36941#21382' '#65289#26465#20214
@@ -482,7 +482,7 @@ object frmMain: TfrmMain
       end
       object btnSlantGroupCodeNameSettings2: TButton
         Left = 15
-        Top = 163
+        Top = 193
         Width = 285
         Height = 40
         Caption = '5-2'#65288'2'#65289'.'#35774#32622#65288' '#36941#21382' '#65289#26465#20214
@@ -491,12 +491,40 @@ object frmMain: TfrmMain
       end
       object btnSlantExportFileSettings: TButton
         Left = 15
-        Top = 255
+        Top = 285
         Width = 378
         Height = 40
         Caption = '6. '#35774#32622#65288' '#36941#21382#26465#20214' '#65289#21450#65288' '#23548#20986#26041#24335' '#65289
         TabOrder = 7
         OnClick = btnSlantExportFileSettingsClick
+      end
+      object edtSameValueCount2: TEdit
+        Left = 270
+        Top = 45
+        Width = 50
+        Height = 29
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -17
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        NumbersOnly = True
+        ParentFont = False
+        TabOrder = 8
+      end
+      object edtSameValueCount: TEdit
+        Left = 189
+        Top = 45
+        Width = 50
+        Height = 29
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -17
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        NumbersOnly = True
+        ParentFont = False
+        TabOrder = 9
       end
     end
   end
@@ -541,24 +569,31 @@ object frmMain: TfrmMain
     object Label20: TLabel
       Left = 321
       Top = 16
-      Width = 495
+      Width = 501
       Height = 24
       Caption = #9313'.'#65288#35774#32622#65289'['#65288' '#20027#26426' IP '#22320#22336' '#65289#36830#25509#65288' N '#21488#26381#21153#22120' '#65289'] '#65306
     end
     object Label21: TLabel
       Left = 14
       Top = 16
-      Width = 226
+      Width = 232
       Height = 24
       Caption = #9312'.'#65288#24050#35774#32622#65289#20027#26426#31471#21475' '#65306
     end
     object Label22: TLabel
       Left = 1199
       Top = 16
-      Width = 20
+      Width = 26
       Height = 24
       Anchors = [akTop, akRight]
       Caption = #9314'.'
+    end
+    object lblRowCount: TLabel
+      Left = 420
+      Top = 54
+      Width = 628
+      Height = 24
+      Caption = #26368#21518#19968#27425#36941#21382' '#65292#29983#25104#65288' '#23384#20648' '#65289#22312' '#12304' Data '#25968#25454#24211' '#12305#30340#34892#25968' '#65306' N  '#34892' '#12290
     end
     object edtFileName: TEdit
       Left = 294

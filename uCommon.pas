@@ -184,6 +184,7 @@ procedure Foreach(TotalCount, EachTimeCount, Number: Cardinal;
   Proc: TProc<Cardinal, TWordDynArray>; Stop: TFunc<Cardinal, Cardinal, Boolean>); overload;
 procedure Foreach2(TotalCount, EachTimeCount: Cardinal; Proc: TProc<TCardinalDynArray>); }
 function DigitToString(Digit: Cardinal): string;
+function NumberToString(Value: Cardinal): string;
 
 function SeparateDigit(var s: string): string;
 procedure StrToArray(s: string; var Arr: TWordDynArray; Offset: Integer = 0); overload;
@@ -1135,6 +1136,21 @@ function DigitToString(Digit: Cardinal): string;
 begin
   Result := Digit.ToString;
   if (Result.Length < 2) and (Result <> '0') then Result := '0' + Result;
+end;
+
+function NumberToString(Value: Cardinal): string;
+var
+  i: Integer;
+begin
+  Result := '';
+  i := Value div 100000000;
+  Value := Value mod 100000000;
+  if i > 0 then Result := Result + Format(' %d вк', [i]);
+  i:= Value div 10000;
+  Value := Value mod 10000;
+  if i > 0 then Result := Result + Format(' %d Эђ', [i]);
+  if Value > 0 then
+    Result := Result + Format(' %d', [Value]);
 end;
 
 function TInt64Helper.ValueExist(Value: Byte): Boolean;

@@ -26,15 +26,13 @@ type
     fMaxValueCount: Word;
     fMaxValueCount2: Word;
     fRowSpacing: Cardinal;
-    fLastRowSpacing: Cardinal;
-  public
-    function Group: string;
+    fValueCountGroup: RawUTF8;
   published
     property RowCount: Cardinal read fRowCount write fRowCount;
     property MaxValueCount: Word read fMaxValueCount write fMaxValueCount;
     property MaxValueCount2: Word read fMaxValueCount2 write fMaxValueCount2;
     property RowSpacing: Cardinal read fRowSpacing write fRowSpacing;
-    property LastRowSpacing: Cardinal read fLastRowSpacing write fLastRowSpacing;
+    property ValueCountGroup: RawUTF8 read fValueCountGroup write fValueCountGroup;
   end;
 
   TSQLCompare = class(TSQLRow);
@@ -48,28 +46,52 @@ type
     property CompareNumber: Cardinal read fCompareNumber write fCompareNumber;
   end;
 
+  TSQLSourceGroup = class(TSQLRecord)
+  protected
+    fValue: RawUTF8;
+    fMaxNumber: Cardinal;
+    fMinNumber: Cardinal;
+    fMaxRowSpacing: Cardinal;
+    fDifferenceValue: Cardinal;
+  published
+    property Value: RawUTF8 read fValue write fValue;
+    property MaxNumber: Cardinal read fMaxNumber write fMaxNumber;
+    property MinNumber: Cardinal read fMinNumber write fMinNumber;
+    property MaxRowSpacing: Cardinal read fMaxRowSpacing write fMaxRowSpacing;
+    property DifferenceValue: Cardinal read fDifferenceValue write fDifferenceValue;
+  end;
+
   TDataComputer = class(TThread)
   private
     fStopwatch: TStopwatch;
     fRest: TSQLRestServerDB;
     fDataMode: Byte;
+    fMergeMode: Boolean;
+    fMergeModeStr: string;
+    fMaxSourceNumber: Cardinal;
+
     fIntervalValues: TWordDynArray;
-    fSourceFileName: string;
+    fSourceFileDirectory: string;
+    fCompareFileDirectory: string;
     fCompareFileName: string;
     fExportDirectory: string;
+    fSameValueCount: Word;
+    fSameValueCount2: Word;
+    fSameValueCount3: Word;
+    fSameValueCount4: Word;
     fMinSameValueCount: Word;
-    fMinSameValueCount2: Word;
-    fMinSameValueCount3: Word;
 
     procedure SetExportDirectory(Value: string);
 
     procedure BuildRest;
     procedure LoadRow(Row: TSQLRow; FileName: string);
     procedure LoadSourceFile;
-    procedure LoadCompareFile;
     procedure Compare;
+    procedure BuildGroup;
     procedure BuildRowSpacing;
-    procedure ExportData(FileName: string; Source: TSQLSource); overload;
+    procedure ExportFile;
+    procedure ExportFile2;
+    procedure ExportFile3;
     procedure ExportData; overload;
   public
     constructor Create;
@@ -77,14 +99,17 @@ type
     procedure Execute; override;
   published
     property Stopwatch: TStopwatch read fStopwatch;
+    property MergeMode: Boolean read fMergeMode write fMergeMode;
     property DataMode: Byte read fDataMode;
     property IntervalValues: TWordDynArray read fIntervalValues write fIntervalValues;
-    property SourceFileName: string read fSourceFileName write fSourceFileName;
-    property CompareFileName: string read fCompareFileName write fCompareFileName;
+    property SourceFileDirectory: string read fSourceFileDirectory write fSourceFileDirectory;
+    property CompareFileDirectory: string read fCompareFileDirectory write fCompareFileDirectory;
     property ExportDirectory: string read fExportDirectory write SetExportDirectory;
+    property SameValueCount: Word read fSameValueCount write fSameValueCount;
+    property SameValueCount2: Word read fSameValueCount2 write fSameValueCount2;
+    property SameValueCount3: Word read fSameValueCount3 write fSameValueCount3;
+    property SameValueCount4: Word read fSameValueCount4 write fSameValueCount4;
     property MinSameValueCount: Word read fMinSameValueCount write fMinSameValueCount;
-    property MinSameValueCount2: Word read fMinSameValueCount2 write fMinSameValueCount2;
-    property MinSameValueCount3: Word read fMinSameValueCount3 write fMinSameValueCount3;
   end;
 
 var
@@ -93,11 +118,6 @@ var
   fKeyValue: TSQLKeyValue;
 
 implementation
-
-function TSQLSource.Group: string;
-begin
-  Result := Format('%d+%d', [fMaxValueCount, fMaxValueCount2]);
-end;
 
 procedure TDataComputer.SetExportDirectory(Value: string);
 begin
@@ -110,7 +130,7 @@ end;
 procedure TDataComputer.BuildRest;
 begin
   fRest := TSQLRestServerDB.CreateWithOwnModel(
-    [TSQLSource, TSQLCompare, TSQLCompareData]
+    [TSQLSource, TSQLCompare, TSQLCompareData, TSQLSourceGroup]
   );
   fRest.CreateMissingTables;
 end;
@@ -174,7 +194,7 @@ begin
 
       fRest.TransactionBegin(Row.RecordClass);
       try
-        fRest.Delete(Row.RecordClass, '');
+        //fRest.Delete(Row.RecordClass, '');
         for i := Count - 1 downto 0 do
         begin
           if not TryStrToInt(Names[i].Trim, Digit) then Continue;
@@ -208,27 +228,18 @@ end;
 procedure TDataComputer.LoadSourceFile;
 var
   Source: TSQLSource;
+  FileName: string;
 begin
   if Terminated then Exit;
-
-  if not TFile.Exists(fSourceFileName) then
-    raise Exception.Create('查询文件不存在');
 
   TSQLSource.AutoFree(Source);
-  LoadRow(Source, fSourceFileName);
-end;
+  for FileName in TDirectory.GetFiles(fSourceFileDirectory, '*.txt') do
+  begin
+    if Terminated then Exit;
 
-procedure TDataComputer.LoadCompareFile;
-var
-  Compare: TSQLCompare;
-begin
-  if Terminated then Exit;
-
-  if not TFile.Exists(fCompareFileName) then
-    raise Exception.Create('比较文件不存在');
-
-  TSQLCompare.AutoFree(Compare);
-  LoadRow(Compare, fCompareFileName);
+    LoadRow(Source, FileName);
+  end;
+  fMaxSourceNumber := StrToInt64(fRest.OneFieldValue(TSQLSource, 'Max(Number)', ''));
 end;
 
 procedure TDataComputer.Compare;
@@ -237,6 +248,7 @@ var
   Compare: TSQLCompare;
   CompareData: TSQLCompareData;
   v: Word;
+  IsValid: Boolean;
 begin
   if Terminated then Exit;
 
@@ -257,9 +269,16 @@ begin
         for v in Compare.Values do
           if Source.ValueExist(v) then CompareData.AddValue(v);
         CompareData.CalcValueCount;
-        if ((CompareData.ValueCount >= fMinSameValueCount) and (CompareData.ValueCount2 >= fMinSameValueCount2))
-          or ((fMinSameValueCount3 > 0) and (CompareData.ValueCount2 >= fMinSameValueCount3))
-        then
+
+        if fMergeMode then
+          IsValid := ((CompareData.ValueCount >= fSameValueCount) and (CompareData.ValueCount <= fSameValueCount2)
+          and (CompareData.ValueCount2 >= fSameValueCount3) and (CompareData.ValueCount2 <= fSameValueCount4))
+          or ((fMinSameValueCount > 0) and (CompareData.ValueCount2 >= fMinSameValueCount))
+        else
+          IsValid := ((CompareData.ValueCount >= fSameValueCount) and (CompareData.ValueCount2 >= fSameValueCount3))
+          or ((fMinSameValueCount > 0) and (CompareData.ValueCount2 >= fMinSameValueCount));
+
+        if IsValid then
         begin
           CompareData.SourceNumber := Source.Number;
           CompareData.CompareNumber := Compare.Number;
@@ -280,54 +299,100 @@ begin
         Source.MaxValueCount2 := CompareData.ValueCount2;
       end;
       Source.RowCount := CompareData.FillTable.RowCount;
+      Source.ValueCountGroup := '';
+      if not fMergeMode then
+        Source.ValueCountGroup := Format('%d+%d', [Source.MaxValueCount, Source.MaxValueCount2]);
 
       fRest.Update(Source);
+    end;
+
+    if fMergeMode then
+    begin
+      Source.FillPrepare(fRest, 'ORDER BY MaxValueCount DESC, MaxValueCount2 DESC LIMIT 1', []);
+      if Source.FillOne then
+      begin
+        Source.ValueCountGroup := Format('%d+%d', [Source.MaxValueCount, Source.MaxValueCount2]);
+        fRest.Execute(Format('UPDATE Source SET ValueCountGroup = ''%s''', [Source.ValueCountGroup]))
+      end;
     end;
 
     fRest.Commit(1, True);
   except
     fRest.RollBack;
     raise;
+  end;
+end;
+
+procedure TDataComputer.BuildGroup;
+var
+  Group: TSQLSourceGroup;
+  l: TSQLTableJSON;
+begin
+  if Terminated then Exit;
+
+  fRest.Delete(TSQLSourceGroup, '');
+  TSQLSourceGroup.AutoFree(Group);
+  l := fRest.MultiFieldValues(TSQLSource, 'ValueCountGroup, Max(Number), Min(Number)',
+    'RowCount > 0 GROUP BY ValueCountGroup ORDER BY MaxValueCount DESC, MaxValueCount2 DESC', []);
+  try
+    fRest.TransactionBegin(TSQLSourceGroup);
+    try
+      while l.Step do
+      begin
+        Group.Value := l.FieldAsRawUTF8(0);
+        Group.MaxNumber := l.FieldAsInteger(1);
+        Group.MinNumber := l.FieldAsInteger(2);
+        fRest.Add(Group, True);
+      end;
+      fRest.Commit(1, True);
+    except
+      fRest.RollBack;
+      raise;
+    end;
+  finally
+    l.Free;
   end;
 end;
 
 procedure TDataComputer.BuildRowSpacing;
 var
+  Group: TSQLSourceGroup;
   Source, Source2: TSQLSource;
-  MaxNumber: Cardinal;
-  LastGroup: string;
 begin
   if Terminated then Exit;
 
-  MaxNumber := StrToInt64(fRest.OneFieldValue(TSQLSource, 'Max(Number)', ''));
-
-  TSQLSource.AutoFree(Source, fRest, 'RowCount > 0 ORDER BY MaxValueCount DESC, MaxValueCount2 DESC, Number DESC', []);
+  TSQLSourceGroup.AutoFree(Group, fRest, '', []);
+  TSQLSource.AutoFree(Source);
   TSQLSource.AutoFree(Source2);
   fRest.TransactionBegin(TSQLSource);
   try
-    LastGroup := '';
-    while Source.FillOne do
+    while Group.FillOne do
     begin
-      Source2.Number := 1;
-      Source2.MaxValueCount := 0;
-      Source2.MaxValueCount2 := 0;
-      if Source.FillCurrentRow <= Source.FillTable.RowCount then
-        Source.FillRow(Source.FillCurrentRow, Source2);
-
-      if Source.Group = Source2.Group then
-        Source.RowSpacing := Source.Number - Source2.Number
-      else
-        Source.RowSpacing := Source.Number - 1;
-      if Source.Group = LastGroup then
-        Source.LastRowSpacing := 0
-      else
+      Group.MaxRowSpacing := 0;
+      Source.FillPrepare(fRest, 'ValueCountGroup = ? AND RowCount > 0 ORDER BY Number DESC', [Group.Value]);
+      while Source.FillOne do
       begin
-        Source.LastRowSpacing := MaxNumber + 1 - Source.Number;
-        LastGroup := Source.Group;
+        Source2.Number := 1;
+        if Source.FillCurrentRow <= Source.FillTable.RowCount then
+          Source.FillRow(Source.FillCurrentRow, Source2);
+
+        Source.RowSpacing := Source.Number - Source2.Number;
+        if Source.RowSpacing > Group.MaxRowSpacing then
+          Group.MaxRowSpacing := Source.RowSpacing;
+
+        fRest.Update(Source);
       end;
 
-      fRest.Update(Source);
+      fRest.Update(Group);
     end;
+
+    Group.FillPrepare(fRest, '', []);
+    while Group.FillOne do
+    begin
+      Group.DifferenceValue := fMaxSourceNumber + 1 - Group.MaxNumber - Group.MaxRowSpacing;
+      fRest.Update(Group);
+    end;
+
     fRest.Commit(1, True);
   except
     fRest.RollBack;
@@ -335,92 +400,86 @@ begin
   end;
 end;
 
-procedure TDataComputer.ExportData(FileName: string; Source: TSQLSource);
+procedure TDataComputer.ExportFile;
 var
   fr: TFileWriter;
-  s, s2, sNumber, sRowSpacing, sCompareData, LastGroup, sCompareNumber: string;
-  Source2: TSQLSource;
+  Group: TSQLSourceGroup;
+  Source: TSQLSource;
   CompareData, CompareData2: TSQLCompareData;
+  s, s2, FileName, sNumber, sCompareData, sCompareNumber: string;
 begin
+  if Terminated then Exit;
+
+  FileName := fCompareFileName.Replace('.txt', '：' + fMergeModeStr + '导出结果 1 .txt');
+  FileName := fExportDirectory + ExtractFileName(FileName);
   fr := TFileWriter.Create(FileName);
   try
-    TSQLSource.AutoFree(Source2);
+    TSQLSourceGroup.AutoFree(Group);
+    TSQLSource.AutoFree(Source);
     TSQLCompareData.AutoFree(CompareData);
     TSQLCompareData.AutoFree(CompareData2);
-    while Source.FillOne do
+
+    Group.FillPrepare(fRest, '', []);
+    while Group.FillOne and not Terminated do
     begin
-      Source2.MaxValueCount := 0;
-      Source2.MaxValueCount2 := 0;
-      if Source.FillCurrentRow <= Source.FillTable.RowCount then
-        Source.FillRow(Source.FillCurrentRow, Source2);
-
-      sCompareNumber := '';
-      sCompareData := '';
-      CompareData.FillPrepare(fRest, 'SourceNumber = ? ORDER BY ValueCount DESC, ValueCount2 DESC, CompareNumber', [Source.Number]);
-      while CompareData.FillOne do
+      if Group.FillCurrentRow > 2 then
       begin
-        CompareData2.ValueCount := 0;
-        CompareData2.ValueCount2 := 0;
-        if CompareData.FillCurrentRow <= CompareData.FillTable.RowCount then
-          CompareData.FillRow(CompareData.FillCurrentRow, CompareData2);
-
-        if not sCompareNumber.IsEmpty then sCompareNumber := sCompareNumber + '、';
-        sCompareNumber := sCompareNumber + CompareData.CompareNumber.ToString;
-
-        s := CompareData.ValueCount.ToString;
-        if Length(fIntervalValues) > 1 then
-          s := Format('%d + %d', [CompareData.ValueCount, CompareData.ValueCount2]);
-        s2 := CompareData2.ValueCount.ToString;
-        if Length(fIntervalValues) > 1 then
-          s2 := Format('%d + %d', [CompareData2.ValueCount, CompareData2.ValueCount2]);
-
-        if not s.Equals(s2) then
-        begin
-          if sCompareData <> '' then sCompareData := sCompareData + ' ；';
-          sCompareData := sCompareData + Format('%s = %s', [sCompareNumber, s]);
-
-          sCompareNumber := '';
-        end;
-      end;
-
-      sNumber := Source.Number.ToString;
-      if sNumber.Length < 2 then sNumber := '0' + sNumber;
-
-      sRowSpacing := Source.RowSpacing.ToString;
-      if Source.LastRowSpacing = 0 then
-        sRowSpacing := '   ' + sRowSpacing
-      else
-        sRowSpacing := Source.LastRowSpacing.ToString + '、' + sRowSpacing;
-
-      if not Source.Group.Equals(LastGroup) then
-      begin
-        if not LastGroup.IsEmpty then
-        begin
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn('');
-          fr.WriteLn('');
-        end;
-        s := '[ 全部行的首行（ 第 %d 行 ）（ 加上 + ）1 ] = [ 第 %d 行 ]（ 减去 - ）[ 该组首行（ 第 %d 行 ）] =（ 行差 %d ）';
-        s := Format(s, [Source.Number + Source.LastRowSpacing - 1, Source.Number + Source.LastRowSpacing, Source.Number, Source.LastRowSpacing]);
-        fr.WriteLn(s);
         fr.WriteLn('');
-
-        LastGroup := Source.Group;
+        fr.WriteLn('');
+        fr.WriteLn('');
       end;
 
-      s := '%s=%s ( 行差 ：%d ) （ %s ）';
-      s := Format(s, [sNumber, Source.ToString(fDataMode), Source.RowSpacing, sCompareData]);
+      s := '[ 全部行的首行（ 第 %d 行 ）（ 加上 + ）1 ] = [ 第 %d 行 ]（ 减去 - ）[ 该组首行（ 第 %d 行 ）] =（ 行差 %d ）';
+      s := Format(s, [fMaxSourceNumber, fMaxSourceNumber + 1, Group.MaxNumber, fMaxSourceNumber + 1 - Group.MaxNumber]);
+      fr.WriteLn('');
+      fr.WriteLn('');
       fr.WriteLn(s);
 
-      if not Source.Group.Equals(Source2.Group) then
+      Source.FillPrepare(fRest, 'ValueCountGroup = ? AND RowCount > 0 ORDER BY Number DESC', [Group.Value]);
+      while Source.FillOne and not Terminated do
       begin
-        s := '[ 该组行的末行（ 第 %d 行 ）（ 减去 - ）1 ] =（ 行差 %d ）';
-        s := Format(s, [Source.Number, Source.Number - 1]);
-        fr.WriteLn('');
+        sNumber := Source.Number.ToString;
+        if sNumber.Length < 2 then sNumber := '0' + sNumber;
+
+        sCompareNumber := '';
+        sCompareData := '';
+        CompareData.FillPrepare(fRest, 'SourceNumber = ? ORDER BY ValueCount DESC, ValueCount2 DESC, CompareNumber', [Source.Number]);
+        while CompareData.FillOne and not Terminated do
+        begin
+          CompareData2.ValueCount := 0;
+          CompareData2.ValueCount2 := 0;
+          if CompareData.FillCurrentRow <= CompareData.FillTable.RowCount then
+            CompareData.FillRow(CompareData.FillCurrentRow, CompareData2);
+
+          if not sCompareNumber.IsEmpty then sCompareNumber := sCompareNumber + '、';
+          sCompareNumber := sCompareNumber + CompareData.CompareNumber.ToString;
+
+          s := CompareData.ValueCount.ToString;
+          if Length(fIntervalValues) > 1 then
+            s := Format('%d + %d', [CompareData.ValueCount, CompareData.ValueCount2]);
+          s2 := CompareData2.ValueCount.ToString;
+          if Length(fIntervalValues) > 1 then
+            s2 := Format('%d + %d', [CompareData2.ValueCount, CompareData2.ValueCount2]);
+
+          if not s.Equals(s2) then
+          begin
+            if sCompareData <> '' then sCompareData := sCompareData + ' ；';
+            sCompareData := sCompareData + Format('%s = %s', [sCompareNumber, s]);
+
+            sCompareNumber := '';
+          end;
+        end;
+
+        s := '%s=%s ( 行差 ：%d ) （ %s ）';
+        s := Format(s, [sNumber, Source.ToString(fDataMode), Source.RowSpacing, sCompareData]);
+        if Source.FillCurrentRow = 2 then fr.WriteLn('');
         fr.WriteLn(s);
       end;
+
+      s := '[ 该组行的末行（ 第 %d 行 ）（ 减去 - ）1 ] =（ 行差 %d ）';
+      s := Format(s, [Group.MinNumber, Group.MinNumber - 1]);
+      fr.WriteLn('');
+      fr.WriteLn(s);
     end;
 
     fr.WriteFinish;
@@ -429,18 +488,211 @@ begin
   end;
 end;
 
-procedure TDataComputer.ExportData;
+procedure TDataComputer.ExportFile2;
 var
+  fr: TFileWriter;
+  Group: TSQLSourceGroup;
   Source: TSQLSource;
+  CompareData, CompareData2: TSQLCompareData;
+  s, s2, FileName, FileName2, sNumber, sCompareData, sCompareNumber: string;
 begin
   if Terminated then Exit;
 
-  TSQLSource.AutoFree(Source, fRest, 'RowCount > 0 ORDER BY MaxValueCount DESC, MaxValueCount2 DESC, Number DESC', []);
-  ExportData(fExportDirectory + '导出结果.txt', Source);
+  FileName := fCompareFileName.Replace('.txt', '：' + fMergeModeStr + '导出结果 2 .txt');
+  FileName := fExportDirectory + ExtractFileName(FileName);
+  fr := TFileWriter.Create(FileName);
+  try
+    TSQLSourceGroup.AutoFree(Group);
+    TSQLSource.AutoFree(Source);
+    TSQLCompareData.AutoFree(CompareData);
+    TSQLCompareData.AutoFree(CompareData2);
+
+
+    Group.FillPrepare(fRest, '', []);
+    while Group.FillOne and not Terminated do
+    begin
+      if Group.FillCurrentRow = 2 then
+        FileName2 := FileName.Replace('.txt', Format('（注：最多相同列数 = %s）.txt', [Group.Value]))
+      else
+      begin
+        fr.WriteLn('');
+        fr.WriteLn('');
+      end;
+
+      s := '[ 全部行的首行（ 第 %d 行 ）（ 加上 + ）1 ] = [ 第 %d 行 ]（ 减去 - ）[ 该组首行（ 第 %d 行 ）] =（ 行差 %d ）';
+      s := Format(s, [fMaxSourceNumber, fMaxSourceNumber + 1, Group.MaxNumber, fMaxSourceNumber + 1 - Group.MaxNumber]);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
+
+      Source.FillPrepare(fRest, 'ValueCountGroup = ? AND RowCount > 0 ORDER BY RowSpacing DESC, Number DESC', [Group.Value]);
+      while Source.FillOne and not Terminated do
+      begin
+        sNumber := Source.Number.ToString;
+        if sNumber.Length < 2 then sNumber := '0' + sNumber;
+
+        sCompareNumber := '';
+        sCompareData := '';
+        CompareData.FillPrepare(fRest, 'SourceNumber = ? ORDER BY ValueCount DESC, ValueCount2 DESC, CompareNumber', [Source.Number]);
+        while CompareData.FillOne and not Terminated do
+        begin
+          CompareData2.ValueCount := 0;
+          CompareData2.ValueCount2 := 0;
+          if CompareData.FillCurrentRow <= CompareData.FillTable.RowCount then
+            CompareData.FillRow(CompareData.FillCurrentRow, CompareData2);
+
+          if not sCompareNumber.IsEmpty then sCompareNumber := sCompareNumber + '、';
+          sCompareNumber := sCompareNumber + CompareData.CompareNumber.ToString;
+
+          s := CompareData.ValueCount.ToString;
+          if Length(fIntervalValues) > 1 then
+            s := Format('%d + %d', [CompareData.ValueCount, CompareData.ValueCount2]);
+          s2 := CompareData2.ValueCount.ToString;
+          if Length(fIntervalValues) > 1 then
+            s2 := Format('%d + %d', [CompareData2.ValueCount, CompareData2.ValueCount2]);
+
+          if not s.Equals(s2) then
+          begin
+            if sCompareData <> '' then sCompareData := sCompareData + ' ；';
+            sCompareData := sCompareData + Format('%s = %s', [sCompareNumber, s]);
+
+            sCompareNumber := '';
+          end;
+        end;
+
+        s := '%s=%s ( 行差 ：%d ) （ %s ）';
+        s := Format(s, [sNumber, Source.ToString(fDataMode), Source.RowSpacing, sCompareData]);
+        if Source.FillCurrentRow = 2 then fr.WriteLn('');
+        fr.WriteLn(s);
+      end;
+
+      s := '[ 该组行的末行（ 第 %d 行 ）（ 减去 - ）1 ] =（ 行差 %d ）';
+      s := Format(s, [Group.MinNumber, Group.MinNumber - 1]);
+      fr.WriteLn('');
+      fr.WriteLn(s);
+    end;
+
+    fr.WriteFinish;
+  finally
+    fr.Free;
+  end;
+  if TFile.Exists(FileName) then
+    RenameFile(FileName, FileName2);
+end;
+
+procedure TDataComputer.ExportFile3;
+var
+  fr: TFileWriter;
+  Group: TSQLSourceGroup;
+  Source: TSQLSource;
+  CompareData, CompareData2: TSQLCompareData;
+  s, s2, FileName, FileName2, sNumber, sCompareData, sCompareNumber, sRowSpacingTip: string;
+begin
   if Terminated then Exit;
 
-  Source.FillPrepare(fRest, 'RowCount > 0 ORDER BY MaxValueCount DESC, MaxValueCount2 DESC, RowSpacing DESC, Number DESC', []);
-  ExportData(fExportDirectory + '导出结果2.txt', Source);
+  FileName := fCompareFileName.Replace('.txt', '：' + fMergeModeStr + '导出结果 3 .txt');
+  FileName := fExportDirectory + ExtractFileName(FileName);
+  fr := TFileWriter.Create(FileName);
+  try
+    TSQLSourceGroup.AutoFree(Group);
+    TSQLSource.AutoFree(Source);
+    TSQLCompareData.AutoFree(CompareData);
+    TSQLCompareData.AutoFree(CompareData2);
+
+    s := '（ 各区域 ）按 [ （ 最新行差 N ）- ( 最大行差： N ) = ( 行差：N  ) ] 从（ 多 → 小 ）排列 ：';
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn('');
+    fr.WriteLn(s);
+
+    Group.FillPrepare(fRest, 'ORDER BY DifferenceValue DESC', []);
+    while Group.FillOne and not Terminated do
+    begin
+      if Group.FillCurrentRow = 2 then
+        FileName2 := FileName.Replace('.txt', Format('（注：最新 - 最大行差 = %d ).txt', [fMaxSourceNumber + 1 - Group.MaxNumber - Group.MaxRowSpacing]));
+
+      s := '[ 全部行的首行（ 第 %d 行 ）（ 加上 + ）1 ] = [ 第 %d 行 ]（ 减去 - ）[ 该组首行（ 第 %d 行 ）] =（ 最新行差 ：%d ）- ( 最大行差 ：%d ) = ( 行差 ：%d )';
+      s := Format(s, [
+        fMaxSourceNumber,
+        fMaxSourceNumber + 1,
+        Group.MaxNumber,
+        fMaxSourceNumber + 1 - Group.MaxNumber,
+        Group.MaxRowSpacing,
+        fMaxSourceNumber + 1 - Group.MaxNumber - Group.MaxRowSpacing
+      ]);
+      fr.WriteLn('');
+      fr.WriteLn('');
+      fr.WriteLn(s);
+
+      Source.FillPrepare(fRest, 'ValueCountGroup = ? AND RowCount > 0 ORDER BY RowSpacing DESC, Number DESC', [Group.Value]);
+      while Source.FillOne and not Terminated do
+      begin
+        sNumber := Source.Number.ToString;
+        if sNumber.Length < 2 then sNumber := '0' + sNumber;
+
+        sCompareNumber := '';
+        sCompareData := '';
+        CompareData.FillPrepare(fRest, 'SourceNumber = ? ORDER BY ValueCount DESC, ValueCount2 DESC, CompareNumber', [Source.Number]);
+        while CompareData.FillOne and not Terminated do
+        begin
+          CompareData2.ValueCount := 0;
+          CompareData2.ValueCount2 := 0;
+          if CompareData.FillCurrentRow <= CompareData.FillTable.RowCount then
+            CompareData.FillRow(CompareData.FillCurrentRow, CompareData2);
+
+          if not sCompareNumber.IsEmpty then sCompareNumber := sCompareNumber + '、';
+          sCompareNumber := sCompareNumber + CompareData.CompareNumber.ToString;
+
+          s := CompareData.ValueCount.ToString;
+          if Length(fIntervalValues) > 1 then
+            s := Format('%d + %d', [CompareData.ValueCount, CompareData.ValueCount2]);
+          s2 := CompareData2.ValueCount.ToString;
+          if Length(fIntervalValues) > 1 then
+            s2 := Format('%d + %d', [CompareData2.ValueCount, CompareData2.ValueCount2]);
+
+          if not s.Equals(s2) then
+          begin
+            if sCompareData <> '' then sCompareData := sCompareData + ' ；';
+            sCompareData := sCompareData + Format('%s = %s', [sCompareNumber, s]);
+
+            sCompareNumber := '';
+          end;
+        end;
+
+        sRowSpacingTip := '行差';
+        if Source.RowSpacing = Group.MaxRowSpacing then sRowSpacingTip := '最大行差';
+
+        s := '%s=%s ( %s ：%d ) （ %s ）';
+        s := Format(s, [sNumber, Source.ToString(fDataMode), sRowSpacingTip, Source.RowSpacing, sCompareData]);
+        if Source.FillCurrentRow = 2 then fr.WriteLn('');
+        fr.WriteLn(s);
+      end;
+
+      s := '[ 该组行的末行（ 第 %d 行 ）（ 减去 - ）1 ] =（ 行差 %d ）';
+      s := Format(s, [Group.MinNumber, Group.MinNumber - 1]);
+      fr.WriteLn('');
+      fr.WriteLn(s);
+    end;
+
+    fr.WriteFinish;
+  finally
+    fr.Free;
+  end;
+  if TFile.Exists(FileName) then
+    RenameFile(FileName, FileName2);
+end;
+
+procedure TDataComputer.ExportData;
+begin
+  if Terminated then Exit;
+
+  fMergeModeStr := '【 各区域（分开）】';
+  if fMergeMode then fMergeModeStr := '【 各区域（合并）】';
+
+  ExportFile;
+  ExportFile2;
+  ExportFile3;
 end;
 
 constructor TDataComputer.Create;
@@ -456,17 +708,30 @@ begin
 end;
 
 procedure TDataComputer.Execute;
+var
+  Compare: TSQLCompare;
+  FileName: string;
 begin
-  if Now >= 43676 then Exit;
+  if Now > 43739 then Exit;
   fStopwatch := TStopwatch.StartNew;
   try
     try
       BuildRest;
       LoadSourceFile;
-      LoadCompareFile;
-      Compare;
-      BuildRowSpacing;
-      ExportData;
+      TSQLCompare.AutoFree(Compare);
+      for FileName in TDirectory.GetFiles(fCompareFileDirectory, '*.txt') do
+      begin
+        if Terminated then Exit;
+
+        fCompareFileName := FileName;
+        fRest.Delete(TSQLCompare, '');
+        LoadRow(Compare, fCompareFileName);
+
+        Self.Compare;
+        BuildGroup;
+        BuildRowSpacing;
+        ExportData;
+      end;
 
       if Terminated then Exit;
       TThread.Queue(nil, procedure

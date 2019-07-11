@@ -61,15 +61,17 @@ begin
 end;
 
 procedure TfrmGroupCodeNameSettings.FormShow(Sender: TObject);
+var
+  v: Variant;
 begin
-  if fSettings.GroupNumber > 0 then
-    edtGroupNumber.Text := fSettings.GroupNumber.ToString;
-  if fSettings.GroupNumber2 > 0 then
-    edtGroupNumber2.Text := fSettings.GroupNumber2.ToString;
-  if fSettings.GroupFirstNumberCount > 0 then
-    edtGroupFirstNumberCount.Text := fSettings.GroupFirstNumberCount.ToString;
-  if fSettings.GroupCountEachFirstNumber > 0 then
-    edtGroupCountEachFirstNumber.Text := fSettings.GroupCountEachFirstNumber.ToString;
+  fKeyValue.GetKeyValue('GroupNumber', v);
+  if not VarIsEmpty(v) then edtGroupNumber.Text := v;
+  fKeyValue.GetKeyValue('GroupNumber2', v);
+  if not VarIsEmpty(v) then edtGroupNumber2.Text := v;
+  fKeyValue.GetKeyValue('GroupFirstNumberCount', v);
+  if not VarIsEmpty(v) then edtGroupFirstNumberCount.Text := v;
+  fKeyValue.GetKeyValue('GroupCountEachFirstNumber', v);
+  if not VarIsEmpty(v) then edtGroupCountEachFirstNumber.Text := v;
 end;
 
 procedure TfrmGroupCodeNameSettings.btnOkClick(Sender: TObject);
@@ -83,14 +85,10 @@ begin
   if not edtGroupCountEachFirstNumber.TryToValue(GroupCountEachFirstNumber) then
     raise Exception.Create('请输入有效随后首行');
 
-  fSettings.GroupNumber := GroupNumber;
-  fSettings.GroupNumber2 := GroupNumber2;
-  fSettings.GroupFirstNumberCount := GroupFirstNumberCount;
-  fSettings.GroupCountEachFirstNumber := GroupCountEachFirstNumber;
-  fKeyValue.SetKeyValue('GroupNumber', fSettings.GroupNumber);
-  fKeyValue.SetKeyValue('GroupNumber2', fSettings.GroupNumber2);
-  fKeyValue.SetKeyValue('GroupFirstNumberCount', fSettings.GroupFirstNumberCount);
-  fKeyValue.SetKeyValue('GroupCountEachFirstNumber', fSettings.GroupCountEachFirstNumber);
+  fKeyValue.SetKeyValue('GroupNumber', GroupNumber);
+  fKeyValue.SetKeyValue('GroupNumber2', GroupNumber2);
+  fKeyValue.SetKeyValue('GroupFirstNumberCount', GroupFirstNumberCount);
+  fKeyValue.SetKeyValue('GroupCountEachFirstNumber', GroupCountEachFirstNumber);
 
   ModalResult := mrOK;
 end;

@@ -65,11 +65,13 @@ begin
 end;
 
 procedure TfrmGroupCodeNameSettings2.FormShow(Sender: TObject);
+var
+  v: Variant;
 begin
-  if fSettings.GroupNumber3 > 0 then
-    edtGroupNumber3.Text := fSettings.GroupNumber3.ToString;
-  if fSettings.GroupNumber4 > 0 then
-    edtGroupNumber4.Text := fSettings.GroupNumber4.ToString;
+  fKeyValue.GetKeyValue('GroupNumber3', v);
+  if not VarIsEmpty(v) then edtGroupNumber3.Text := v;
+  fKeyValue.GetKeyValue('GroupNumber4', v);
+  if not VarIsEmpty(v) then edtGroupNumber4.Text := v;
 
   BuildGroupNumberSet;
 end;
@@ -110,22 +112,14 @@ begin
     end;
   end;
 
-  fSettings.GroupNumber3 := GroupNumber3;
-  fSettings.GroupNumber4 := GroupNumber4;
-  fSettings.BuildValidityCountEachGroupNumber;
-  if fSettings.GroupNumber3 > 0 then
-    for i := Low(fSettings.ValidityCountEachGroupNumber) to High(fSettings.ValidityCountEachGroupNumber) do
-    begin
-      fSettings.ValidityCountEachGroupNumber[i].Value := Ranges[i].Value;
-      fSettings.ValidityCountEachGroupNumber[i].Value2 := Ranges[i].Value2;
-    end;
-  fKeyValue.SetKeyValue('GroupNumber3', fSettings.GroupNumber3);
-  fKeyValue.SetKeyValue('GroupNumber4', fSettings.GroupNumber4);
-  SetLength(ValidityCountEachGroupNumber, Length(fSettings.ValidityCountEachGroupNumber) * 2);
-  for i := Low(fSettings.ValidityCountEachGroupNumber) to High(fSettings.ValidityCountEachGroupNumber) do
+  fKeyValue.SetKeyValue('GroupNumber3', GroupNumber3);
+  fKeyValue.SetKeyValue('GroupNumber4', GroupNumber4);
+
+  SetLength(ValidityCountEachGroupNumber, Length(Ranges) * 2);
+  for i := Low(Ranges) to High(Ranges) do
   begin
-    ValidityCountEachGroupNumber[(i + 1) * 2 - 2] := fSettings.ValidityCountEachGroupNumber[i].Value;
-    ValidityCountEachGroupNumber[(i + 1) * 2 - 1] := fSettings.ValidityCountEachGroupNumber[i].Value2;
+    ValidityCountEachGroupNumber[(i + 1) * 2 - 2] := Ranges[i].Value;
+    ValidityCountEachGroupNumber[(i + 1) * 2 - 1] := Ranges[i].Value2;
   end;
   fKeyValue.SetKeyValue('ValidityCountEachGroupNumber', ValidityCountEachGroupNumber);
 
@@ -149,6 +143,7 @@ var
   i, GroupNumber, GroupNumber2, iLeft, iTop, EditIndex: Integer;
   ComponentName: string;
   Component: TComponent;
+  ValidityCountEachGroupNumber: TInt64DynArray;
 begin
   for i := ControlCount - 1 downto 0 do
     if ((Controls[i] is TLabel) or (Controls[i] is TEdit))
@@ -158,6 +153,8 @@ begin
   if not CheckGroupNumber(GroupNumber, GroupNumber2) then Exit;
   if GroupNumber = 0 then Exit;
   SetLength(fEdits, (GroupNumber2 - GroupNumber + 1) * 2);
+
+  fKeyValue.GetKeyValue('ValidityCountEachGroupNumber', ValidityCountEachGroupNumber);
 
   iLeft := lblLine.Left;
   iTop := lblLine.Top;
@@ -203,10 +200,14 @@ begin
         Top := iTop;
         Width := 50;
         Text := '';
-        if (i <= High(fSettings.ValidityCountEachGroupNumber))
+        {if (i <= High(fSettings.ValidityCountEachGroupNumber))
           and (fSettings.ValidityCountEachGroupNumber[i].Value > -1)
         then
-          Text := fSettings.ValidityCountEachGroupNumber[i].Value.ToString;
+          Text := fSettings.ValidityCountEachGroupNumber[i].Value.ToString;}
+        if (EditIndex < Length(ValidityCountEachGroupNumber))
+          and (ValidityCountEachGroupNumber[EditIndex] > -1)
+        then
+          Text := ValidityCountEachGroupNumber[EditIndex].ToString;
       end;
     end;
 
@@ -230,10 +231,10 @@ begin
         Top := iTop;
         Width := 50;
         Text := '';
-        if (i <= High(fSettings.ValidityCountEachGroupNumber))
-          and (fSettings.ValidityCountEachGroupNumber[i].Value2 > -1)
+        if (EditIndex < Length(ValidityCountEachGroupNumber))
+          and (ValidityCountEachGroupNumber[EditIndex] > -1)
         then
-          Text := fSettings.ValidityCountEachGroupNumber[i].Value2.ToString;
+          Text := ValidityCountEachGroupNumber[EditIndex].ToString;
       end;
     end;
   end;

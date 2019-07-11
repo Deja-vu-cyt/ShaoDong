@@ -17,6 +17,7 @@ type
     chkFile2: TCheckBox;
     chkFile3: TCheckBox;
     chkFile: TCheckBox;
+    chkKeepExportCodeNameValueCount: TCheckBox;
     procedure FormShow(Sender: TObject);
     procedure btnOkClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -71,7 +72,9 @@ begin
     BuildLineInfo(Value, NewNumber, sNewCompareMode);
 
     s := lblLine.Caption;
-    lblLine.Caption := s.Replace(sCompareMode, sNewCompareMode);
+    lblLine.Caption := s.Replace(Number.ToString, NewNumber.ToString).Replace(sCompareMode, sNewCompareMode);
+    s := chkKeepExportCodeNameValueCount.Caption;
+    chkKeepExportCodeNameValueCount.Caption := s.Replace(Number.ToString, NewNumber.ToString).Replace(sCompareMode, sNewCompareMode);
 
     if Number <> NewNumber then
     begin
@@ -102,16 +105,27 @@ begin
 end;
 
 procedure TfrmExportFileSettings.FormShow(Sender: TObject);
+var
+  v: Variant;
 begin
-  if fSettings.ExportCodeNameValueCount > 0 then
-    edtExportCodeNameValueCount.Text := fSettings.ExportCodeNameValueCount.ToString;
-  if fSettings.ExportCodeNameValueCount2 > 0 then
-    edtExportCodeNameValueCount2.Text := fSettings.ExportCodeNameValueCount2.ToString;
-  chkKeepLastBatchCodeNameOnEachComputer.Checked := fSettings.KeepLastBatchCodeNameOnEachComputer;
-  chkFile.Checked := fSettings.ExportFile;
-  chkFile2.Checked := fSettings.ExportFile2;
-  chkFile3.Checked := fSettings.ExportFile3;
-  chkFile4.Checked := fSettings.ExportFile4;
+  fKeyValue.GetKeyValue('ExportCodeNameValueCount', v);
+  if not VarIsEmpty(v) then edtExportCodeNameValueCount.Text := v;
+  fKeyValue.GetKeyValue('ExportCodeNameValueCount2', v);
+  if not VarIsEmpty(v) then edtExportCodeNameValueCount2.Text := v;
+  fKeyValue.GetKeyValue('KeepExportCodeNameValueCount', v);
+  chkKeepExportCodeNameValueCount.Checked := True;
+  if not VarIsEmpty(v) then chkKeepExportCodeNameValueCount.Checked := v;
+  fKeyValue.GetKeyValue('KeepLastBatchCodeNameOnEachComputer', v);
+  chkKeepLastBatchCodeNameOnEachComputer.Checked := True;
+  if not VarIsEmpty(v) then chkKeepLastBatchCodeNameOnEachComputer.Checked := v;
+  fKeyValue.GetKeyValue('ExportFile', v);
+  if not VarIsEmpty(v) then chkFile.Checked := v;
+  fKeyValue.GetKeyValue('ExportFile2', v);
+  if not VarIsEmpty(v) then chkFile2.Checked := v;
+  fKeyValue.GetKeyValue('ExportFile3', v);
+  if not VarIsEmpty(v) then chkFile3.Checked := v;
+  fKeyValue.GetKeyValue('ExportFile4', v);
+  if not VarIsEmpty(v) then chkFile4.Checked := v;
 end;
 
 procedure TfrmExportFileSettings.btnOkClick(Sender: TObject);
@@ -119,22 +133,16 @@ var
   i, v, ValueCount, ValueCount2, GroupFirstNumberCount, GroupCountEachFirstNumber: Integer;
 begin
   if not CheckExportCodeNameValueCount(ValueCount, ValueCount2) then
-    raise Exception.Create('请输入有效遍历次数');
+    raise Exception.Create('请输入有效导出代号个数范围');
 
-  fSettings.ExportCodeNameValueCount := ValueCount;
-  fSettings.ExportCodeNameValueCount2 := ValueCount2;
-  fSettings.KeepLastBatchCodeNameOnEachComputer := chkKeepLastBatchCodeNameOnEachComputer.Checked;
-  fSettings.ExportFile := chkFile.Checked;
-  fSettings.ExportFile2 := chkFile2.Checked;
-  fSettings.ExportFile3 := chkFile3.Checked;
-  fSettings.ExportFile4 := chkFile4.Checked;
-  fKeyValue.SetKeyValue('ExportCodeNameValueCount', fSettings.ExportCodeNameValueCount);
-  fKeyValue.SetKeyValue('ExportCodeNameValueCount2', fSettings.ExportCodeNameValueCount2);
-  fKeyValue.SetKeyValue('KeepLastBatchCodeNameOnEachComputer', fSettings.KeepLastBatchCodeNameOnEachComputer);
-  fKeyValue.SetKeyValue('ExportFile', fSettings.ExportFile);
-  fKeyValue.SetKeyValue('ExportFile2', fSettings.ExportFile2);
-  fKeyValue.SetKeyValue('ExportFile3', fSettings.ExportFile3);
-  fKeyValue.SetKeyValue('ExportFile4', fSettings.ExportFile4);
+  fKeyValue.SetKeyValue('ExportCodeNameValueCount', ValueCount);
+  fKeyValue.SetKeyValue('ExportCodeNameValueCount2', ValueCount2);
+  fKeyValue.SetKeyValue('KeepExportCodeNameValueCount', chkKeepExportCodeNameValueCount.Checked);
+  fKeyValue.SetKeyValue('KeepLastBatchCodeNameOnEachComputer', chkKeepLastBatchCodeNameOnEachComputer.Checked);
+  fKeyValue.SetKeyValue('ExportFile', chkFile.Checked);
+  fKeyValue.SetKeyValue('ExportFile2', chkFile2.Checked);
+  fKeyValue.SetKeyValue('ExportFile3', chkFile3.Checked);
+  fKeyValue.SetKeyValue('ExportFile4', chkFile4.Checked);
 
   ModalResult := mrOK;
 end;
