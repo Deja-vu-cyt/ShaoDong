@@ -38,9 +38,9 @@ object frmMain: TfrmMain
       object Label12: TLabel
         Left = 15
         Top = 41
-        Width = 473
+        Width = 463
         Height = 24
-        Caption = #65288'1'#65289'.'#65288#30452#36830#65289'y'#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
+        Caption = #65288'1'#65289'.'#65288#30452#36830#65289#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
       end
       object Label14: TLabel
         Left = 15
@@ -52,9 +52,9 @@ object frmMain: TfrmMain
       object Label15: TLabel
         Left = 15
         Top = 110
-        Width = 473
+        Width = 463
         Height = 24
-        Caption = #65288'1'#65289'.'#65288#26012#36830#65289'y'#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
+        Caption = #65288'1'#65289'.'#65288#26012#36830#65289#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
       end
       object Label18: TLabel
         Left = 15
@@ -73,7 +73,7 @@ object frmMain: TfrmMain
         Caption = '6-1.'#35774#32622#65306#26242#20445#30041#65288#24182#65289#23548#20986#65288' '#31526#21512#35774#32622' '#65289#30340'          '#20010#20197#19978#32452#21512#30340#34892
       end
       object edtVVertSameValueCount2: TEdit
-        Left = 270
+        Left = 258
         Top = 41
         Width = 50
         Height = 29
@@ -87,7 +87,7 @@ object frmMain: TfrmMain
         TabOrder = 0
       end
       object edtVVertSameValueCount: TEdit
-        Left = 189
+        Left = 177
         Top = 41
         Width = 50
         Height = 29
@@ -115,7 +115,7 @@ object frmMain: TfrmMain
         TabOrder = 2
       end
       object edtSlantSameValueCount2: TEdit
-        Left = 270
+        Left = 258
         Top = 110
         Width = 50
         Height = 29
@@ -129,7 +129,7 @@ object frmMain: TfrmMain
         TabOrder = 3
       end
       object edtSlantSameValueCount: TEdit
-        Left = 189
+        Left = 177
         Top = 110
         Width = 50
         Height = 29
@@ -243,9 +243,9 @@ object frmMain: TfrmMain
       object Label9: TLabel
         Left = 15
         Top = 49
-        Width = 473
+        Width = 463
         Height = 24
-        Caption = #65288'1'#65289'.'#65288#30452#36830#65289'y'#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
+        Caption = #65288'1'#65289'.'#65288#30452#36830#65289#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
       end
       object Label8: TLabel
         Left = 15
@@ -264,7 +264,7 @@ object frmMain: TfrmMain
         Caption = '5-1.'#35774#32622#65306#26242#20445#30041#65288#24182#65289#23548#20986#65288' '#31526#21512#35774#32622' '#65289#30340'          '#20010#20197#19978#32452#21512#30340#34892
       end
       object edtVertSameValueCount2: TEdit
-        Left = 270
+        Left = 257
         Top = 49
         Width = 50
         Height = 29
@@ -278,7 +278,7 @@ object frmMain: TfrmMain
         TabOrder = 0
       end
       object edtVertSameValueCount: TEdit
-        Left = 189
+        Left = 176
         Top = 49
         Width = 50
         Height = 29
@@ -407,9 +407,9 @@ object frmMain: TfrmMain
       object Label6: TLabel
         Left = 15
         Top = 45
-        Width = 473
+        Width = 463
         Height = 24
-        Caption = #65288'1'#65289'.'#65288#26012#36830#65289'y'#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
+        Caption = #65288'1'#65289'.'#65288#26012#36830#65289#26377'          '#8594'           '#20010#12304#23545#24212#21015#12305#25968#23383
       end
       object edtCompareSpacing: TEdit
         Left = 834
@@ -499,7 +499,7 @@ object frmMain: TfrmMain
         OnClick = btnSlantExportFileSettingsClick
       end
       object edtSameValueCount2: TEdit
-        Left = 270
+        Left = 258
         Top = 45
         Width = 50
         Height = 29
@@ -513,7 +513,7 @@ object frmMain: TfrmMain
         TabOrder = 8
       end
       object edtSameValueCount: TEdit
-        Left = 189
+        Left = 177
         Top = 45
         Width = 50
         Height = 29
@@ -541,9 +541,9 @@ object frmMain: TfrmMain
     object Label1: TLabel
       Left = 19
       Top = 81
-      Width = 269
+      Width = 534
       Height = 24
-      Caption = '1.'#35835#21462#8220#34987#26597#35810#65288'TXT'#65289#25991#26412#8221#65306
+      Caption = '1. '#35835#21462' ['#65288' '#25991#20214#22841' '#65289#20869' 1 - N '#20010#8220' '#34987#26597#35810#65288' TXT '#65289#25991#26412' '#8221'] '#65306
     end
     object lblUseTime: TLabel
       Left = 19
@@ -583,21 +583,21 @@ object frmMain: TfrmMain
     object Label22: TLabel
       Left = 321
       Top = 16
-      Width = 501
+      Width = 495
       Height = 24
       Caption = #9313'.'#65288#35774#32622#65289'['#65288' '#20027#26426' IP '#22320#22336' '#65289#36830#25509#65288' N '#21488#26381#21153#22120' '#65289'] '#65306
     end
     object Label23: TLabel
       Left = 14
       Top = 16
-      Width = 232
+      Width = 226
       Height = 24
       Caption = #9312'.'#65288#24050#35774#32622#65289#20027#26426#31471#21475' '#65306
     end
     object Label24: TLabel
       Left = 1199
       Top = 16
-      Width = 26
+      Width = 20
       Height = 24
       Anchors = [akTop, akRight]
       Caption = #9314'.'
@@ -609,10 +609,10 @@ object frmMain: TfrmMain
       Height = 24
       Caption = #26368#21518#19968#27425#36941#21382' '#65292#29983#25104#65288' '#23384#20648' '#65289#22312' '#12304' Data '#25968#25454#24211' '#12305#30340#34892#25968' '#65306' N  '#34892' '#12290
     end
-    object edtFileName: TEdit
-      Left = 294
+    object edtFileDirectory: TEdit
+      Left = 552
       Top = 81
-      Width = 1014
+      Width = 756
       Height = 29
       Anchors = [akLeft, akTop, akRight]
       Font.Charset = DEFAULT_CHARSET
@@ -623,7 +623,7 @@ object frmMain: TfrmMain
       ParentFont = False
       ReadOnly = True
       TabOrder = 0
-      OnClick = edtFileNameClick
+      OnClick = edtFileDirectoryClick
     end
     object edtIntervalValue: TEdit
       Left = 311
@@ -688,11 +688,6 @@ object frmMain: TfrmMain
       TabOrder = 6
       OnClick = btnOkClick
     end
-  end
-  object OpenDialog: TOpenDialog
-    Filter = #25991#26412#25991#20214'|*.txt'
-    Left = 1032
-    Top = 65530
   end
   object MainMenu: TMainMenu
     Left = 1072

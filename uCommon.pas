@@ -40,30 +40,13 @@ type
   public
     procedure Assign(s: string);
     procedure Clear;
-    procedure Add(v: Word);
+    procedure Add(v: Word); overload;
+    procedure Add(v: TWordDynArray); overload;
     function Exist(v: Word): Boolean;
     function Equals(v: TWordDynArray): Boolean;
     function Contains(v: TWordDynArray): Boolean;
     function ToString: string;
   end;
-
-  {TData = class
-  private
-    fValue: TInt64DynArray;
-    fTotalValueCount: Word;
-    fValueCount: Word;
-    fValueCount2: Byte;
-    fFirstValueRange: Byte;
-  public
-    constructor Create(Value: TInt64DynArray; FirstValueRange: Byte);
-    function ToString: string;
-    function CompareValueCount(v: TData): Byte;
-    property Value: TInt64DynArray read fValue;
-    property FirstValueRange: Byte read fFirstValueRange;
-    property TotalValueCount: Word read fTotalValueCount;
-    property ValueCount: Word read fValueCount;
-    property ValueCount2: Byte read fValueCount2;
-  end;}
 
   TSQLKeyValue = class(TSQLRecord)
   private
@@ -111,6 +94,7 @@ type
     procedure AddValues(Source: TSQLData);
     procedure AddValue(v: Word); overload;
     procedure AddValue(v: Word; IntervalIndex: Integer); overload;
+    procedure AddValue(v: TWordDynArray); overload;
     procedure DeleteValue(v: Word); overload;
     procedure DeleteValue(v: Word; IntervalIndex: Integer); overload;
     procedure DeleteValueByIndex(IntervalIndex, ValueIndex: Integer);
@@ -118,6 +102,7 @@ type
     function Value(IntervalIndex, ValueIndex: Integer): Word;
     function ValueExist(v: Word): Boolean; overload;
     function ValueExist(v: Word; IntervalIndex: Integer): Boolean; overload;
+    function ValueExist(v: TWordDynArray): Boolean; overload;
     function HasValue: Boolean;
     function IntervalIndexOfValue(v: Word): Integer;
     class function ToString(aValues: TWordDynArray; aIntervalValues: TWordDynArray = [];
@@ -136,7 +121,7 @@ type
     property TotalValueCount: Word read fTotalValueCount write fTotalValueCount;
     property ValueCount: Word read fValueCount write fValueCount;
     property ValueCount2: Word read fValueCount2 write fValueCount2;
-    property IntervalValues: TWordDynArray read fIntervalValues;
+    property IntervalValues: TWordDynArray read fIntervalValues write fIntervalValues;
     property IntervalValueCounts: TByteDynArray read fIntervalValueCounts;
   end;
 
@@ -704,6 +689,13 @@ begin
   fIntervalValueCounts[IntervalIndex] := fIntervalValueCounts[IntervalIndex] + 1;
 end;
 
+procedure TSQLData.AddValue(v: TWordDynArray);
+var
+  v2: Word;
+begin
+  for v2 in v do AddValue(v2);
+end;
+
 procedure TSQLData.DeleteValue(v: Word);
 var
   i: Byte;
@@ -779,6 +771,18 @@ function TSQLData.ValueExist(v: Word; IntervalIndex: Integer): Boolean;
 begin
   v := v + GetIntervalValueByIndex(IntervalIndex);
   Result := ValueExist(v);
+end;
+
+function TSQLData.ValueExist(v: TWordDynArray): Boolean;
+var
+  v2: Word;
+begin
+  Result := False;
+  for v2 in v do
+  begin
+    Result := ValueExist(v2);
+    if not Result then Break;
+  end;
 end;
 
 function TSQLData.HasValue: Boolean;
@@ -1270,6 +1274,13 @@ begin
   Self[High(Self)] := v;
 end;
 
+procedure TWordDynArrayHelper.Add(v: TWordDynArray);
+var
+  v2: Word;
+begin
+  for v2 in v do Add(v2);
+end;
+
 function TWordDynArrayHelper.Exist(v: Word): Boolean;
 var
   v2: Word;
@@ -1607,7 +1618,7 @@ begin
           end;
         end;
       end;
-    until r[High(r)] = TotalCount;
+    until (r[High(r)] = TotalCount) or (Length(r) = 1);
   end;
 end;
 

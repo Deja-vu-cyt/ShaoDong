@@ -176,7 +176,7 @@ type
   private
     fStopwatch: TStopwatch;
 
-    fFileName: string;
+    fFileDirectory: string;
     fDataMode: Byte;
     fExportLite: Boolean;
     fIntervalValues: TWordDynArray;
@@ -272,7 +272,7 @@ type
     procedure BuildValidityCountEachGroupNumber;
   published
     property Stopwatch: TStopwatch read fStopwatch;
-    property FileName: string read fFileName write fFileName;
+    property FileDirectory: string read fFileDirectory write fFileDirectory;
     property DataMode: Byte read fDataMode write fDataMode;
     property ExportLite: Boolean read fExportLite write fExportLite;
     property IntervalValues: TWordDynArray read fIntervalValues write fIntervalValues;
@@ -715,36 +715,39 @@ end;
 procedure TDataComputer.LoadRow;
 var
   i, Digit: Integer;
-  s: string;
+  s, FileName: string;
   Row: TSQLRow;
 begin
   if Terminated then Exit;
-  if not TFile.Exists(fFileName) then Exit;
+  if not TDirectory.Exists(fFileDirectory) then Exit;
 
   TSQLRow.AutoFree(Row);
   with TStringList.Create do
   begin
     try
-      LoadFromFile(fFileName);
+      for FileName in TDirectory.GetFiles(fFileDirectory, '*.txt') do
+      begin
+        LoadFromFile(FileName);
 
-      //fRest.Delete(TSQLRow, '');
-      fRest.TransactionBegin(TSQLRow, 1);
-      try
-        for i := Count - 1 downto 0 do
-        begin
-          if not (TryStrToInt(Names[i].Trim, Digit) and (Digit > fRowCount)) then Continue;
-          Row.Number := Digit;
-          s := ValueFromIndex[i];
-          Row.AssignValue(s, fIntervalValues, fDataMode);
-          fRest.Add(Row, True);
-          fRowCount := Digit;
-        end;
-        fRest.Commit(1, True);
-      except
-        on e: Exception do
-        begin
-          fRest.RollBack(1);
-          raise Exception.Create(e.Message);
+        //fRest.Delete(TSQLRow, '');
+        fRest.TransactionBegin(TSQLRow, 1);
+        try
+          for i := Count - 1 downto 0 do
+          begin
+            if not (TryStrToInt(Names[i].Trim, Digit) and (Digit > fRowCount)) then Continue;
+            Row.Number := Digit;
+            s := ValueFromIndex[i];
+            Row.AssignValue(s, fIntervalValues, fDataMode);
+            fRest.Add(Row, True);
+            fRowCount := Digit;
+          end;
+          fRest.Commit(1, True);
+        except
+          on e: Exception do
+          begin
+            fRest.RollBack(1);
+            raise Exception.Create(e.Message);
+          end;
         end;
       end;
     finally

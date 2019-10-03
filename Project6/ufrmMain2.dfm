@@ -569,21 +569,21 @@ object frmMain: TfrmMain
     object Label20: TLabel
       Left = 321
       Top = 16
-      Width = 501
+      Width = 495
       Height = 24
       Caption = #9313'.'#65288#35774#32622#65289'['#65288' '#20027#26426' IP '#22320#22336' '#65289#36830#25509#65288' N '#21488#26381#21153#22120' '#65289'] '#65306
     end
     object Label21: TLabel
       Left = 14
       Top = 16
-      Width = 232
+      Width = 226
       Height = 24
       Caption = #9312'.'#65288#24050#35774#32622#65289#20027#26426#31471#21475' '#65306
     end
     object Label22: TLabel
       Left = 1199
       Top = 16
-      Width = 26
+      Width = 20
       Height = 24
       Anchors = [akTop, akRight]
       Caption = #9314'.'
@@ -595,7 +595,7 @@ object frmMain: TfrmMain
       Height = 24
       Caption = #26368#21518#19968#27425#36941#21382' '#65292#29983#25104#65288' '#23384#20648' '#65289#22312' '#12304' Data '#25968#25454#24211' '#12305#30340#34892#25968' '#65306' N  '#34892' '#12290
     end
-    object edtFileName: TEdit
+    object edtFileDirectory: TEdit
       Left = 97
       Top = 81
       Width = 1220
@@ -609,7 +609,7 @@ object frmMain: TfrmMain
       ParentFont = False
       ReadOnly = True
       TabOrder = 0
-      OnClick = edtFileNameClick
+      OnClick = edtFileDirectoryClick
     end
     object edtIntervalValue: TEdit
       Left = 97
@@ -674,11 +674,6 @@ object frmMain: TfrmMain
       TabOrder = 6
       OnClick = btnOkClick
     end
-  end
-  object OpenDialog: TOpenDialog
-    Filter = #25991#26412#25991#20214'|*.txt'
-    Left = 1032
-    Top = 65530
   end
   object MainMenu: TMainMenu
     Left = 1072

@@ -13,11 +13,10 @@ type
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
-    OpenDialog: TOpenDialog;
     Panel3: TPanel;
     Label1: TLabel;
     lblUseTime: TLabel;
-    edtFileName: TEdit;
+    edtFileDirectory: TEdit;
     Label3: TLabel;
     Label4: TLabel;
     edtIntervalValue: TEdit;
@@ -86,7 +85,7 @@ type
     edtSameValueCount2: TEdit;
     edtSameValueCount: TEdit;
     procedure FormCreate(Sender: TObject);
-    procedure edtFileNameClick(Sender: TObject);
+    procedure edtFileDirectoryClick(Sender: TObject);
     procedure btnCompareClick(Sender: TObject);
     procedure TimerTimer(Sender: TObject);
     procedure btnVertSlantGroupCodeNameSettingsClick(Sender: TObject);
@@ -306,10 +305,12 @@ begin
   frmGroupCodeNameSettings.ShowModal;
 end;
 
-procedure TfrmMain.edtFileNameClick(Sender: TObject);
+procedure TfrmMain.edtFileDirectoryClick(Sender: TObject);
+var
+  FileDirectory: string;
 begin
-  if not OpenDialog.Execute then Exit;
-  TEdit(Sender).Text := OpenDialog.FileName;
+  if not SelectDirectory('', '', FileDirectory) then Exit;
+  TEdit(Sender).Text := FileDirectory;
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
@@ -544,7 +545,7 @@ begin
   fDataComputer.DataMode := 1;
   fDataComputer.ExportLite := False;
   fDataComputer.CompareMode := CompareMode;
-  fDataComputer.FileName := edtFileName.Text;
+  fDataComputer.FileDirectory := edtFileDirectory.Text;
   fDataComputer.IntervalValues := IntervalValues;
   fDataComputer.CompareCrossRange := CompareCrossRange;
   fDataComputer.VertCompareSpacing := VertCompareSpacing;
