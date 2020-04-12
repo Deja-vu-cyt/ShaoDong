@@ -2,8 +2,6 @@ program Project2b;
 
 uses
   Vcl.Forms,
-  uInternetTime in '..\uInternetTime.pas',
-  uTimer in '..\uTimer.pas',
   uCommon in '..\uCommon.pas',
   uDataComputer in 'uDataComputer.pas',
   uFileWriter in '..\uFileWriter.pas',

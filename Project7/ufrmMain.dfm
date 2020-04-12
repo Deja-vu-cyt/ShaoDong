@@ -164,28 +164,64 @@ object frmMain: TfrmMain
       end
       object Label16: TLabel
         Left = 19
-        Top = 73
-        Width = 173
+        Top = 213
+        Width = 231
         Height = 24
-        Caption = '5-1. '#9314'. '#38468#21152#35774#32622' '#65306
+        Caption = '5-'#65288'1-3'#65289'. '#9314'. '#38468#21152#35774#32622' '#65306
       end
       object Label20: TLabel
         Left = 19
-        Top = 103
-        Width = 894
+        Top = 243
+        Width = 952
         Height = 24
         Caption = 
-          '5-1. '#9312'. '#35774#32622' [ '#26597#35810#65288' '#31532' 1 '#21306#22495' '#65289' ] '#30456#21516#65288' '#21015#25968#23383' '#65289#25968#37327'  ...'#65288' '#19981' '#65289#31526#21512#65288' '#35774#32622#26465#20214' '#65289#30340#24773#20917#19979' ' +
-          #65306
+          '5-'#65288'1-3'#65289'. '#9312'. '#35774#32622' [ '#26597#35810#65288' '#31532' 1 '#21306#22495' '#65289' ] '#30456#21516#65288' '#21015#25968#23383' '#65289#25968#37327'  ...'#65288' '#19981' '#65289#31526#21512#65288' '#35774#32622#26465#20214' '#65289#30340 +
+          #24773#20917#19979' '#65306
       end
       object Label21: TLabel
         Left = 19
-        Top = 133
-        Width = 1065
+        Top = 273
+        Width = 1123
         Height = 24
         Caption = 
-          '5-1. '#9313'. '#35774#32622' [ '#26597#35810#65288' '#31532' 2 '#21306#22495' '#65289' ] '#30456#21516#65288' '#21015#25968#23383' '#65289#25968#37327' '#65306#65288' '#22823#12289#31561#20110' '#8805' '#65289'             ' +
-          '     '#20010' '#65292#25165#20801#35768#65288' '#23548#20986' '#65289#27492#34892' '#12290
+          '5-'#65288'1-3'#65289'. '#9313'. '#35774#32622' [ '#26597#35810#65288' '#31532' 2 '#21306#22495' '#65289' ] '#30456#21516#65288' '#21015#25968#23383' '#65289#25968#37327' '#65306#65288' '#22823#12289#31561#20110' '#8805' '#65289'         ' +
+          '         '#20010' '#65292#25165#20801#35768#65288' '#23548#20986' '#65289#27492#34892' '#12290
+      end
+      object Label22: TLabel
+        Left = 19
+        Top = 78
+        Width = 1226
+        Height = 24
+        Caption = 
+          '5-2. '#9312'. '#35774#32622' [ '#26597#35810#65288' '#31532' 1 '#21306#22495' '#65289'] '#30456#21516#65288' '#21015#25968#23383' '#65289#25968#37327' '#65306#65288' '#22823#12289#31561#20110' '#8805' '#65289'              ' +
+          '      '#20010' [ '#27880' '#65306#65288' '#31532' 1'#12289'3 '#27169#24335' '#65289#21482#22635' '#65306'5.'#35774#32622' ... ] '
+      end
+      object Label23: TLabel
+        Left = 19
+        Top = 113
+        Width = 1237
+        Height = 24
+        Caption = 
+          '5-2. '#9313'. '#35774#32622' [ '#26597#35810#65288' '#31532' 2 '#21306#22495' '#65289'] '#30456#21516#65288' '#21015#25968#23383' '#65289#25968#37327' '#65306#65288' '#22823#12289#31561#20110' '#8805' '#65289'              ' +
+          '      '#20010' [ '#27880' '#65306#65288' '#31532' 2'#12289'4 '#27169#24335' '#65289#35201#22635' '#65306'5.6.'#35774#32622' ... ]'
+      end
+      object Label24: TLabel
+        Left = 19
+        Top = 148
+        Width = 1226
+        Height = 24
+        Caption = 
+          '5-3. '#9312'. '#35774#32622' [ '#26597#35810#65288' '#31532' 1 '#21306#22495' '#65289'] '#30456#21516#65288' '#21015#25968#23383' '#65289#25968#37327' '#65306#65288' '#22823#12289#31561#20110' '#8805' '#65289'              ' +
+          '      '#20010' [ '#27880' '#65306#65288' '#31532' 1'#12289'3 '#27169#24335' '#65289#21482#22635' '#65306'5.'#35774#32622' ... ] '
+      end
+      object Label25: TLabel
+        Left = 19
+        Top = 183
+        Width = 1237
+        Height = 24
+        Caption = 
+          '5-3. '#9313'. '#35774#32622' [ '#26597#35810#65288' '#31532' 2 '#21306#22495' '#65289'] '#30456#21516#65288' '#21015#25968#23383' '#65289#25968#37327' '#65306#65288' '#22823#12289#31561#20110' '#8805' '#65289'              ' +
+          '      '#20010' [ '#27880' '#65306#65288' '#31532' 2'#12289'4 '#27169#24335' '#65289#35201#22635' '#65306'5.6.'#35774#32622' ... ]'
       end
       object edtSeparateSameValueCount: TEdit
         Left = 714
@@ -217,7 +253,7 @@ object frmMain: TfrmMain
       end
       object btnCompare: TButton
         Left = 494
-        Top = 176
+        Top = 316
         Width = 89
         Height = 41
         Caption = #30830#23450
@@ -225,8 +261,8 @@ object frmMain: TfrmMain
         OnClick = btnCompareClick
       end
       object edtMinSeparateSameValueCount: TEdit
-        Left = 714
-        Top = 133
+        Left = 770
+        Top = 273
         Width = 100
         Height = 29
         Font.Charset = DEFAULT_CHARSET
@@ -237,6 +273,62 @@ object frmMain: TfrmMain
         NumbersOnly = True
         ParentFont = False
         TabOrder = 3
+      end
+      object edtSeparateSameValueCount3: TEdit
+        Left = 714
+        Top = 78
+        Width = 100
+        Height = 29
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -17
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        NumbersOnly = True
+        ParentFont = False
+        TabOrder = 4
+      end
+      object edtSeparateSameValueCount4: TEdit
+        Left = 714
+        Top = 113
+        Width = 100
+        Height = 29
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -17
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        NumbersOnly = True
+        ParentFont = False
+        TabOrder = 5
+      end
+      object edtSeparateSameValueCount5: TEdit
+        Left = 714
+        Top = 148
+        Width = 100
+        Height = 29
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -17
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        NumbersOnly = True
+        ParentFont = False
+        TabOrder = 6
+      end
+      object edtSeparateSameValueCount6: TEdit
+        Left = 714
+        Top = 183
+        Width = 100
+        Height = 29
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -17
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        NumbersOnly = True
+        ParentFont = False
+        TabOrder = 7
       end
     end
     object TabSheet2: TTabSheet

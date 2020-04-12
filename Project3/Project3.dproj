@@ -108,8 +108,6 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="..\uGlobal.pas"/>
-        <DCCReference Include="..\uTimer.pas"/>
-        <DCCReference Include="..\uInternetTime.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

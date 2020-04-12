@@ -158,15 +158,32 @@ begin
 end;
 
 procedure TfrmMain.TimerTimer(Sender: TObject);
+const
+  sGroupCodeName: string = '总（ 遍历 ）行数共 %d 行 - 已（ 遍历 ）行数共 %d 行 = 未（ 遍历 ）行数共 %d 行 ；2. 正（ 遍历 ）行数 ：第 %d 行 ，组成 ：%d 个组合 ； 3. 正（ 遍历 ）：第 %d 行';
 var
   TS: TTimeStamp;
   Days: Byte;
+  CompareSpacing: Word;
 begin
   TS.Date := DateDelta;
   TS.Time := fDataComputer.Stopwatch.ElapsedMilliseconds;
   Days := TS.Time div 86400000;
   TS.Time := TS.Time mod 86400000;
   lblUseTime.Caption := Format('处理所需时间：%d日', [Days]) + FormatDateTime('H小时M分S秒', TimeStampToDateTime(TS));
+
+  case fSettings.CompareMode of
+    cmSlant: CompareSpacing := fSettings.SlantCompareSpacing;
+    else CompareSpacing := fSettings.VertCompareSpacing;
+  end;
+  if fMainApp then
+    Caption := Format(sGroupCodeName, [
+      fDataComputer.RowCount,
+      fConsumers.FinishCount,
+      fDataComputer.RowCount - fConsumers.FinishCount,
+      fDataComputer.ActiveFirstRow,
+      CompareSpacing,
+      0
+    ]);
 end;
 
 procedure TfrmMain.btnExportSettingsClick(Sender: TObject);
@@ -301,7 +318,7 @@ begin
   OnStateChange(False);
 
   fDataComputer := TDataComputer.Create;
-  fDataComputer.OnGroupCodeName := OnGroupCodeName;
+  //fDataComputer.OnGroupCodeName := OnGroupCodeName;
   fDataComputer.OnFinish := OnFinish;
   fDataComputer.Start;
 end;

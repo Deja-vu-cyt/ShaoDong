@@ -106,7 +106,6 @@
             <Form>frmMain</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="..\uInternetTime.pas"/>
         <DCCReference Include="..\uCommon.pas"/>
         <DCCReference Include="uDataComputer.pas"/>
         <DCCReference Include="..\uFileWriter.pas"/>

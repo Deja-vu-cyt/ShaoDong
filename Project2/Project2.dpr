@@ -3,7 +3,6 @@ program Project2;
 uses
   Vcl.Forms,
   ufrmMain in 'ufrmMain.pas' {frmMain},
-  uInternetTime in '..\uInternetTime.pas',
   uCommon in '..\uCommon.pas',
   uDataComputer in 'uDataComputer.pas',
   uFileWriter in '..\uFileWriter.pas',

@@ -103,8 +103,6 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="..\uInternetTime.pas"/>
-        <DCCReference Include="..\uTimer.pas"/>
         <DCCReference Include="..\uCommon.pas"/>
         <DCCReference Include="uDataComputer.pas"/>
         <DCCReference Include="..\uFileWriter.pas"/>

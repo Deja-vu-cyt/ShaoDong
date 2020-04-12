@@ -60,7 +60,7 @@ var
 implementation
 
 uses
-  uGlobal, uInternetTime, uTimer;
+  uGlobal;
 
 {$R *.dfm}
 
@@ -243,7 +243,7 @@ var
   s: string;
   InternetTime: TDateTime;
 begin
-  try
+  {try
     InternetTime := GetInternetTime;
     if (InternetTime = 0) or (InternetTime > StrToDateTime('2017-11-30')) then
       raise Exception.Create('软件已过期');
@@ -253,7 +253,7 @@ begin
       ShowMessage(e.Message);
       Application.Terminate;
     end;
-  end;
+  end;}
 
   fdmtData.Close;
   fdmtData.FieldDefs.Clear;

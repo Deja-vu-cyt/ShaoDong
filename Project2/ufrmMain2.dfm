@@ -262,6 +262,10 @@ object frmMain: TfrmMain
     object TabSheet2: TTabSheet
       Caption = '  '#20108'.'#26597#35810'      '
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label11: TLabel
         Left = 9
         Top = 154
@@ -439,6 +443,10 @@ object frmMain: TfrmMain
     end
     object TabSheet1: TTabSheet
       Caption = '  '#19977'.'#26597#35810'     '
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label5: TLabel
         Left = 12
         Top = 82

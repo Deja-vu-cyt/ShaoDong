@@ -19,6 +19,7 @@ type
     fRebuildFileEvent: TFunc<Cardinal, Boolean>;
     fRebuildFileNameEvent: TFunc<TFileWriter, string>;
     fLastFileNo: Boolean;
+    fWithFileNo: Boolean;
   public
     constructor Create(aFileName: string);
     destructor Destroy; override;
@@ -70,6 +71,7 @@ begin
     if Assigned(fRebuildFileNameEvent) then
       fActiveFileName := fRebuildFileNameEvent(Self);
   end;
+
   fActiveFileName := fFileDirectory + fActiveFileName + '.txt';
 end;
 

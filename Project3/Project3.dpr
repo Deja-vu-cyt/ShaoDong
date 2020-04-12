@@ -3,9 +3,7 @@ program Project3;
 uses
   Vcl.Forms,
   ufrmMain in 'ufrmMain.pas' {frmMain},
-  uGlobal in '..\uGlobal.pas',
-  uTimer in '..\uTimer.pas',
-  uInternetTime in '..\uInternetTime.pas';
+  uGlobal in '..\uGlobal.pas';
 
 {$R *.res}
 

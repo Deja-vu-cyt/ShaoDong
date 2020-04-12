@@ -110,12 +110,20 @@
         <DCCReference Include="uDataComputer.pas"/>
         <DCCReference Include="..\uFileWriter.pas"/>
         <DCCReference Include="..\uControlHelper.pas"/>
+        <DCCReference Include="ufrmExportSettings11.pas">
+            <Form>frmExportSettings11</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <DCCReference Include="ufrmExportSettings4.pas">
             <Form>frmExportSettings4</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="ufrmExportSettings.pas">
-            <Form>frmExportSettings</Form>
+        <DCCReference Include="ufrmExportSettings5.pas">
+            <Form>frmExportSettings5</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ufrmExportSettings6.pas">
+            <Form>frmExportSettings6</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="ufrmExportSettings2.pas">
@@ -124,6 +132,26 @@
         </DCCReference>
         <DCCReference Include="ufrmExportSettings3.pas">
             <Form>frmExportSettings3</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ufrmExportSettings.pas">
+            <Form>frmExportSettings</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ufrmExportSettings7.pas">
+            <Form>frmExportSettings7</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ufrmExportSettings8.pas">
+            <Form>frmExportSettings8</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ufrmExportSettings9.pas">
+            <Form>frmExportSettings9</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ufrmExportSettings10.pas">
+            <Form>frmExportSettings10</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">

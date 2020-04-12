@@ -48,6 +48,14 @@ type
     function ToString: string;
   end;
 
+  TCardinalDynArrayHelper = record helper for TCardinalDynArray
+  public
+    procedure Assign(s: string);
+    procedure Add(v: Cardinal); overload;
+    procedure Add(v: TCardinalDynArray); overload;
+    function Exist(v: Cardinal): Boolean;
+  end;
+
   TSQLKeyValue = class(TSQLRecord)
   private
     fRest: TSQLRest;
@@ -71,7 +79,7 @@ type
   end;
 
   TSQLData = class(TSQLRecord)
-  private
+  protected
     fField1: Int64;
     fField2: Int64;
     fField3: Int64;
@@ -108,11 +116,12 @@ type
     class function ToString(aValues: TWordDynArray; aIntervalValues: TWordDynArray = [];
       aDataMode: Byte = 0; aPlaceholder: string = ''): string; overload;
     function ToString(aDataMode: Byte = 0; aPlaceholder: string = ''): string; overload;
+    function ToString2(DifferenceValues: TWordDynArray = []): string; overload;
     procedure CalcValueCount(aIntervalValues: TWordDynArray); overload;
     procedure CalcValueCount; overload;
     function Values: TWordDynArray; overload;
+    function ArrayValues: TArray<TWordDynArray>;
     function Values(IntervalIndex: Integer): TWordDynArray; overload;
-    function Values(s: string): TWordDynArray; overload;
   published
     property Field1: Int64 read fField1 write fField1;
     property Field2: Int64 read fField2 write fField2;
@@ -128,8 +137,10 @@ type
   TSQLRow = class(TSQLData)
   private
     fNumber: Cardinal;
+    fRowSpacing: Cardinal;
   published
     property Number: Cardinal read fNumber write fNumber stored AS_UNIQUE;
+    property RowSpacing: Cardinal read fRowSpacing write fRowSpacing;
   end;
 
   TSortAlgorithm = class
@@ -219,7 +230,7 @@ var
   i: Integer;
 begin
   GetKeyValue(Key, v2);
-  if VarIsEmpty(v2) or VarIsNull(v2) then SetLength(v, 0)
+  if VarIsEmpty(v2) or VarIsNull(v2) then //SetLength(v, 0)
   else
   begin
     SetLength(v, Integer(v2._Count));
@@ -937,6 +948,55 @@ begin
   Result := ToString(Values, fIntervalValues, aDataMode, aPlaceholder);
 end;
 
+function TSQLData.ToString2(DifferenceValues: TWordDynArray = []): string;
+var
+  i, j, IntervalIndex, lvIntervalIndex, v, lv, dv: Integer;
+  sSeparator: string;
+  tValues: TArray<TWordDynArray>;
+  t: TWordDynArray;
+begin
+  Result := '';
+  tValues := ArrayValues;
+  lvIntervalIndex := 0;
+  for IntervalIndex := Low(tValues) to High(tValues) do
+  begin
+    if IntervalIndex > 0 then Result := Result + '-';
+    t := tValues[IntervalIndex];
+    for i := Low(t) to High(t) do
+    begin
+      v := t[i];
+      sSeparator := '';
+      dv := 0;
+      if i = 0 then
+      begin
+        if IntervalIndex > 0 then
+        begin
+          dv := v - lv;
+          for j := IntervalIndex - 1 downto lvIntervalIndex do
+            dv := dv + fIntervalValues[j];
+          if DifferenceValues.Exist(dv) then
+            sSeparator := Format('¡¾%d¡¿', [dv]);
+        end;
+      end
+      else
+      begin
+        sSeparator := '¡¢';
+        dv := v - lv;
+        if DifferenceValues.Exist(dv) then
+          sSeparator := Format('¡¾%d¡¿', [dv]);
+      end;
+      if (i > 0) or (IntervalIndex > 0) then
+        Result := Result + sSeparator;
+
+      if v < 10 then Result := Result + '0';
+      Result := Result + v.ToString;
+
+      lvIntervalIndex := IntervalIndex;
+      lv := v;
+    end;
+  end;
+end;
+
 function TSQLData.Values: TWordDynArray;
 var
   i, i2, i3: Integer;
@@ -966,7 +1026,18 @@ begin
   Result := fValues;
 end;
 
-function TSQLData.Values(IntervalIndex: Integer): TWordDynArray;
+function TSQLData.ArrayValues: TArray<TWordDynArray>;
+var
+  i, v: Integer;
+begin
+  SetLength(Result, Length(fIntervalValues));
+  for i := Low(Result) to High(Result) do
+    for v := 1 to fIntervalValues[i] do
+      if ValueExist(v, i) then Result[i].Add(v);
+end;
+
+function
+ TSQLData.Values(IntervalIndex: Integer): TWordDynArray;
 var
   i, ValueIndex: Integer;
   IntervalValue: Word;
@@ -977,11 +1048,6 @@ begin
   Values;
   for i := Low(Result) to High(Result) do
     Result[i] := fValues[ValueIndex + i] - IntervalValue;
-end;
-
-function TSQLData.Values(s: string): TWordDynArray;
-begin
-
 end;
 
 procedure InternalSQLFunctionValueExist(Context: TSQLite3FunctionContext;
@@ -1278,7 +1344,8 @@ procedure TWordDynArrayHelper.Add(v: TWordDynArray);
 var
   v2: Word;
 begin
-  for v2 in v do Add(v2);
+  for v2 in v do
+    if not Exist(v2) then Add(v2);
 end;
 
 function TWordDynArrayHelper.Exist(v: Word): Boolean;
@@ -1329,6 +1396,43 @@ begin
   begin
     if not Result.IsEmpty then Result := Result + '¡¢';
     Result := Result + v.ToString;
+  end;
+end;
+
+procedure TCardinalDynArrayHelper.Assign(s: string);
+var
+  t: TArray<string>;
+  i, v: Integer;
+begin
+  t := s.Split(['¡¢']);
+  SetLength(Self, Length(t));
+  for i := Low(Self) to High(Self) do
+    if TryStrToInt(t[i], v) then Self[i] := v else Self[i] := 0;
+end;
+
+procedure TCardinalDynArrayHelper.Add(v: Cardinal);
+begin
+  SetLength(Self, Length(Self) + 1);
+  Self[High(Self)] := v;
+end;
+
+procedure TCardinalDynArrayHelper.Add(v: TCardinalDynArray);
+var
+  v2: Cardinal;
+begin
+  for v2 in v do
+    if not Exist(v2) then Add(v2);
+end;
+
+function TCardinalDynArrayHelper.Exist(v: Cardinal): Boolean;
+var
+  v2: Cardinal;
+begin
+  Result := False;
+  for v2 in Self do
+  begin
+    Result := v2 = v;
+    if Result then Break;
   end;
 end;
 

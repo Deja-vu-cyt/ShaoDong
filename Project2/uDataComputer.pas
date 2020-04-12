@@ -158,6 +158,7 @@ type
     fList: TThreadList<TConsumer>;
     fBusyList: TThreadList<TConsumer>;
     fQueue: TThreadedQueue<TConsumer>;
+    fFinishCount: Word;
     function FindConsumer(ID: string): TConsumer;
   public
     constructor Create;
@@ -173,6 +174,7 @@ type
     property ConsumerFree: TObject read fConsumerFree;
     property BusyList: TThreadList<TConsumer> read fBusyList;
     property Queue: TThreadedQueue<TConsumer> read fQueue;
+    property FinishCount: Word read fFinishCount;
   end;
 
   TCompareMode = (cmNone, cmVert, cmSlant, cmVertSlant);
@@ -248,6 +250,7 @@ type
     fExportDirectory2: string;
 
     fRowCount: Word;
+    fActiveFirstRow: Word;
     fTipStr: string;
 
     procedure LoadRow;
@@ -279,6 +282,8 @@ type
     property Queue: TThreadedQueue<Word> read fQueue;
     property OnGroupCodeName: TOnGroupCodeName read fOnGroupCodeName write fOnGroupCodeName;
     property OnFinish: TNotifyEvent read fOnFinish write fOnFinish;
+    property RowCount: Word read fRowCount;
+    property ActiveFirstRow: Word read fActiveFirstRow;
   end;
 
 const
@@ -287,6 +292,7 @@ const
   EachPageRowCount: Word = 10000;
 
 var
+  fMainApp: Boolean;
   fLocalIP: string;
   fProcessorCount: Byte;
 
@@ -463,7 +469,7 @@ end;
 procedure TCodeNameConsumer.FindCodeNameWithMostRowCount(CodeNames: TWordDynArray);
 var
   GroupCount: Int64;
-  Rows: TWordDynArray;
+  Rows, CodeName: TWordDynArray;
   i: Integer;
   s: string;
 begin
@@ -473,13 +479,22 @@ begin
   GroupCount := 0;
   for i := fExportGroupValueCount to fGroupValueCount do
   begin
-    Foreach(Length(CodeNames), i,
-    procedure(CodeNameIndexs: TWordDynArray)
+    SetLength(CodeName, i);
+    TCombinatorialAlgorithm.For(Length(CodeNames), i,
+    procedure(FirstNumber: Cardinal; CodeNameIndexs: TCardinalDynArray)
     var
+      //CodeName: TWordDynArray;
       i, RowCount: Integer;
       s: string;
     begin
       try
+        if (Length(CodeNameIndexs) > 1) and (CodeNameIndexs[High(CodeNameIndexs)] - CodeNameIndexs[High(CodeNameIndexs) - 1] = 1) then
+        begin
+          for i := Low(CodeNameIndexs) to High(CodeNameIndexs) do
+            CodeName[i] := CodeNames[CodeNameIndexs[i] - 1];
+          Rows := GetCodeNameRows(CodeName);
+        end;
+
         if Length(fActiveCodeName) <> Length(CodeNameIndexs) then
           SetLength(fActiveCodeName, Length(CodeNameIndexs));
         for i := Low(fActiveCodeName) to High(fActiveCodeName) do
@@ -503,7 +518,8 @@ begin
         end;
       end;
     end,
-    procedure(CodeNameIndexs: TWordDynArray)
+    //ÒÆµ½ÉÏÃæ
+    {procedure(FirstNumber: Cardinal; CodeNameIndexs: TCardinalDynArray)
     var
       CodeName: TWordDynArray;
       i: Integer;
@@ -514,8 +530,8 @@ begin
         CodeName[i] := CodeNames[CodeNameIndexs[i] - 1];
 
       Rows := GetCodeNameRows(CodeName);
-    end,
-    function: Boolean
+    end,}
+    function(FirstNumber, GroupCount: Cardinal): Boolean
     begin
       Result := Terminated or ((fMaxGroupCount > 0) and (GroupCount >= fMaxGroupCount));
     end);
@@ -874,6 +890,7 @@ procedure TConsumers.InitConsumers;
 var
   i: Integer;
 begin
+  fFinishCount := 0;
   with fList.LockList do
   begin
     try
@@ -956,6 +973,8 @@ begin
       fBusyList.UnLockList;
     end;
   end;
+
+  fFinishCount := fFinishCount + 1;
 end;
 
 procedure TConsumers.TaskFailed(ID: string; FirstRow: Word);
@@ -1226,6 +1245,7 @@ begin
       Task := fQueue.PopItem;
       if Task > 0 then
       begin
+        fActiveFirstRow := Task;
         try
           Consumer := nil;
           Consumer := fConsumers.Queue.PopItem;
@@ -2351,7 +2371,7 @@ begin
 
       fStopwatch := TStopwatch.StartNew;
       try
-        if Now >= 43586 then  Break;   //5.1
+        if Now >= 44562 then  Break;   //2022-01-01
 
         LoadRow;
         if Terminated then Break;
@@ -2446,6 +2466,8 @@ begin
     raise EServiceException.Create('Service IService unavailable');
   fNotifyCallback := TNotifyCallback.Create(fClient, INotifyCallback);
   fService.RegisterConsumer(fNotifyCallback, TNotifyCallback(fNotifyCallback).ID, fLocalIP);
+
+  fMainApp := Address = fLocalIP;
 end;
 
 procedure DisconnectServer;
@@ -2490,7 +2512,7 @@ initialization
   end;
 
   fProcessorCount := GetEnvironmentVariable('NUMBER_OF_PROCESSORS').ToInteger;   //fProcessorCount := 1;
-  ConnectServer('127.0.0.1', '8888');
+  ConnectServer(fLocalIP, '8888');
 
 finalization
   if Assigned(fConsumers) then FreeAndNil(fConsumers);

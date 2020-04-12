@@ -21,10 +21,19 @@ type
     edtIntervalValue2: TEdit;
     btnCompare: TButton;
     Timer: TTimer;
-    btnExportSettings: TButton;
     btnExportSettings2: TButton;
+    btnExportSettings5: TButton;
+    btnExportSettings6: TButton;
+    btnExportSettings: TButton;
     btnExportSettings3: TButton;
     btnExportSettings4: TButton;
+    btnExportSettings7: TButton;
+    btnExportSettings8: TButton;
+    btnExportSettings9: TButton;
+    btnExportSettings10: TButton;
+    btnExportSettings11: TButton;
+    chkExportFile254: TCheckBox;
+    chkExportFile255: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure edtFileDirectoryClick(Sender: TObject);
     procedure btnCompareClick(Sender: TObject);
@@ -32,11 +41,18 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
-    procedure btnExportSettingsClick(Sender: TObject);
     procedure btnExportSettings2Click(Sender: TObject);
+    procedure btnExportSettingsClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
     procedure btnExportSettings3Click(Sender: TObject);
     procedure btnExportSettings4Click(Sender: TObject);
-    procedure FormShow(Sender: TObject);
+    procedure btnExportSettings5Click(Sender: TObject);
+    procedure btnExportSettings6Click(Sender: TObject);
+    procedure btnExportSettings7Click(Sender: TObject);
+    procedure btnExportSettings8Click(Sender: TObject);
+    procedure btnExportSettings9Click(Sender: TObject);
+    procedure btnExportSettings10Click(Sender: TObject);
+    procedure btnExportSettings11Click(Sender: TObject);
   private
     fSerializer: TJsonSerializer;
     function CheckIntervalValues(var IntervalValues: TWordDynArray): Boolean;
@@ -53,9 +69,25 @@ implementation
 
 uses
   uControlHelper, ufrmExportSettings, ufrmExportSettings2, ufrmExportSettings3,
-  ufrmExportSettings4;
+  ufrmExportSettings4, ufrmExportSettings5, ufrmExportSettings6, ufrmExportSettings7,
+  ufrmExportSettings8, ufrmExportSettings9, ufrmExportSettings10, ufrmExportSettings11;
 
 {$R *.dfm}
+
+procedure TfrmMain.btnExportSettingsClick(Sender: TObject);
+begin
+  frmExportSettings.ShowModal;
+end;
+
+procedure TfrmMain.btnExportSettings10Click(Sender: TObject);
+begin
+  frmExportSettings10.ShowModal;
+end;
+
+procedure TfrmMain.btnExportSettings11Click(Sender: TObject);
+begin
+  frmExportSettings11.ShowModal;
+end;
 
 procedure TfrmMain.btnExportSettings2Click(Sender: TObject);
 begin
@@ -72,9 +104,29 @@ begin
   frmExportSettings4.ShowModal;
 end;
 
-procedure TfrmMain.btnExportSettingsClick(Sender: TObject);
+procedure TfrmMain.btnExportSettings5Click(Sender: TObject);
 begin
-  frmExportSettings.ShowModal;
+  frmExportSettings5.ShowModal;
+end;
+
+procedure TfrmMain.btnExportSettings6Click(Sender: TObject);
+begin
+  frmExportSettings6.ShowModal;
+end;
+
+procedure TfrmMain.btnExportSettings7Click(Sender: TObject);
+begin
+  frmExportSettings7.ShowModal;
+end;
+
+procedure TfrmMain.btnExportSettings8Click(Sender: TObject);
+begin
+  frmExportSettings8.ShowModal;
+end;
+
+procedure TfrmMain.btnExportSettings9Click(Sender: TObject);
+begin
+  frmExportSettings9.ShowModal;
 end;
 
 function TfrmMain.CheckIntervalValues(var IntervalValues: TWordDynArray): Boolean;
@@ -154,6 +206,10 @@ begin
   if not VarIsEmpty(v) then edtIntervalValue.Text := VarToStr(v);
   fKeyValue.GetKeyValue(edtIntervalValue2.Name, v);
   if not VarIsEmpty(v) then edtIntervalValue2.Text := VarToStr(v);
+  fKeyValue.GetKeyValue(chkExportFile254.Name, v);
+  if not VarIsEmpty(v) then chkExportFile254.Checked := v;
+  fKeyValue.GetKeyValue(chkExportFile255.Name, v);
+  if not VarIsEmpty(v) then chkExportFile255.Checked := v;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -186,22 +242,135 @@ procedure TfrmMain.btnCompareClick(Sender: TObject);
 var
   IntervalValues: TWordDynArray;
   GroupCount, GroupCount2: Integer;
+  Settings: TArray<TSettings>;
 begin
   if not DirectoryExists(edtFileDirectory.Text) then
     raise Exception.Create('请选择查询文件目录');
   if not CheckIntervalValues(IntervalValues) then
     raise Exception.Create('请输入有效区域');
 
-  if (Length(frmExportSettings.GroupCounts) = 0)
-    and (Length(frmExportSettings2.GroupCounts) = 0)
-    and (Length(frmExportSettings3.GroupCounts) = 0)
-    and (Length(frmExportSettings4.ExportFiles) = 0)
+  SetLength(Settings, 0);
+  if frmExportSettings.Settings.Flag > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings.Settings;
+  end;
+  if frmExportSettings.Settings2.Flag > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings.Settings2;
+  end;
+  if frmExportSettings.Settings3.Flag > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings.Settings3;
+  end;
+  if frmExportSettings.Settings4.Flag > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings.Settings4;
+  end;
+  if frmExportSettings.Settings5.Flag > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings.Settings5;
+  end;
+  if frmExportSettings.Settings6.Flag > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings.Settings6;
+  end;
+  if frmExportSettings.Settings7.Flag > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings.Settings7;
+  end;
+  if frmExportSettings.Settings8.Flag > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings.Settings8;
+  end;
+  if Length(frmExportSettings2.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings2.Settings;
+  end;
+  if Length(frmExportSettings3.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings3.Settings;
+  end;
+  if Length(frmExportSettings4.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings4.Settings;
+  end;
+  if Length(frmExportSettings5.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings5.Settings;
+  end;
+  if Length(frmExportSettings5.Settings2.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings5.Settings2;
+  end;
+  if Length(frmExportSettings6.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings6.Settings;
+  end;
+  if Length(frmExportSettings6.Settings2.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings6.Settings2;
+  end;
+  if Length(frmExportSettings7.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings7.Settings;
+  end;
+  if Length(frmExportSettings7.Settings2.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings7.Settings2;
+  end;
+  if Length(frmExportSettings8.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings8.Settings;
+  end;
+  if Length(frmExportSettings8.Settings2.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings8.Settings2;
+  end;
+  if Length(frmExportSettings9.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings9.Settings;
+  end;
+  if Length(frmExportSettings10.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings10.Settings;
+  end;
+  if Length(frmExportSettings11.Settings.GroupCounts) > 0 then
+  begin
+    SetLength(Settings, Length(Settings) + 1);
+    Settings[High(Settings)] := frmExportSettings11.Settings;
+  end;
+  if (Length(Settings) = 0)
+    and not frmExportSettings.ExportOneRowSpacingFile
+    and not frmExportSettings.ExportOnlyOneRowSpacingFile
   then
     raise Exception.Create('请设置查询条件');
 
   fKeyValue.SetKeyValue(edtFileDirectory.Name, edtFileDirectory.Text);
   fKeyValue.SetKeyValue(edtIntervalValue.Name, edtIntervalValue.Text);
   fKeyValue.SetKeyValue(edtIntervalValue2.Name, edtIntervalValue2.Text);
+  fKeyValue.SetKeyValue(chkExportFile254.Name, chkExportFile254.Checked);
+  fKeyValue.SetKeyValue(chkExportFile255.Name, chkExportFile255.Checked);
 
   OnStateChange(True);
   Timer.Enabled := True;
@@ -211,41 +380,24 @@ begin
   fDataComputer.IntervalValues := IntervalValues;
   fDataComputer.SourceFileDirectory := edtFileDirectory.Text;
   fDataComputer.ExportDirectory := TPath.GetDirectoryName(fDataComputer.SourceFileDirectory);
-
-  fDataComputer.GroupCounts := frmExportSettings.GroupCounts;
-  fDataComputer.ExportFile := frmExportSettings.ExportFile;
-  fDataComputer.ExportFile2 := frmExportSettings.ExportFile2;
-  fDataComputer.ExportFile3 := frmExportSettings.ExportFile3;
-  fDataComputer.ExportCodeNameCount := frmExportSettings.ExportCodeNameCount;
-  fDataComputer.ExportCodeNameCount2 := frmExportSettings.ExportCodeNameCount2;
-  fDataComputer.ExportCodeNameCount3 := frmExportSettings.ExportCodeNameCount3;
-
-  fDataComputer.VertCompareSpacing := frmExportSettings2.CompareSpacing;
-  fDataComputer.VertSameValueCount := frmExportSettings2.SameValueCount;
-  fDataComputer.VertSameValueCount2 := frmExportSettings2.SameValueCount2;
-  fDataComputer.VertGroupCounts := frmExportSettings2.GroupCounts;
-  fDataComputer.VertExportFile := frmExportSettings2.ExportFile;
-  fDataComputer.VertExportFile2 := frmExportSettings2.ExportFile2;
-  fDataComputer.VertExportFile3 := frmExportSettings2.ExportFile3;
-  fDataComputer.VertExportCodeNameCount := frmExportSettings2.ExportCodeNameCount;
-  fDataComputer.VertExportCodeNameCount2 := frmExportSettings2.ExportCodeNameCount2;
-  fDataComputer.VertExportCodeNameCount3 := frmExportSettings2.ExportCodeNameCount3;
-
+  fDataComputer.DeleteProcessed := frmExportSettings.DeleteProcessed;
+  fDataComputer.Settings := Settings;
+  fDataComputer.VertCompareSpacing := frmExportSettings5.CompareSpacing;
+  fDataComputer.VertSameValueCount := frmExportSettings5.SameValueCount;
+  fDataComputer.VertSameValueCount2 := frmExportSettings5.SameValueCount2;
   fDataComputer.CompareCrossRange := True;
-  fDataComputer.SlantCompareSpacing := frmExportSettings3.CompareSpacing;
-  fDataComputer.SlantSameValueCount := frmExportSettings3.SameValueCount;
-  fDataComputer.SlantSameValueCount2 := frmExportSettings3.SameValueCount2;
-  fDataComputer.SlantGroupCounts := frmExportSettings3.GroupCounts;
-  fDataComputer.SlantExportFile := frmExportSettings3.ExportFile;
-  fDataComputer.SlantExportFile2 := frmExportSettings3.ExportFile2;
-  fDataComputer.SlantExportFile3 := frmExportSettings3.ExportFile3;
-  fDataComputer.SlantExportCodeNameCount := frmExportSettings3.ExportCodeNameCount;
-  fDataComputer.SlantExportCodeNameCount2 := frmExportSettings3.ExportCodeNameCount2;
-  fDataComputer.SlantExportCodeNameCount3 := frmExportSettings3.ExportCodeNameCount3;
-
-  fDataComputer.ExportFiles := frmExportSettings4.ExportFiles;
-  fDataComputer.DeleteProcessed := frmExportSettings4.DeleteProcessed;
-
+  fDataComputer.SlantCompareSpacing := frmExportSettings6.CompareSpacing;
+  fDataComputer.SlantSameValueCount := frmExportSettings6.SameValueCount;
+  fDataComputer.SlantSameValueCount2 := frmExportSettings6.SameValueCount2;
+  fDataComputer.ExportFile254 := chkExportFile254.Checked;
+  fDataComputer.ExportFile255 := chkExportFile255.Checked;
+  fDataComputer.ExportOneRowSpacingFile := frmExportSettings.ExportOneRowSpacingFile;
+  fDataComputer.ExportOnlyOneRowSpacingFile := frmExportSettings.ExportOnlyOneRowSpacingFile;
+  fDataComputer.TakePartRow := frmExportSettings.TakePartRow;
+  fDataComputer.RowRange := frmExportSettings.RowRange;
+  fDataComputer.RowRange2 := frmExportSettings.RowRange2;
+  fDataComputer.RowRange3 := frmExportSettings.RowRange3;
+  fDataComputer.RowRange4 := frmExportSettings.RowRange4;
   fDataComputer.Start;
 end;
 

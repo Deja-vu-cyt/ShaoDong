@@ -341,8 +341,10 @@ type
   end;
 
 const
-  EachFileRowCount: Cardinal = 1000000;
-  EachFileRowNumber: Cardinal = 200000;
+  //EachFileRowCount: Cardinal = 1000000;
+  //EachFileRowNumber: Cardinal = 200000;
+  EachFileRowCount: Cardinal = 1000;
+  EachFileRowNumber: Cardinal = 200;
   EachPageRowCount: Word = 10000;
 
 var
@@ -1372,7 +1374,7 @@ begin
 
   i := Sender.FileName.IndexOf('）');
   Result := Sender.FileName.SubString(0, i + 1);
-  Result := Result + Format('.【最末第%s（空白及文字）行】- %d', [sSub, Sender.FileNo - 1]);
+  Result := Result + Format('（%d）.【最末第%s（空白及文字）行】- %d', [Sender.FileNo, sSub, Sender.FileNo - 1]);
 end;
 
 function TDataComputer.RebuildFileName2(Sender: TFileWriter): string;
@@ -1393,9 +1395,9 @@ begin
   if Sender.FileName.Contains('（2-1）')
     or Sender.FileName.Contains('（6）')
   then i := Sender.FileName.IndexOf('）')
-  else i := Sender.FileName.IndexOf('次');
+  else i := Sender.FileName.IndexOf('0');
   Result := Sender.FileName.SubString(0, i + 1);
-  Result := Result + Format('【最末第%s=行】- %d', [sSub, Sender.FileNo - 1]);
+  Result := Result + Format('（%d）.【最末第%s=行】- %d', [Sender.FileNo, sSub, Sender.FileNo - 1]);
 end;
 
 function TDataComputer.CodeNameToString(CodeName: string): string;
@@ -1450,7 +1452,7 @@ var
   CodeName: TSQLCodeName;
   RowNumber: Cardinal;
 begin
-  TxtFileName := '0 .［ 各（第 N 行为首行）的（符合条件的代号）］第 %d 次（ 依次遍历 ）导出［ 相同（符合条件的代号）］.txt';
+  TxtFileName := '0（1）.［ 各（第 N 行为首行）的（符合条件的代号）］第 %d 次（ 依次遍历 ）导出［ 相同（符合条件的代号）］.txt';
   TxtFileName := Format(TxtFileName, [BatchNumber]);
   FileName := fExportDirectory + TxtFileName;
   fr := TFileWriter.Create(FileName);
@@ -1508,7 +1510,7 @@ begin
     if fExportLite then TxtFileName := '（2-1）.txt'
     else
     begin
-      TxtFileName := '（2-1）.【排列】【“%d-%d”个[相同组合、不同首行]的组合[不同首行数：最多→少]】（1）.txt';
+      TxtFileName := '（2-1）（1）.【排列】【“%d-%d”个[相同组合、不同首行]的组合[不同首行数：最多→少]】（1）.txt';
       TxtFileName := Format(TxtFileName, [fExportCodeNameValueCount, fExportCodeNameValueCount2]);
     end;
     FileName := fExportDirectory + TxtFileName;
@@ -1521,7 +1523,7 @@ begin
     if fExportLite then TxtFileName := '（6）.txt'
     else
     begin
-      TxtFileName := '（6）.【简化】【“%d-%d”个[相同组合、不同首行]的组合】.txt';
+      TxtFileName := '（6）（1）.【简化】【“%d-%d”个[相同组合、不同首行]的组合】.txt';
       TxtFileName := Format(TxtFileName, [fExportCodeNameValueCount, fExportCodeNameValueCount2]);
     end;
     FileName2 := fExportDirectory2 + TxtFileName;
@@ -1656,7 +1658,7 @@ begin
   if fExportLite then TxtFileName := '（1）.txt'
   else
   begin
-    TxtFileName := '（1）.【排列】【“%d-%d”个以上[相同首行、不同组合]的组合】.txt';
+    TxtFileName := '（1）（1）.【排列】【“%d-%d”个以上[相同首行、不同组合]的组合】.txt';
     TxtFileName := Format(TxtFileName, [fExportCodeNameValueCount, fExportCodeNameValueCount2]);
   end;
   FileName := fExportDirectory + TxtFileName;
@@ -1951,7 +1953,7 @@ procedure TDataComputer.Execute;
 var
   ErrorMessage: string;
 begin
-  if Now > 43739 then Exit; //10.1
+  if Now > 43861 then Exit; //1.1
 
   fStopwatch := TStopwatch.StartNew;
   try

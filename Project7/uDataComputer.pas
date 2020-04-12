@@ -292,7 +292,11 @@ begin
           end;
           else
           begin
-            IsValid := (CompareData.ValueCount >= fSameValues[0].Left) and (CompareData.ValueCount2 >= fSameValues[0].Top);
+            for i := Low(fSameValues) to High(fSameValues) do
+            begin
+              IsValid := (CompareData.ValueCount >= fSameValues[i].Left) and (CompareData.ValueCount2 >= fSameValues[i].Top);
+              if IsValid then Break;
+            end;
             if not IsValid and (fMinSameValueCount > 0) then
               IsValid := CompareData.ValueCount2 >= fMinSameValueCount;
           end;

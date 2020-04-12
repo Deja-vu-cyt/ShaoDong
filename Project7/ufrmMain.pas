@@ -71,6 +71,14 @@ type
     Label20: TLabel;
     Label21: TLabel;
     edtMinSeparateSameValueCount: TEdit;
+    Label22: TLabel;
+    Label23: TLabel;
+    edtSeparateSameValueCount3: TEdit;
+    edtSeparateSameValueCount4: TEdit;
+    Label24: TLabel;
+    Label25: TLabel;
+    edtSeparateSameValueCount5: TEdit;
+    edtSeparateSameValueCount6: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure edtFileDirectoryClick(Sender: TObject);
     procedure btnCompareClick(Sender: TObject);
@@ -80,6 +88,7 @@ type
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   private
     function CheckIntervalValues(var IntervalValues: TWordDynArray): Boolean;
+    function CheckSeparateSameValueCount(var ValueCount, ValueCount2: Integer): Boolean;
     function CheckSameValueCount(var ValueCount, ValueCount2, ValueCount3, ValueCount4: Integer): Boolean;
     function CheckSameValueCount2(var ValueCount, ValueCount2, ValueCount3, ValueCount4: Integer): Boolean;
     function CheckSameValueCount3(var ValueCount, ValueCount2, ValueCount3, ValueCount4: Integer): Boolean;
@@ -119,6 +128,16 @@ begin
     SetLength(IntervalValues, 2);
     IntervalValues[1] := v2;
   end;
+end;
+
+function TfrmMain.CheckSeparateSameValueCount(var ValueCount, ValueCount2: Integer): Boolean;
+begin
+  Result := edtSeparateSameValueCount.TryToValue(ValueCount, -1);
+  if not Result then Exit;
+  Result := edtSeparateSameValueCount2.TryToValue(ValueCount2);
+  if not Result then Exit;
+  if ValueCount > -1 then
+    Result := (ValueCount2 >= 0) and (ValueCount2 >= 0);
 end;
 
 function TfrmMain.CheckSameValueCount(var ValueCount, ValueCount2, ValueCount3, ValueCount4: Integer): Boolean;
@@ -280,6 +299,14 @@ begin
   if not VarIsEmpty(v) then edtSeparateSameValueCount.Text := VarToStr(v);
   fKeyValue.GetKeyValue(edtSeparateSameValueCount2.Name, v);
   if not VarIsEmpty(v) then edtSeparateSameValueCount2.Text := VarToStr(v);
+  fKeyValue.GetKeyValue(edtSeparateSameValueCount3.Name, v);
+  if not VarIsEmpty(v) then edtSeparateSameValueCount3.Text := VarToStr(v);
+  fKeyValue.GetKeyValue(edtSeparateSameValueCount4.Name, v);
+  if not VarIsEmpty(v) then edtSeparateSameValueCount4.Text := VarToStr(v);
+  fKeyValue.GetKeyValue(edtSeparateSameValueCount5.Name, v);
+  if not VarIsEmpty(v) then edtSeparateSameValueCount5.Text := VarToStr(v);
+  fKeyValue.GetKeyValue(edtSeparateSameValueCount6.Name, v);
+  if not VarIsEmpty(v) then edtSeparateSameValueCount6.Text := VarToStr(v);
   fKeyValue.GetKeyValue(edtMinSeparateSameValueCount.Name, v);
   if not VarIsEmpty(v) then edtMinSeparateSameValueCount.Text := VarToStr(v);
   fKeyValue.GetKeyValue(edtSameValueCount.Name, v);
@@ -375,14 +402,35 @@ begin
   SetLength(SameValues, 0);
   if Sender = btnCompare then
   begin
-    if not edtSeparateSameValueCount.TryToValue(SameValueCount) then
+    if not edtSeparateSameValueCount.TryToValue(SameValueCount, -1) then
       raise Exception.Create('请输入有效相同列数');
     if not edtSeparateSameValueCount2.TryToValue(SameValueCount2) then
       raise Exception.Create('请输入有效相同列数');
-    if not edtMinSeparateSameValueCount.TryToValue(MinSameValueCount) then
-      raise Exception.Create('请输入有效最小相同列数');
-    SetLength(SameValues, Length(SameValues) + 1);
-    SameValues[High(SameValues)] := Rect(SameValueCount, SameValueCount2, 0, 0);
+    if SameValueCount > -1 then
+    begin
+      SetLength(SameValues, Length(SameValues) + 1);
+      SameValues[High(SameValues)] := Rect(SameValueCount, SameValueCount2, 0, 0);
+    end;
+
+    if not edtSeparateSameValueCount3.TryToValue(SameValueCount, -1) then
+      raise Exception.Create('请输入有效相同列数');
+    if not edtSeparateSameValueCount4.TryToValue(SameValueCount2) then
+      raise Exception.Create('请输入有效相同列数');
+    if SameValueCount > -1 then
+    begin
+      SetLength(SameValues, Length(SameValues) + 1);
+      SameValues[High(SameValues)] := Rect(SameValueCount, SameValueCount2, 0, 0);
+    end;
+
+    if not edtSeparateSameValueCount5.TryToValue(SameValueCount, -1) then
+      raise Exception.Create('请输入有效相同列数');
+    if not edtSeparateSameValueCount6.TryToValue(SameValueCount2) then
+      raise Exception.Create('请输入有效相同列数');
+    if SameValueCount > -1 then
+    begin
+      SetLength(SameValues, Length(SameValues) + 1);
+      SameValues[High(SameValues)] := Rect(SameValueCount, SameValueCount2, 0, 0);
+    end;
   end
   else
   begin
@@ -438,6 +486,10 @@ begin
   fKeyValue.SetKeyValue(edtIntervalValue2.Name, edtIntervalValue2.Text);
   fKeyValue.SetKeyValue(edtSeparateSameValueCount.Name, edtSeparateSameValueCount.Text);
   fKeyValue.SetKeyValue(edtSeparateSameValueCount2.Name, edtSeparateSameValueCount2.Text);
+  fKeyValue.SetKeyValue(edtSeparateSameValueCount3.Name, edtSeparateSameValueCount3.Text);
+  fKeyValue.SetKeyValue(edtSeparateSameValueCount4.Name, edtSeparateSameValueCount4.Text);
+  fKeyValue.SetKeyValue(edtSeparateSameValueCount5.Name, edtSeparateSameValueCount5.Text);
+  fKeyValue.SetKeyValue(edtSeparateSameValueCount6.Name, edtSeparateSameValueCount6.Text);
   fKeyValue.SetKeyValue(edtMinSeparateSameValueCount.Name, edtMinSeparateSameValueCount.Text);
   fKeyValue.SetKeyValue(edtSameValueCount.Name, edtSameValueCount.Text);
   fKeyValue.SetKeyValue(edtSameValueCount2.Name, edtSameValueCount2.Text);
